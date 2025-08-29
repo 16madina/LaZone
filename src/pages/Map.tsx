@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLocation } from '@/contexts/LocationContext';
 import PropertyMap from '@/components/PropertyMap';
@@ -21,6 +21,16 @@ const Map: React.FC = () => {
   const [showList, setShowList] = useState(false);
   const [sortBy, setSortBy] = useState('date');
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [mapboxToken, setMapboxToken] = useState<string>('');
+
+  // Extract Mapbox token from URL hash on component mount
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes('mapbox_token=')) {
+      const token = hash.split('mapbox_token=')[1].split('&')[0];
+      setMapboxToken(token);
+    }
+  }, []);
   
   const [filters, setFilters] = useState<FilterState>({
     propertyType: [],
@@ -141,6 +151,7 @@ const Map: React.FC = () => {
           selectedProperty={selectedProperty}
           onPropertySelect={handlePropertySelect}
           className="h-full w-full"
+          apiKey={mapboxToken}
         />
 
         {/* List Overlay */}
