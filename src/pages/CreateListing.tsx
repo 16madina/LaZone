@@ -112,12 +112,19 @@ export default function CreateListing() {
   };
 
   const nextStep = () => {
+    console.log('NextStep clicked, current step:', currentStep);
+    console.log('Current form data:', formData);
+    
     if (validateStep(currentStep)) {
+      console.log('Validation passed, moving to next step');
       setCurrentStep(prev => Math.min(prev + 1, STEPS.length));
+    } else {
+      console.log('Validation failed, staying on current step');
     }
   };
 
   const prevStep = () => {
+    console.log('PrevStep clicked, current step:', currentStep);
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
@@ -304,7 +311,7 @@ export default function CreateListing() {
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 px-2">
               <div className="space-y-2">
                 <Label>Titre de l'annonce</Label>
                 <Input
