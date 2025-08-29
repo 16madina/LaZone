@@ -18,6 +18,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLocation } from "@/contexts/LocationContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface ListingData {
   purpose: 'rent' | 'sale';
@@ -55,7 +57,9 @@ export default function CreateListing() {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { selectedCountry, selectedCity, currency } = useLocation();
+  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<ListingData>({
     purpose: 'rent',
     propertyType: '',
@@ -154,15 +158,68 @@ export default function CreateListing() {
     }
   };
 
-  const handleSubmit = () => {
-    if (validateStep(currentStep)) {
-      // Here would be the actual submission logic
-      console.log('Submitting listing:', formData);
+  const handleSubmit = async () => {
+    if (!validateStep(currentStep)) return;
+    
+    setIsLoading(true);
+    console.log('Submitting listing:', formData);
+    
+    try {
+      // Check if user is authenticated
+      const { data: { user } } = await supabase.auth.getUser();
       
-      // Simulate success and redirect
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1000);
+      if (!user) {
+        toast({
+          title: 'Erreur',
+          description: 'Vous devez être connecté pour publier une annonce.',
+          variant: 'destructive',
+        });
+        navigate('/auth?next=' + encodeURIComponent(window.location.pathname));
+        return;
+      }
+
+      // Create the listing in database
+      const { error } = await supabase
+        .from('listings')
+        .insert({
+          user_id: user.id,
+          purpose: formData.purpose,
+          property_type: formData.propertyType,
+          title: formData.title,
+          description: formData.description,
+          price: parseFloat(formData.price),
+          currency,
+          bedrooms: formData.bedrooms ? parseInt(formData.bedrooms) : null,
+          bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : null,
+          area: parseFloat(formData.area),
+          land_area: formData.landArea ? parseFloat(formData.landArea) : null,
+          address: formData.address,
+          city: formData.city,
+          neighborhood: formData.neighborhood,
+          country: selectedCountry,
+          amenities: formData.amenities,
+          images: [], // TODO: Handle image upload later
+          status: 'active'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Annonce publiée avec succès !',
+        description: 'Votre annonce sera visible sous 24h après vérification.',
+      });
+      
+      // Redirect to profile page
+      navigate('/profile');
+    } catch (error: any) {
+      console.error('Error creating listing:', error);
+      toast({
+        title: 'Erreur',
+        description: error.message || 'Une erreur est survenue lors de la publication.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 

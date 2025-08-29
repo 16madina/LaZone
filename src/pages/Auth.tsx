@@ -10,6 +10,7 @@ import { ArrowLeft, Mail, Lock, User, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from '@/contexts/LocationContext';
 import { useGeolocation } from '@/hooks/useGeolocation';
+import { supabase } from '@/integrations/supabase/client';
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
@@ -56,20 +57,65 @@ const Auth: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // Mock authentication
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: isSignUp ? 'Compte créé avec succès' : 'Connexion réussie',
-        description: 'Bienvenue sur LaZone !',
-      });
+      if (isSignUp) {
+        // Préparer les métadonnées utilisateur
+        const userMetadata = userType === 'particulier' 
+          ? {
+              user_type: userType,
+              first_name: firstName,
+              last_name: lastName,
+              country: selectedCountry,
+              city: selectedCity,
+              neighborhood,
+              phone
+            }
+          : {
+              user_type: userType,
+              agency_name: agencyName,
+              responsible_first_name: responsibleFirstName,
+              responsible_last_name: responsibleLastName,
+              country: selectedCountry,
+              city: selectedCity,
+              neighborhood,
+              agency_phone: agencyPhone,
+              responsible_mobile: responsibleMobile
+            };
+
+        const { error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`,
+            data: userMetadata
+          }
+        });
+
+        if (signUpError) throw signUpError;
+
+        toast({
+          title: 'Compte créé avec succès',
+          description: 'Un email de confirmation vous a été envoyé.',
+        });
+      } else {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (signInError) throw signInError;
+
+        toast({
+          title: 'Connexion réussie',
+          description: 'Bienvenue sur LaZone !',
+        });
+      }
       
       // Redirect to the next URL or home
       navigate(nextUrl);
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: 'Erreur',
-        description: 'Une erreur est survenue. Veuillez réessayer.',
+        description: error.message || 'Une erreur est survenue. Veuillez réessayer.',
         variant: 'destructive',
       });
     } finally {
