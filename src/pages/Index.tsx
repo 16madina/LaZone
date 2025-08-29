@@ -156,79 +156,43 @@ const Index = () => {
               </SelectContent>
             </Select>
 
-            {/* View Toggle - Mobile Only */}
-            <div className="flex bg-secondary rounded-lg p-1 lg:hidden">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setViewMode('map')}
-                className={viewMode === 'map' ? "bg-primary text-primary-foreground" : ""}
-              >
-                <MapPin className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setViewMode('list')}
-                className={viewMode === 'list' ? "bg-primary text-primary-foreground" : ""}
-              >
-                <List className="w-4 h-4" />
-              </Button>
-            </div>
           </div>
         </div>
 
-        {/* Content Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-280px)]">
-          {/* Map Section - Hidden on mobile when list is active */}
-          <div className={`${viewMode === 'list' ? 'hidden lg:block' : ''}`}>
-            <PropertyMap
-              properties={sortedProperties}
-              selectedProperty={selectedProperty}
-              onPropertySelect={handlePropertySelect}
-              apiKey={window.location.hash.includes('mapbox_token=') 
-                ? window.location.hash.split('mapbox_token=')[1].split('&')[0] 
-                : undefined
-              }
-              className="h-full rounded-xl"
-            />
-          </div>
-
-          {/* List Section - Hidden on mobile when map is active */}
-          <div className={`${viewMode === 'map' ? 'hidden lg:block' : ''} overflow-y-auto`}>
-            {sortedProperties.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                <SlidersHorizontal className="w-12 h-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Aucun résultat trouvé</h3>
-                <p className="text-muted-foreground mb-4">
-                  Essayez de modifier vos critères de recherche ou vos filtres.
-                </p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowFilters(true)}
-                >
-                  Modifier les filtres
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4 pr-2">
-                {sortedProperties.map((property) => (
-                  <PropertyCard
-                    key={property.id}
-                    property={property}
-                    onFavorite={toggleFavorite}
-                    isFavorited={favorites.has(property.id)}
-                    onClick={handlePropertyClick}
-                    onContact={() => {
-                      // Handle contact - could open a modal or navigate to contact page
-                      console.log('Contact agent for property:', property.id);
-                    }}
-                    className="w-full"
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+        {/* Property Cards List */}
+        <div className="max-w-full">
+          {sortedProperties.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-center p-8">
+              <SlidersHorizontal className="w-12 h-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Aucun résultat trouvé</h3>
+              <p className="text-muted-foreground mb-4">
+                Essayez de modifier vos critères de recherche ou vos filtres.
+              </p>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowFilters(true)}
+              >
+                Modifier les filtres
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {sortedProperties.map((property) => (
+                <PropertyCard
+                  key={property.id}
+                  property={property}
+                  onFavorite={toggleFavorite}
+                  isFavorited={favorites.has(property.id)}
+                  onClick={handlePropertyClick}
+                  onContact={() => {
+                    // Handle contact - could open a modal or navigate to contact page
+                    console.log('Contact agent for property:', property.id);
+                  }}
+                  className="w-full"
+                />
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>

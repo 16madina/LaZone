@@ -13,7 +13,7 @@ const WelcomeStats: React.FC = () => {
     <div className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 border border-border rounded-xl p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-lg font-bold text-foreground">Bienvenue sur LaZone</h2>
+          <h2 className="text-2xl font-bold text-foreground">Bienvenue sur LaZone</h2>
           <p className="text-sm text-muted-foreground">Découvrez {seedDataStats.totalProperties} biens immobiliers à travers l'Afrique</p>
         </div>
         <Button 
@@ -26,8 +26,8 @@ const WelcomeStats: React.FC = () => {
         </Button>
       </div>
       
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="bg-background/50 border-border/50">
+      <div className="flex overflow-x-auto gap-3 pb-2">
+        <Card className="bg-background/50 border-border/50 flex-shrink-0 min-w-[80px]">
           <CardContent className="p-3 text-center">
             <Globe className="h-6 w-6 mx-auto mb-1 text-primary" />
             <div className="text-lg font-bold">{Object.keys(seedDataStats.byCountry).length}</div>
@@ -35,7 +35,7 @@ const WelcomeStats: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-background/50 border-border/50">
+        <Card className="bg-background/50 border-border/50 flex-shrink-0 min-w-[80px]">
           <CardContent className="p-3 text-center">
             <TrendingUp className="h-6 w-6 mx-auto mb-1 text-primary" />
             <div className="text-lg font-bold">{seedDataStats.new}</div>
@@ -43,7 +43,7 @@ const WelcomeStats: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-background/50 border-border/50">
+        <Card className="bg-background/50 border-border/50 flex-shrink-0 min-w-[80px]">
           <CardContent className="p-3 text-center">
             <MapPin className="h-6 w-6 mx-auto mb-1 text-primary" />
             <div className="text-lg font-bold">{seedDataStats.featured}</div>
@@ -51,7 +51,7 @@ const WelcomeStats: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-background/50 border-border/50">
+        <Card className="bg-background/50 border-border/50 flex-shrink-0 min-w-[80px]">
           <CardContent className="p-3 text-center">
             <Award className="h-6 w-6 mx-auto mb-1 text-primary" />
             <div className="text-lg font-bold">{seedDataStats.verified}</div>
