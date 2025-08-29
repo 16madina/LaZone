@@ -215,7 +215,7 @@ export default function CreateListing() {
                     onClick={() => updateFormData({ purpose })}
                     className="h-12"
                   >
-                    {purpose === 'rent' ? t('nav.rent') : t('nav.buy')}
+                    {purpose === 'rent' ? 'À louer' : 'À vendre'}
                   </Button>
                 ))}
               </div>
