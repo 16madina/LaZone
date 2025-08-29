@@ -31,61 +31,79 @@ export default function PropertyMap({
 
   // Initialize map
   useEffect(() => {
-    if (!mapContainer.current || !apiKey) {
-      console.log('🗺️ Map init skipped:', { hasContainer: !!mapContainer.current, hasApiKey: !!apiKey });
-      setShowApiKeyInput(!apiKey); // Show input if no API key
-      return;
-    }
+    // Wait a bit for the container to be ready
+    const initMap = () => {
+      if (!mapContainer.current) {
+        console.log('🗺️ Map container not ready, retrying...');
+        setTimeout(initMap, 100);
+        return;
+      }
 
-    console.log('🗺️ Initializing map with token:', apiKey.substring(0, 20) + '...');
-    setShowApiKeyInput(false); // Hide input since we have a key
-
-    // Set Mapbox access token
-    mapboxgl.accessToken = apiKey;
-    
-    try {
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/light-v11',
-        center: [-4.0333, 5.3167], // Abidjan, Côte d'Ivoire
-        zoom: 11,
-        pitch: 0,
-      });
-
-      map.current.addControl(
-        new mapboxgl.NavigationControl({
-          visualizePitch: false,
-        }),
-        'top-right'
-      );
-
-      map.current.on('load', () => {
-        console.log('🗺️ Map loaded successfully!');
-        setMapLoaded(true);
-      });
-
-      map.current.on('error', (e) => {
-        console.error('🚨 Map error:', e);
+      if (!apiKey) {
+        console.log('🗺️ No API key provided');
         setShowApiKeyInput(true);
-      });
+        return;
+      }
 
-      // Listen for map movements
-      map.current.on('moveend', () => {
-        if (map.current && onMapBoundsChange) {
-          onMapBoundsChange(map.current.getBounds());
-        }
-      });
+      console.log('🗺️ Initializing map with token:', apiKey.substring(0, 20) + '...');
+      setShowApiKeyInput(false);
 
-      return () => {
-        if (map.current) {
-          map.current.remove();
-          map.current = null;
-        }
-      };
-    } catch (error) {
-      console.error('🚨 Error initializing map:', error);
-      setShowApiKeyInput(true);
-    }
+      // Clean up existing map
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+
+      // Set Mapbox access token
+      mapboxgl.accessToken = apiKey;
+      
+      try {
+        map.current = new mapboxgl.Map({
+          container: mapContainer.current,
+          style: 'mapbox://styles/mapbox/light-v11',
+          center: [-4.0333, 5.3167], // Abidjan, Côte d'Ivoire
+          zoom: 11,
+          pitch: 0,
+        });
+
+        map.current.addControl(
+          new mapboxgl.NavigationControl({
+            visualizePitch: false,
+          }),
+          'top-right'
+        );
+
+        map.current.on('load', () => {
+          console.log('🗺️ Map loaded successfully!');
+          setMapLoaded(true);
+        });
+
+        map.current.on('error', (e) => {
+          console.error('🚨 Map error:', e);
+          setShowApiKeyInput(true);
+        });
+
+        // Listen for map movements
+        map.current.on('moveend', () => {
+          if (map.current && onMapBoundsChange) {
+            onMapBoundsChange(map.current.getBounds());
+          }
+        });
+
+      } catch (error) {
+        console.error('🚨 Error initializing map:', error);
+        setShowApiKeyInput(true);
+      }
+    };
+
+    initMap();
+
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+    };
   }, [apiKey, onMapBoundsChange]);
 
   // Update markers when properties change
