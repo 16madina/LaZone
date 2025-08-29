@@ -16,19 +16,19 @@ interface GeolocationState {
 }
 
 const AFRICAN_COUNTRIES = [
-  { code: 'CI', name: 'Côte d\'Ivoire', currency: 'CFA', cities: ['Abidjan', 'Bouaké', 'Daloa'] },
-  { code: 'SN', name: 'Sénégal', currency: 'CFA', cities: ['Dakar', 'Thiès', 'Kaolack'] },
-  { code: 'NG', name: 'Nigeria', currency: 'NGN', cities: ['Lagos', 'Kano', 'Ibadan'] },
-  { code: 'GH', name: 'Ghana', currency: 'GHS', cities: ['Accra', 'Kumasi', 'Tamale'] },
-  { code: 'CM', name: 'Cameroun', currency: 'CFA', cities: ['Douala', 'Yaoundé', 'Garoua'] },
-  { code: 'KE', name: 'Kenya', currency: 'KES', cities: ['Nairobi', 'Mombasa', 'Kisumu'] },
-  { code: 'MA', name: 'Maroc', currency: 'MAD', cities: ['Casablanca', 'Rabat', 'Marrakech'] },
-  { code: 'TN', name: 'Tunisie', currency: 'TND', cities: ['Tunis', 'Sfax', 'Sousse'] },
-  { code: 'EG', name: 'Égypte', currency: 'EGP', cities: ['Le Caire', 'Alexandrie', 'Giza'] },
-  { code: 'ZA', name: 'Afrique du Sud', currency: 'ZAR', cities: ['Johannesburg', 'Le Cap', 'Durban'] },
-  { code: 'ET', name: 'Éthiopie', currency: 'ETB', cities: ['Addis-Abeba', 'Dire Dawa', 'Mekelle'] },
-  { code: 'TG', name: 'Togo', currency: 'CFA', cities: ['Lomé', 'Sokodé', 'Kara'] },
-  { code: 'BJ', name: 'Bénin', currency: 'CFA', cities: ['Cotonou', 'Porto-Novo', 'Parakou'] }
+  { code: 'CI', name: 'Côte d\'Ivoire', currency: 'CFA', flag: '🇨🇮', phoneCode: '+225', cities: ['Abidjan', 'Bouaké', 'Daloa'] },
+  { code: 'SN', name: 'Sénégal', currency: 'CFA', flag: '🇸🇳', phoneCode: '+221', cities: ['Dakar', 'Thiès', 'Kaolack'] },
+  { code: 'NG', name: 'Nigeria', currency: 'NGN', flag: '🇳🇬', phoneCode: '+234', cities: ['Lagos', 'Kano', 'Ibadan'] },
+  { code: 'GH', name: 'Ghana', currency: 'GHS', flag: '🇬🇭', phoneCode: '+233', cities: ['Accra', 'Kumasi', 'Tamale'] },
+  { code: 'CM', name: 'Cameroun', currency: 'CFA', flag: '🇨🇲', phoneCode: '+237', cities: ['Douala', 'Yaoundé', 'Garoua'] },
+  { code: 'KE', name: 'Kenya', currency: 'KES', flag: '🇰🇪', phoneCode: '+254', cities: ['Nairobi', 'Mombasa', 'Kisumu'] },
+  { code: 'MA', name: 'Maroc', currency: 'MAD', flag: '🇲🇦', phoneCode: '+212', cities: ['Casablanca', 'Rabat', 'Marrakech'] },
+  { code: 'TN', name: 'Tunisie', currency: 'TND', flag: '🇹🇳', phoneCode: '+216', cities: ['Tunis', 'Sfax', 'Sousse'] },
+  { code: 'EG', name: 'Égypte', currency: 'EGP', flag: '🇪🇬', phoneCode: '+20', cities: ['Le Caire', 'Alexandrie', 'Giza'] },
+  { code: 'ZA', name: 'Afrique du Sud', currency: 'ZAR', flag: '🇿🇦', phoneCode: '+27', cities: ['Johannesburg', 'Le Cap', 'Durban'] },
+  { code: 'ET', name: 'Éthiopie', currency: 'ETB', flag: '🇪🇹', phoneCode: '+251', cities: ['Addis-Abeba', 'Dire Dawa', 'Mekelle'] },
+  { code: 'TG', name: 'Togo', currency: 'CFA', flag: '🇹🇬', phoneCode: '+228', cities: ['Lomé', 'Sokodé', 'Kara'] },
+  { code: 'BJ', name: 'Bénin', currency: 'CFA', flag: '🇧🇯', phoneCode: '+229', cities: ['Cotonou', 'Porto-Novo', 'Parakou'] }
 ];
 
 // Reverse geocoding simulé basé sur les coordonnées

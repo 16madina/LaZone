@@ -9,12 +9,14 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ArrowLeft, Mail, Lock, User, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from '@/contexts/LocationContext';
+import { useGeolocation } from '@/hooks/useGeolocation';
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { selectedCountry, selectedCity } = useLocation();
+  const { countries } = useGeolocation();
   
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
@@ -36,6 +38,18 @@ const Auth: React.FC = () => {
   
   const mode = searchParams.get('mode') || 'login';
   const nextUrl = searchParams.get('next') || '/';
+
+  // Helper pour obtenir les infos du pays
+  const getCountryInfo = () => {
+    if (!selectedCountry) return { flag: '', phoneCode: '' };
+    const country = countries.find(c => c.name === selectedCountry);
+    return {
+      flag: country?.flag || '',
+      phoneCode: country?.phoneCode || ''
+    };
+  };
+
+  const { flag, phoneCode } = getCountryInfo();
 
   const handleSubmit = async (e: React.FormEvent, isSignUp: boolean) => {
     e.preventDefault();
@@ -200,14 +214,16 @@ const Auth: React.FC = () => {
                           <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-2">
                               <Label htmlFor="country">Pays</Label>
-                              <Input
-                                id="country"
-                                type="text"
-                                value={selectedCountry || ''}
-                                placeholder="Pays détecté automatiquement"
-                                readOnly
-                                className="bg-muted"
-                              />
+                              <div className="relative">
+                                <Input
+                                  id="country"
+                                  type="text"
+                                  value={flag ? `${flag} ${selectedCountry}` : selectedCountry || ''}
+                                  placeholder="Pays détecté automatiquement"
+                                  readOnly
+                                  className="bg-muted pl-3"
+                                />
+                              </div>
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="city">Ville</Label>
@@ -236,14 +252,20 @@ const Auth: React.FC = () => {
 
                           <div className="space-y-2">
                             <Label htmlFor="phone">Téléphone</Label>
-                            <Input
-                              id="phone"
-                              type="tel"
-                              placeholder="+225 XX XX XX XX"
-                              value={phone}
-                              onChange={(e) => setPhone(e.target.value)}
-                              required
-                            />
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm z-10">
+                                {phoneCode}
+                              </span>
+                              <Input
+                                id="phone"
+                                type="tel"
+                                placeholder={`${phoneCode} XX XX XX XX`}
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                                className={phoneCode ? 'pl-16' : 'pl-3'}
+                                required
+                              />
+                            </div>
                           </div>
                         </>
                       ) : (
@@ -290,14 +312,16 @@ const Auth: React.FC = () => {
                           <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-2">
                               <Label htmlFor="agencyCountry">Pays</Label>
-                              <Input
-                                id="agencyCountry"
-                                type="text"
-                                value={selectedCountry || ''}
-                                placeholder="Pays détecté automatiquement"
-                                readOnly
-                                className="bg-muted"
-                              />
+                              <div className="relative">
+                                <Input
+                                  id="agencyCountry"
+                                  type="text"
+                                  value={flag ? `${flag} ${selectedCountry}` : selectedCountry || ''}
+                                  placeholder="Pays détecté automatiquement"
+                                  readOnly
+                                  className="bg-muted pl-3"
+                                />
+                              </div>
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="agencyCity">Ville</Label>
@@ -326,26 +350,38 @@ const Auth: React.FC = () => {
 
                           <div className="space-y-2">
                             <Label htmlFor="agencyPhone">Téléphone de l'agence</Label>
-                            <Input
-                              id="agencyPhone"
-                              type="tel"
-                              placeholder="+225 XX XX XX XX"
-                              value={agencyPhone}
-                              onChange={(e) => setAgencyPhone(e.target.value)}
-                              required
-                            />
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm z-10">
+                                {phoneCode}
+                              </span>
+                              <Input
+                                id="agencyPhone"
+                                type="tel"
+                                placeholder={`${phoneCode} XX XX XX XX`}
+                                value={agencyPhone}
+                                onChange={(e) => setAgencyPhone(e.target.value)}
+                                className={phoneCode ? 'pl-16' : 'pl-3'}
+                                required
+                              />
+                            </div>
                           </div>
 
                           <div className="space-y-2">
                             <Label htmlFor="responsibleMobile">Téléphone cellulaire du responsable</Label>
-                            <Input
-                              id="responsibleMobile"
-                              type="tel"
-                              placeholder="+225 XX XX XX XX"
-                              value={responsibleMobile}
-                              onChange={(e) => setResponsibleMobile(e.target.value)}
-                              required
-                            />
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm z-10">
+                                {phoneCode}
+                              </span>
+                              <Input
+                                id="responsibleMobile"
+                                type="tel"
+                                placeholder={`${phoneCode} XX XX XX XX`}
+                                value={responsibleMobile}
+                                onChange={(e) => setResponsibleMobile(e.target.value)}
+                                className={phoneCode ? 'pl-16' : 'pl-3'}
+                                required
+                              />
+                            </div>
                           </div>
                         </>
                       )}
