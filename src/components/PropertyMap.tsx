@@ -204,34 +204,42 @@ export default function PropertyMap({
     }
   };
 
-  if (showApiKeyInput) {
+  if (showApiKeyInput || !apiKey) {
     return (
-      <div className={`relative bg-gradient-card rounded-xl p-8 ${className}`}>
-        <div className="text-center space-y-4">
-          <Layers className="w-12 h-12 text-muted-foreground mx-auto" />
-          <h3 className="text-lg font-semibold">Configuration de la carte</h3>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Pour afficher la carte interactive, veuillez entrer votre token Mapbox public. 
-            Vous pouvez en obtenir un gratuitement sur{' '}
-            <a 
-              href="https://mapbox.com" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              mapbox.com
-            </a>
-          </p>
-          <form onSubmit={handleApiKeySubmit} className="space-y-3 max-w-sm mx-auto">
-            <input
-              type="text"
-              placeholder="pk.eyJ1IjoiYWJjZGVmZy..."
-              value={inputApiKey}
-              onChange={(e) => setInputApiKey(e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-            />
-            <Button type="submit" className="w-full">
-              Configurer la carte
+      <div className={`relative bg-card border border-border rounded-xl p-8 ${className}`}>
+        <div className="text-center space-y-6">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <Layers className="w-8 h-8 text-primary" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-semibold text-foreground">Configuration Mapbox</h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+              Pour afficher la carte interactive avec les biens immobiliers, connectez votre token Mapbox public.
+            </p>
+          </div>
+          
+          <div className="bg-muted/50 rounded-lg p-4 max-w-md mx-auto">
+            <p className="text-xs text-muted-foreground mb-2">📍 Étapes simples :</p>
+            <ol className="text-xs text-muted-foreground space-y-1 text-left">
+              <li>1. Créez un compte gratuit sur <a href="https://mapbox.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">mapbox.com</a></li>
+              <li>2. Copiez votre "Public token" depuis le dashboard</li>
+              <li>3. Collez-le ci-dessous</li>
+            </ol>
+          </div>
+
+          <form onSubmit={handleApiKeySubmit} className="space-y-4 max-w-sm mx-auto">
+            <div className="space-y-2">
+              <input
+                type="text"
+                placeholder="pk.eyJ1IjoiYWJjZGVmZy1leGFtcGxl..."
+                value={inputApiKey}
+                onChange={(e) => setInputApiKey(e.target.value)}
+                className="w-full px-4 py-3 border border-border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+              />
+              <p className="text-xs text-muted-foreground">Le token commence par "pk."</p>
+            </div>
+            <Button type="submit" className="w-full h-11" disabled={!inputApiKey.trim()}>
+              🗺️ Activer la carte
             </Button>
           </form>
         </div>
