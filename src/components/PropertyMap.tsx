@@ -245,9 +245,9 @@ export default function PropertyMap({
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-          ">
-            ${property.location.neighborhood}, ${property.location.city}
-          </div>
+            ">
+              ${property.location.neighborhood}, ${property.location.city}
+            </div>
           
           <div style="
             display: flex;
@@ -313,6 +313,10 @@ export default function PropertyMap({
       el.addEventListener('click', (e) => {
         e.stopPropagation();
         onPropertySelect(property);
+        
+        // Open the popup immediately
+        popup.addTo(map.current!);
+        
         map.current?.flyTo({
           center: property.location.coordinates,
           zoom: 14,
@@ -363,8 +367,7 @@ export default function PropertyMap({
     if (inputApiKey.trim()) {
       // Save to localStorage for persistence
       localStorage.setItem('mapbox_token', inputApiKey.trim());
-      // Also update URL for immediate use
-      window.location.hash = `mapbox_token=${inputApiKey.trim()}`;
+      // Trigger a page reload to apply the new token
       window.location.reload();
     }
   };
