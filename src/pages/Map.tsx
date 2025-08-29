@@ -6,8 +6,8 @@ import PropertyFilters, { FilterState } from '@/components/PropertyFilters';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { extendedMockProperties } from '@/data/extendedMockProperties';
 import { filterProperties } from '@/data/mockProperties';
+import { comprehensiveMockProperties } from '@/data/comprehensiveSeedData';
 import { SlidersHorizontal, ArrowUpDown, List } from 'lucide-react';
 
 const Map: React.FC = () => {
@@ -28,9 +28,9 @@ const Map: React.FC = () => {
     amenities: []
   });
 
-  // Filter and sort properties
+  // Filter and sort properties (map 'buy' to 'sale' for data compatibility)
   const filteredProperties = filterProperties(
-    extendedMockProperties.filter(p => p.purpose === searchMode),
+    comprehensiveMockProperties.filter(p => p.purpose === (searchMode === 'buy' ? 'sale' : searchMode)),
     filters
   );
 

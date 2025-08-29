@@ -5,44 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Heart, Search, ArrowLeft } from 'lucide-react';
+import { comprehensiveMockProperties } from '@/data/comprehensiveSeedData';
 
-// Mock favorites data - in real app this would come from a store/context
-const mockFavorites: Property[] = [
-  {
-    id: '1',
-    title: 'Appartement moderne à Cocody',
-    location: {
-      city: 'Abidjan',
-      neighborhood: 'Cocody',
-      coordinates: [-4.0266, 5.3364] // [lng, lat] format
-    },
-    price: 850000,
-    currency: 'XOF',
-    purpose: 'rent' as const,
-    type: 'apartment' as const,
-    bedrooms: 3,
-    bathrooms: 2,
-    area: 85,
-    images: ['/placeholder.svg'],
-    createdAt: '2024-01-15',
-    agent: {
-      name: 'Koffi Asante',
-      avatar: '/placeholder.svg',
-      isVerified: true
-    },
-    amenities: ['parking', 'security', 'internet'],
-    isVerified: true,
-    isNew: false,
-    isFeatured: false
-  }
-];
-
+// Mock favorites data - remove old static data since we're using comprehensive data now
 const Favorites: React.FC = () => {
   const navigate = useNavigate();
-  const [favorites, setFavorites] = useState<Set<string>>(new Set(['1']));
+  const [favorites, setFavorites] = useState<Set<string>>(new Set(['1', '10', '25'])); // Sample favorites from comprehensive data
   const [activeTab, setActiveTab] = useState<'rent' | 'sale'>('rent');
 
-  const favoriteProperties = mockFavorites.filter(p => 
+  const favoriteProperties = comprehensiveMockProperties.filter(p => 
     favorites.has(p.id) && p.purpose === activeTab
   );
 
@@ -102,13 +73,13 @@ const Favorites: React.FC = () => {
             <TabsTrigger value="rent" className="flex items-center gap-2">
               Location
               <Badge variant="secondary" className="ml-1">
-                {mockFavorites.filter(p => favorites.has(p.id) && p.purpose === 'rent').length}
+                {comprehensiveMockProperties.filter(p => favorites.has(p.id) && p.purpose === 'rent').length}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="sale" className="flex items-center gap-2">
               Achat
               <Badge variant="secondary" className="ml-1">
-                {mockFavorites.filter(p => favorites.has(p.id) && p.purpose === 'sale').length}
+                {comprehensiveMockProperties.filter(p => favorites.has(p.id) && p.purpose === 'sale').length}
               </Badge>
             </TabsTrigger>
           </TabsList>

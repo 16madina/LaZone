@@ -3,12 +3,13 @@ import Header from "@/components/Header";
 import PropertyFilters, { FilterState } from "@/components/PropertyFilters";
 import PropertyCard, { Property } from "@/components/PropertyCard";
 import PropertyMap from "@/components/PropertyMap";
+import WelcomeStats from "@/components/WelcomeStats";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { mockProperties, filterProperties } from "@/data/mockProperties";
-import { extendedMockProperties } from "@/data/extendedMockProperties";
+import { filterProperties } from '@/data/mockProperties';
+import { comprehensiveMockProperties } from '@/data/comprehensiveSeedData';
 import { useNavigate } from "react-router-dom";
 import { MapPin, List, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 
@@ -39,9 +40,9 @@ const Index = () => {
     }));
   }, [searchMode]);
 
-  // Filter and sort properties
+  // Filter and sort properties (map 'buy' to 'sale' for data compatibility)
   const filteredProperties = filterProperties(
-    extendedMockProperties.filter(p => p.purpose === searchMode),
+    comprehensiveMockProperties.filter(p => p.purpose === (searchMode === 'buy' ? 'sale' : searchMode)),
     filters
   );
 
@@ -108,6 +109,9 @@ const Index = () => {
       />
 
       <main className="container mx-auto px-4 py-6">
+        {/* Welcome Stats */}
+        <WelcomeStats />
+        
         {/* Active Filters & Controls */}
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
           <div className="flex items-center gap-2 flex-wrap">

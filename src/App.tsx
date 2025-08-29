@@ -10,6 +10,7 @@ import CreateListing from "./pages/CreateListing";
 import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
+import Stats from "./pages/Stats";
 import PropertyDetail from "./pages/PropertyDetail";
 import NotFound from "./pages/NotFound";
 import { LocationProvider } from "./contexts/LocationContext";
@@ -37,6 +38,7 @@ const App = () => (
                 <Route path="/favorites" element={<Favorites />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/stats" element={<Stats />} />
                 <Route path="/property/:id" element={<PropertyDetail />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
