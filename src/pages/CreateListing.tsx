@@ -193,7 +193,7 @@ export default function CreateListing() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6 max-w-2xl">
+      <div className="container mx-auto px-4 py-6 max-w-2xl pb-24">
         {/* Step 1: Type & Purpose */}
         {currentStep === 1 && (
           <Card className="p-6 space-y-6">
