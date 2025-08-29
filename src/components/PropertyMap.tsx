@@ -215,6 +215,9 @@ export default function PropertyMap({
   const handleApiKeySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputApiKey.trim()) {
+      // Save to localStorage for persistence
+      localStorage.setItem('mapbox_token', inputApiKey.trim());
+      // Also update URL for immediate use
       window.location.hash = `mapbox_token=${inputApiKey.trim()}`;
       window.location.reload();
     }

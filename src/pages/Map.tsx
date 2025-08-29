@@ -23,13 +23,27 @@ const Map: React.FC = () => {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [mapboxToken, setMapboxToken] = useState<string>('');
 
-  // Extract Mapbox token from URL hash on component mount
+  // Extract and persist Mapbox token
   useEffect(() => {
+    // Check localStorage first
+    const savedToken = localStorage.getItem('mapbox_token');
+    if (savedToken) {
+      setMapboxToken(savedToken);
+      console.log('🗺️ Token Mapbox chargé depuis localStorage');
+      return;
+    }
+
+    // Then check URL hash
     const hash = window.location.hash;
     if (hash.includes('mapbox_token=')) {
       const token = hash.split('mapbox_token=')[1].split('&')[0];
-      setMapboxToken(decodeURIComponent(token));
-      console.log('🗺️ Token Mapbox extrait:', token.substring(0, 20) + '...');
+      const decodedToken = decodeURIComponent(token);
+      setMapboxToken(decodedToken);
+      // Save to localStorage for future use
+      localStorage.setItem('mapbox_token', decodedToken);
+      console.log('🗺️ Token Mapbox extrait et sauvé:', token.substring(0, 20) + '...');
+      // Clean URL
+      window.history.replaceState(null, '', window.location.pathname);
     }
   }, []);
 
