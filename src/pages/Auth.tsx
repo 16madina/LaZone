@@ -5,18 +5,34 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Mail, Lock } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ArrowLeft, Mail, Lock, User, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useLocation } from '@/contexts/LocationContext';
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { selectedCountry, selectedCity } = useLocation();
   
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [userType, setUserType] = useState<'particulier' | 'agence'>('particulier');
+  
+  // Champs particulier
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
+  const [phone, setPhone] = useState('');
+  
+  // Champs agence
+  const [agencyName, setAgencyName] = useState('');
+  const [responsibleFirstName, setResponsibleFirstName] = useState('');
+  const [responsibleLastName, setResponsibleLastName] = useState('');
+  const [agencyPhone, setAgencyPhone] = useState('');
+  const [responsibleMobile, setResponsibleMobile] = useState('');
   
   const mode = searchParams.get('mode') || 'login';
   const nextUrl = searchParams.get('next') || '/';
@@ -126,55 +142,252 @@ const Auth: React.FC = () => {
                 </TabsContent>
                 
                 <TabsContent value="register">
-                  <form onSubmit={(e) => handleSubmit(e, true)} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="register-name">Nom complet</Label>
-                      <Input
-                        id="register-name"
-                        type="text"
-                        placeholder="Votre nom"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="register-email">Email</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                        <Input
-                          id="register-email"
-                          type="email"
-                          placeholder="votre@email.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="pl-10"
-                          required
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="register-password">Mot de passe</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                        <Input
-                          id="register-password"
-                          type="password"
-                          placeholder="••••••••"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="pl-10"
-                          required
-                        />
-                      </div>
+                  <div className="space-y-4">
+                    {/* Type d'utilisateur */}
+                    <div className="space-y-3">
+                      <Label>Type de compte</Label>
+                      <RadioGroup 
+                        value={userType} 
+                        onValueChange={(value) => setUserType(value as 'particulier' | 'agence')}
+                        className="grid grid-cols-2 gap-4"
+                      >
+                        <div className="flex items-center space-x-2 p-3 border rounded-md">
+                          <RadioGroupItem value="particulier" id="particulier" />
+                          <div className="flex items-center space-x-2">
+                            <User className="w-4 h-4" />
+                            <Label htmlFor="particulier" className="text-sm">Particulier</Label>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2 p-3 border rounded-md">
+                          <RadioGroupItem value="agence" id="agence" />
+                          <div className="flex items-center space-x-2">
+                            <Building2 className="w-4 h-4" />
+                            <Label htmlFor="agence" className="text-sm">Agence</Label>
+                          </div>
+                        </div>
+                      </RadioGroup>
                     </div>
 
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? 'Création...' : 'Créer un compte'}
-                    </Button>
-                  </form>
+                    <form onSubmit={(e) => handleSubmit(e, true)} className="space-y-4">
+                      {userType === 'particulier' ? (
+                        <>
+                          {/* Formulaire Particulier */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                              <Label htmlFor="firstName">Nom</Label>
+                              <Input
+                                id="firstName"
+                                type="text"
+                                placeholder="Nom"
+                                value={firstName}
+                                onChange={(e) => setFirstName(e.target.value)}
+                                required
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="lastName">Prénom</Label>
+                              <Input
+                                id="lastName"
+                                type="text"
+                                placeholder="Prénom"
+                                value={lastName}
+                                onChange={(e) => setLastName(e.target.value)}
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                              <Label htmlFor="country">Pays</Label>
+                              <Input
+                                id="country"
+                                type="text"
+                                value={selectedCountry || ''}
+                                placeholder="Pays détecté automatiquement"
+                                readOnly
+                                className="bg-muted"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="city">Ville</Label>
+                              <Input
+                                id="city"
+                                type="text"
+                                value={selectedCity || ''}
+                                placeholder="Ville détectée automatiquement"
+                                readOnly
+                                className="bg-muted"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="neighborhood">Quartier</Label>
+                            <Input
+                              id="neighborhood"
+                              type="text"
+                              placeholder="Votre quartier"
+                              value={neighborhood}
+                              onChange={(e) => setNeighborhood(e.target.value)}
+                              required
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="phone">Téléphone</Label>
+                            <Input
+                              id="phone"
+                              type="tel"
+                              placeholder="+225 XX XX XX XX"
+                              value={phone}
+                              onChange={(e) => setPhone(e.target.value)}
+                              required
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {/* Formulaire Agence */}
+                          <div className="space-y-2">
+                            <Label htmlFor="agencyName">Nom de l'agence</Label>
+                            <Input
+                              id="agencyName"
+                              type="text"
+                              placeholder="Nom de votre agence"
+                              value={agencyName}
+                              onChange={(e) => setAgencyName(e.target.value)}
+                              required
+                            />
+                          </div>
+
+                          <div className="text-sm font-medium text-muted-foreground mb-2">Responsable</div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                              <Label htmlFor="responsibleFirstName">Nom</Label>
+                              <Input
+                                id="responsibleFirstName"
+                                type="text"
+                                placeholder="Nom du responsable"
+                                value={responsibleFirstName}
+                                onChange={(e) => setResponsibleFirstName(e.target.value)}
+                                required
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="responsibleLastName">Prénom</Label>
+                              <Input
+                                id="responsibleLastName"
+                                type="text"
+                                placeholder="Prénom du responsable"
+                                value={responsibleLastName}
+                                onChange={(e) => setResponsibleLastName(e.target.value)}
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                              <Label htmlFor="agencyCountry">Pays</Label>
+                              <Input
+                                id="agencyCountry"
+                                type="text"
+                                value={selectedCountry || ''}
+                                placeholder="Pays détecté automatiquement"
+                                readOnly
+                                className="bg-muted"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="agencyCity">Ville</Label>
+                              <Input
+                                id="agencyCity"
+                                type="text"
+                                value={selectedCity || ''}
+                                placeholder="Ville détectée automatiquement"
+                                readOnly
+                                className="bg-muted"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="agencyNeighborhood">Quartier</Label>
+                            <Input
+                              id="agencyNeighborhood"
+                              type="text"
+                              placeholder="Quartier de l'agence"
+                              value={neighborhood}
+                              onChange={(e) => setNeighborhood(e.target.value)}
+                              required
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="agencyPhone">Téléphone de l'agence</Label>
+                            <Input
+                              id="agencyPhone"
+                              type="tel"
+                              placeholder="+225 XX XX XX XX"
+                              value={agencyPhone}
+                              onChange={(e) => setAgencyPhone(e.target.value)}
+                              required
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="responsibleMobile">Téléphone cellulaire du responsable</Label>
+                            <Input
+                              id="responsibleMobile"
+                              type="tel"
+                              placeholder="+225 XX XX XX XX"
+                              value={responsibleMobile}
+                              onChange={(e) => setResponsibleMobile(e.target.value)}
+                              required
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {/* Email commun */}
+                      <div className="space-y-2">
+                        <Label htmlFor="register-email">Email</Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                          <Input
+                            id="register-email"
+                            type="email"
+                            placeholder="votre@email.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="pl-10"
+                            required
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="register-password">Mot de passe</Label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                          <Input
+                            id="register-password"
+                            type="password"
+                            placeholder="••••••••"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="pl-10"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <Button type="submit" className="w-full" disabled={isLoading}>
+                        {isLoading ? 'Création...' : 'Créer un compte'}
+                      </Button>
+                    </form>
+                  </div>
                 </TabsContent>
               </Tabs>
 
