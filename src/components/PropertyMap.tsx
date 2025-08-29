@@ -106,11 +106,11 @@ export default function PropertyMap({
       const formatPrice = (price: number, currency: string) => {
         if (currency === 'XOF' || currency === 'XAF') {
           if (price >= 1000000) {
-            return `${Math.round(price / 1000000)}M CFA`;
+            return `${Math.round(price / 1000000)}M`;
           } else if (price >= 1000) {
-            return `${Math.round(price / 1000)}k CFA`;
+            return `${Math.round(price / 1000)}k`;
           }
-          return `${price} CFA`;
+          return price.toString();
         }
         return `${Math.round(price / 1000)}k`;
       };
@@ -121,32 +121,32 @@ export default function PropertyMap({
         background: linear-gradient(135deg, #16a34a, #22c55e);
         color: white;
         border: 2px solid white;
-        border-radius: 20px;
-        padding: 4px 12px;
-        font-size: 12px;
+        border-radius: 12px;
+        padding: 3px 8px;
+        font-size: 10px;
         font-weight: 700;
         cursor: pointer;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         transition: all 0.2s ease;
         white-space: nowrap;
         position: relative;
+        min-width: 35px;
+        text-align: center;
       `;
       
       // Add arrow pointing down
       el.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 2px;">
-          ${priceText}
-        </div>
+        <div>${priceText}</div>
         <div style="
           position: absolute;
-          bottom: -8px;
+          bottom: -6px;
           left: 50%;
           transform: translateX(-50%);
           width: 0;
           height: 0;
-          border-left: 8px solid transparent;
-          border-right: 8px solid transparent;
-          border-top: 8px solid #16a34a;
+          border-left: 6px solid transparent;
+          border-right: 6px solid transparent;
+          border-top: 6px solid #16a34a;
         "></div>
       `;
       
@@ -154,13 +154,13 @@ export default function PropertyMap({
       el.addEventListener('mouseenter', () => {
         el.style.transform = 'scale(1.1) translateY(-2px)';
         el.style.zIndex = '1000';
-        el.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.3)';
+        el.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
       });
       
       el.addEventListener('mouseleave', () => {
         el.style.transform = 'scale(1) translateY(0)';
         el.style.zIndex = '1';
-        el.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.25)';
+        el.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
       });
 
       const marker = new mapboxgl.Marker(el)
