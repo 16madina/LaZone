@@ -28,9 +28,19 @@ const Map: React.FC = () => {
     const hash = window.location.hash;
     if (hash.includes('mapbox_token=')) {
       const token = hash.split('mapbox_token=')[1].split('&')[0];
-      setMapboxToken(token);
+      setMapboxToken(decodeURIComponent(token));
+      console.log('🗺️ Token Mapbox extrait:', token.substring(0, 20) + '...');
     }
   }, []);
+
+  // Debug: Log token changes
+  useEffect(() => {
+    console.log('🗺️ Mapbox token status:', {
+      hasToken: !!mapboxToken,
+      tokenLength: mapboxToken?.length,
+      tokenPrefix: mapboxToken?.substring(0, 10)
+    });
+  }, [mapboxToken]);
   
   const [filters, setFilters] = useState<FilterState>({
     propertyType: [],

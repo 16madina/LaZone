@@ -31,7 +31,12 @@ export default function PropertyMap({
 
   // Initialize map
   useEffect(() => {
-    if (!mapContainer.current || !apiKey) return;
+    if (!mapContainer.current || !apiKey) {
+      console.log('🗺️ Map init skipped:', { hasContainer: !!mapContainer.current, hasApiKey: !!apiKey });
+      return;
+    }
+
+    console.log('🗺️ Initializing map with token:', apiKey.substring(0, 20) + '...');
 
     // Set Mapbox access token
     mapboxgl.accessToken = apiKey;
@@ -53,7 +58,13 @@ export default function PropertyMap({
       );
 
       map.current.on('load', () => {
+        console.log('🗺️ Map loaded successfully!');
         setMapLoaded(true);
+      });
+
+      map.current.on('error', (e) => {
+        console.error('🚨 Map error:', e);
+        setShowApiKeyInput(true);
       });
 
       // Listen for map movements
@@ -64,10 +75,13 @@ export default function PropertyMap({
       });
 
       return () => {
-        map.current?.remove();
+        if (map.current) {
+          map.current.remove();
+          map.current = null;
+        }
       };
     } catch (error) {
-      console.error('Error initializing map:', error);
+      console.error('🚨 Error initializing map:', error);
       setShowApiKeyInput(true);
     }
   }, [apiKey, onMapBoundsChange]);
