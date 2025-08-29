@@ -176,32 +176,135 @@ export default function PropertyMap({
         .setLngLat(property.location.coordinates)
         .addTo(map.current!);
 
-      // Create popup content
+      // Create popup content with property preview
       const popupContent = document.createElement('div');
       popupContent.className = 'property-popup';
+      popupContent.style.cssText = `
+        width: 280px;
+        border-radius: 12px;
+        overflow: hidden;
+        background: white;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        cursor: pointer;
+        transition: transform 0.2s ease;
+      `;
+      
       popupContent.innerHTML = `
-        <div class="p-3 max-w-xs">
-          <img src="${property.images[0]}" alt="${property.title}" class="w-full h-32 object-cover rounded-lg mb-2" />
-          <div class="space-y-1">
-            <div class="font-semibold text-sm line-clamp-1">${property.title}</div>
-            <div class="text-lg font-bold text-blue-600">
-              ${property.price.toLocaleString()} ${property.currency}
-              ${property.purpose === 'rent' ? '/mois' : ''}
-            </div>
-            <div class="text-xs text-gray-600">${property.location.neighborhood}, ${property.location.city}</div>
-            <div class="flex items-center gap-2 text-xs text-gray-500">
-              ${property.bedrooms ? `${property.bedrooms} ch.` : ''} 
-              ${property.bathrooms ? `${property.bathrooms} sdb.` : ''} 
+        <div style="position: relative;">
+          <img 
+            src="${property.images[0]}" 
+            alt="${property.title}" 
+            style="
+              width: 100%;
+              height: 160px;
+              object-fit: cover;
+              display: block;
+            "
+          />
+          <div style="
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+          ">
+            ${property.purpose === 'rent' ? 'À louer' : 'À vendre'}
+          </div>
+        </div>
+        
+        <div style="padding: 16px;">
+          <div style="
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 4px;
+          ">
+            ${property.price.toLocaleString()} ${property.currency === 'XOF' || property.currency === 'XAF' ? 'CFA' : property.currency}
+            ${property.purpose === 'rent' ? '/mois' : ''}
+          </div>
+          
+          <div style="
+            color: #64748b;
+            font-size: 12px;
+            margin-bottom: 8px;
+            font-weight: 500;
+          ">
+            ${property.purpose === 'rent' ? 'Maison à louer' : 'Maison à vendre'}
+          </div>
+          
+          <div style="
+            color: #475569;
+            font-size: 13px;
+            margin-bottom: 12px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          ">
+            ${property.location.neighborhood}, ${property.location.city}
+          </div>
+          
+          <div style="
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            color: #64748b;
+            font-size: 12px;
+          ">
+            ${property.bedrooms ? `
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20 9.557V3h-2v2H6V3H4v6.557C2.81 10.25 2 11.525 2 13v4a1 1 0 0 0 1 1h1v4h2v-4h12v4h2v-4h1a1 1 0 0 0 1-1v-4c0-1.475-.81-2.75-2-3.443zM18 7v2.129c-.47-.08-.94-.129-1-.129-.66 0-1.26.22-1.78.46L15 7h3zM8 7h2l-.22 2.46c-.52-.24-1.12-.46-1.78-.46-.06 0-.53.049-1 .129V7z"/>
+                </svg>
+                ${property.bedrooms}
+              </div>
+            ` : ''}
+            ${property.bathrooms ? `
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                ${property.bathrooms}
+              </div>
+            ` : ''}
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
               ${property.area} m²
             </div>
           </div>
         </div>
       `;
 
+      // Add hover effect to popup
+      popupContent.addEventListener('mouseenter', () => {
+        popupContent.style.transform = 'translateY(-2px)';
+        popupContent.style.boxShadow = '0 12px 32px rgba(0, 0, 0, 0.2)';
+      });
+      
+      popupContent.addEventListener('mouseleave', () => {
+        popupContent.style.transform = 'translateY(0)';
+        popupContent.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.15)';
+      });
+
+      // Add click handler to navigate to property detail
+      popupContent.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Navigate to property detail page
+        window.location.href = `/property/${property.id}`;
+      });
+
       const popup = new mapboxgl.Popup({
         offset: 25,
-        closeButton: false,
-        anchor: 'bottom'
+        closeButton: true,
+        anchor: 'bottom',
+        maxWidth: 'none'
       }).setDOMContent(popupContent);
 
       marker.setPopup(popup);
