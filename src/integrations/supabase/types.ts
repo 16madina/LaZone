@@ -14,7 +14,141 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      listings: {
+        Row: {
+          address: string
+          amenities: string[] | null
+          area: number
+          bathrooms: number | null
+          bedrooms: number | null
+          city: string
+          country: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          images: string[] | null
+          land_area: number | null
+          latitude: number | null
+          longitude: number | null
+          neighborhood: string
+          price: number
+          property_type: string
+          purpose: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          amenities?: string[] | null
+          area: number
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city: string
+          country?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          land_area?: number | null
+          latitude?: number | null
+          longitude?: number | null
+          neighborhood: string
+          price: number
+          property_type: string
+          purpose: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          amenities?: string[] | null
+          area?: number
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string
+          country?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          land_area?: number | null
+          latitude?: number | null
+          longitude?: number | null
+          neighborhood?: string
+          price?: number
+          property_type?: string
+          purpose?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          agency_name: string | null
+          agency_phone: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          neighborhood: string | null
+          phone: string | null
+          responsible_first_name: string | null
+          responsible_last_name: string | null
+          responsible_mobile: string | null
+          updated_at: string
+          user_id: string
+          user_type: string
+        }
+        Insert: {
+          agency_name?: string | null
+          agency_phone?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          neighborhood?: string | null
+          phone?: string | null
+          responsible_first_name?: string | null
+          responsible_last_name?: string | null
+          responsible_mobile?: string | null
+          updated_at?: string
+          user_id: string
+          user_type: string
+        }
+        Update: {
+          agency_name?: string | null
+          agency_phone?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          neighborhood?: string | null
+          phone?: string | null
+          responsible_first_name?: string | null
+          responsible_last_name?: string | null
+          responsible_mobile?: string | null
+          updated_at?: string
+          user_id?: string
+          user_type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
