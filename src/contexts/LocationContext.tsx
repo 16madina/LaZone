@@ -46,15 +46,22 @@ interface LocationProviderProps {
 export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) => {
   const { data, loading, error, getCurrentPosition, countries } = useGeolocation();
   
-  const [state, setState] = useState<LocationState>({
-    detectedCountry: null,
-    detectedCity: null,
-    selectedCountry: null,
-    selectedCity: null,
-    currency: 'CFA', // Default currency
-    coordinates: null,
-    isLocationDetected: false,
-    showLocationPrompt: true
+  const [state, setState] = useState<LocationState>(() => {
+    // Initialize state with data from localStorage if available
+    const savedCountry = localStorage.getItem('lazone_selected_country');
+    const savedCity = localStorage.getItem('lazone_selected_city');
+    const currency = savedCountry ? CURRENCY_MAP[savedCountry] || 'CFA' : 'CFA';
+    
+    return {
+      detectedCountry: null,
+      detectedCity: null,
+      selectedCountry: savedCountry,
+      selectedCity: savedCity,
+      currency,
+      coordinates: null,
+      isLocationDetected: false,
+      showLocationPrompt: !savedCountry // Don't show prompt if we have a saved country
+    };
   });
 
   // Update state when geolocation data changes
@@ -83,6 +90,15 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
       selectedCity: null, // Reset city when country changes
       currency
     }));
+    
+    // Persist to localStorage
+    if (country) {
+      localStorage.setItem('lazone_selected_country', country);
+      localStorage.removeItem('lazone_selected_city');
+    } else {
+      localStorage.removeItem('lazone_selected_country');
+      localStorage.removeItem('lazone_selected_city');
+    }
   };
 
   const setSelectedCity = (city: string | null) => {
@@ -90,6 +106,13 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
       ...prev,
       selectedCity: city
     }));
+    
+    // Persist to localStorage
+    if (city) {
+      localStorage.setItem('lazone_selected_city', city);
+    } else {
+      localStorage.removeItem('lazone_selected_city');
+    }
   };
 
   const requestLocation = () => {

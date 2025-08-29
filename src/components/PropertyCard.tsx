@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Heart, MapPin, Bed, Bath, Maximize, Phone, MessageCircle, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocation } from "@/contexts/LocationContext";
+import { formatPrice } from "@/utils/currency";
 
 export interface Property {
   id: string;
@@ -51,9 +53,10 @@ export default function PropertyCard({
   onClick,
   className 
 }: PropertyCardProps) {
-  const formatPrice = (price: number, currency: string) => {
-    return new Intl.NumberFormat('fr-FR').format(price) + ' ' + currency;
-  };
+  const { currency } = useLocation();
+
+  // Use current currency from location context, fallback to property currency
+  const displayCurrency = currency || property.currency;
 
   const getTypeLabel = (type: string) => {
     switch (type) {
@@ -131,7 +134,7 @@ export default function PropertyCard({
         <div className="flex items-start justify-between">
           <div>
             <div className="text-xl font-bold text-primary">
-              {formatPrice(property.price, property.currency)}
+              {formatPrice(property.price, displayCurrency)}
               {property.purpose === 'rent' && <span className="text-sm font-normal text-muted-foreground">/mois</span>}
             </div>
             <div className="text-sm text-muted-foreground">

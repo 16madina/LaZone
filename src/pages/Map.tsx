@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLocation } from '@/contexts/LocationContext';
 import PropertyMap from '@/components/PropertyMap';
 import PropertyCard, { Property } from '@/components/PropertyCard';
 import PropertyFilters, { FilterState } from '@/components/PropertyFilters';
+import CountrySelector from '@/components/CountrySelector';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { filterProperties } from '@/data/mockProperties';
-import { comprehensiveMockProperties } from '@/data/comprehensiveSeedData';
+import { comprehensiveMockProperties, propertiesByCountry } from '@/data/comprehensiveSeedData';
 import { SlidersHorizontal, ArrowUpDown, List } from 'lucide-react';
 
 const Map: React.FC = () => {
   const navigate = useNavigate();
+  const { selectedCountry } = useLocation();
   const [searchMode] = useState<'rent' | 'buy'>('rent');
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -28,9 +31,14 @@ const Map: React.FC = () => {
     amenities: []
   });
 
+  // Get properties for the selected country, fallback to all if no country selected
+  const countryProperties = selectedCountry && propertiesByCountry[selectedCountry] 
+    ? propertiesByCountry[selectedCountry] 
+    : comprehensiveMockProperties;
+
   // Filter and sort properties (map 'buy' to 'sale' for data compatibility)
   const filteredProperties = filterProperties(
-    comprehensiveMockProperties.filter(p => p.purpose === (searchMode === 'buy' ? 'sale' : searchMode)),
+    countryProperties.filter(p => p.purpose === (searchMode === 'buy' ? 'sale' : searchMode)),
     filters
   );
 
@@ -72,11 +80,14 @@ const Map: React.FC = () => {
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-background border-b border-border z-10">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-lg">Carte</span>
-          <Badge variant="secondary">
-            {sortedProperties.length} biens
-          </Badge>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-lg">Carte</span>
+            <Badge variant="secondary">
+              {sortedProperties.length} biens
+            </Badge>
+          </div>
+          <CountrySelector variant="compact" />
         </div>
         
         <div className="flex items-center gap-2">

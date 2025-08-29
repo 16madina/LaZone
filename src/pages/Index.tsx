@@ -4,17 +4,20 @@ import PropertyFilters, { FilterState } from "@/components/PropertyFilters";
 import PropertyCard, { Property } from "@/components/PropertyCard";
 import PropertyMap from "@/components/PropertyMap";
 import WelcomeStats from "@/components/WelcomeStats";
+import CountrySelector from "@/components/CountrySelector";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { filterProperties } from '@/data/mockProperties';
-import { comprehensiveMockProperties } from '@/data/comprehensiveSeedData';
+import { comprehensiveMockProperties, propertiesByCountry } from '@/data/comprehensiveSeedData';
 import { useNavigate } from "react-router-dom";
+import { useLocation } from "@/contexts/LocationContext";
 import { MapPin, List, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { selectedCountry } = useLocation();
   const [searchMode, setSearchMode] = useState<'rent' | 'buy'>('rent');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -40,9 +43,14 @@ const Index = () => {
     }));
   }, [searchMode]);
 
+  // Get properties for the selected country, fallback to all if no country selected
+  const countryProperties = selectedCountry && propertiesByCountry[selectedCountry] 
+    ? propertiesByCountry[selectedCountry] 
+    : comprehensiveMockProperties;
+
   // Filter and sort properties (map 'buy' to 'sale' for data compatibility)
   const filteredProperties = filterProperties(
-    comprehensiveMockProperties.filter(p => p.purpose === (searchMode === 'buy' ? 'sale' : searchMode)),
+    countryProperties.filter(p => p.purpose === (searchMode === 'buy' ? 'sale' : searchMode)),
     filters
   );
 
@@ -111,6 +119,11 @@ const Index = () => {
       <main className="container mx-auto px-4 py-6">
         {/* Welcome Stats */}
         <WelcomeStats />
+        
+        {/* Country Selector */}
+        <div className="mb-6">
+          <CountrySelector />
+        </div>
         
         {/* Active Filters & Controls */}
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
