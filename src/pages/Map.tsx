@@ -25,26 +25,30 @@ const Map: React.FC = () => {
 
   // Extract and persist Mapbox token
   useEffect(() => {
-    // Check localStorage first
-    const savedToken = localStorage.getItem('mapbox_token');
-    if (savedToken) {
-      setMapboxToken(savedToken);
-      console.log('🗺️ Token Mapbox chargé depuis localStorage');
-      return;
-    }
+    const loadToken = () => {
+      // Check localStorage first
+      const savedToken = localStorage.getItem('mapbox_token');
+      if (savedToken) {
+        console.log('🗺️ Token Mapbox chargé depuis localStorage:', savedToken.substring(0, 20) + '...');
+        setMapboxToken(savedToken);
+        return;
+      }
 
-    // Then check URL hash
-    const hash = window.location.hash;
-    if (hash.includes('mapbox_token=')) {
-      const token = hash.split('mapbox_token=')[1].split('&')[0];
-      const decodedToken = decodeURIComponent(token);
-      setMapboxToken(decodedToken);
-      // Save to localStorage for future use
-      localStorage.setItem('mapbox_token', decodedToken);
-      console.log('🗺️ Token Mapbox extrait et sauvé:', token.substring(0, 20) + '...');
-      // Clean URL
-      window.history.replaceState(null, '', window.location.pathname);
-    }
+      // Then check URL hash
+      const hash = window.location.hash;
+      if (hash.includes('mapbox_token=')) {
+        const token = hash.split('mapbox_token=')[1].split('&')[0];
+        const decodedToken = decodeURIComponent(token);
+        console.log('🗺️ Token Mapbox extrait de l\'URL:', token.substring(0, 20) + '...');
+        setMapboxToken(decodedToken);
+        // Save to localStorage for future use
+        localStorage.setItem('mapbox_token', decodedToken);
+        // Clean URL
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    };
+
+    loadToken();
   }, []);
 
   // Debug: Log token changes
@@ -113,49 +117,68 @@ const Map: React.FC = () => {
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-background border-b border-border z-10">
+      <div className="flex flex-col gap-4 p-4 bg-background border-b border-border z-10">
+        {/* Search Bar */}
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-lg">Carte</span>
-            <Badge variant="secondary">
-              {sortedProperties.length} biens
-            </Badge>
+          <div className="flex-1 relative">
+            <div className="absolute inset-y-0 left-3 flex items-center">
+              <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder="Rechercher une ville, quartier..."
+              className="w-full pl-10 pr-4 py-3 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+            />
           </div>
-          <CountrySelector variant="compact" />
         </div>
-        
-        <div className="flex items-center gap-2">
-          {/* Sort */}
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-32">
-              <ArrowUpDown className="w-4 h-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="date">Récent</SelectItem>
-              <SelectItem value="price_asc">Prix ↑</SelectItem>
-              <SelectItem value="price_desc">Prix ↓</SelectItem>
-              <SelectItem value="distance">Distance</SelectItem>
-            </SelectContent>
-          </Select>
 
-          {/* Filters */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-          </Button>
+        {/* Controls */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-lg">Carte</span>
+              <Badge variant="secondary">
+                {sortedProperties.length} biens
+              </Badge>
+            </div>
+            <CountrySelector variant="compact" />
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {/* Sort */}
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-32">
+                <ArrowUpDown className="w-4 h-4 mr-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date">Récent</SelectItem>
+                <SelectItem value="price_asc">Prix ↑</SelectItem>
+                <SelectItem value="price_desc">Prix ↓</SelectItem>
+                <SelectItem value="distance">Distance</SelectItem>
+              </SelectContent>
+            </Select>
 
-          {/* List Toggle */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowList(!showList)}
-          >
-            <List className="w-4 h-4" />
-          </Button>
+            {/* Filters */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+            </Button>
+
+            {/* List Toggle */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowList(!showList)}
+            >
+              <List className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </div>
 

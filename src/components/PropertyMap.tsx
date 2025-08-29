@@ -98,35 +98,69 @@ export default function PropertyMap({
 
     // Add markers for each property
     properties.forEach(property => {
+      // Create custom marker with price
       const el = document.createElement('div');
       el.className = 'property-marker';
+      
+      // Format price for display
+      const formatPrice = (price: number, currency: string) => {
+        if (currency === 'XOF' || currency === 'XAF') {
+          if (price >= 1000000) {
+            return `${Math.round(price / 1000000)}M CFA`;
+          } else if (price >= 1000) {
+            return `${Math.round(price / 1000)}k CFA`;
+          }
+          return `${price} CFA`;
+        }
+        return `${Math.round(price / 1000)}k`;
+      };
+
+      const priceText = formatPrice(property.price, property.currency);
+      
       el.style.cssText = `
-        width: 32px;
-        height: 32px;
-        background: linear-gradient(135deg, hsl(217, 91%, 25%), hsl(212, 100%, 47%));
-        border: 2px solid white;
-        border-radius: 50%;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        font-weight: 600;
+        background: linear-gradient(135deg, #16a34a, #22c55e);
         color: white;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        border: 2px solid white;
+        border-radius: 20px;
+        padding: 4px 12px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
         transition: all 0.2s ease;
+        white-space: nowrap;
+        position: relative;
       `;
-      el.textContent = property.purpose === 'rent' ? 'L' : 'V';
+      
+      // Add arrow pointing down
+      el.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 2px;">
+          ${priceText}
+        </div>
+        <div style="
+          position: absolute;
+          bottom: -8px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 0;
+          height: 0;
+          border-left: 8px solid transparent;
+          border-right: 8px solid transparent;
+          border-top: 8px solid #16a34a;
+        "></div>
+      `;
       
       // Hover effect
       el.addEventListener('mouseenter', () => {
-        el.style.transform = 'scale(1.1)';
+        el.style.transform = 'scale(1.1) translateY(-2px)';
         el.style.zIndex = '1000';
+        el.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.3)';
       });
       
       el.addEventListener('mouseleave', () => {
-        el.style.transform = 'scale(1)';
+        el.style.transform = 'scale(1) translateY(0)';
         el.style.zIndex = '1';
+        el.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.25)';
       });
 
       const marker = new mapboxgl.Marker(el)
