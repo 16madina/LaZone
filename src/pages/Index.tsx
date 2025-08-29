@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { mockProperties, filterProperties } from "@/data/mockProperties";
+import { extendedMockProperties } from "@/data/extendedMockProperties";
 import { useNavigate } from "react-router-dom";
 import { MapPin, List, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 
@@ -40,7 +41,7 @@ const Index = () => {
 
   // Filter and sort properties
   const filteredProperties = filterProperties(
-    mockProperties.filter(p => p.purpose === searchMode),
+    extendedMockProperties.filter(p => p.purpose === searchMode),
     filters
   );
 
