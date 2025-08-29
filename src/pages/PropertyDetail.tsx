@@ -1,0 +1,396 @@
+import { useParams, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { 
+  ArrowLeft, Heart, Share2, Phone, MessageCircle, Calendar,
+  MapPin, Bed, Bath, Maximize, Car, Shield, Wifi, 
+  Snowflake, Building, TreePine, Eye, Star
+} from "lucide-react";
+import { mockProperties } from "@/data/mockProperties";
+import { Property } from "@/components/PropertyCard";
+import PropertyMap from "@/components/PropertyMap";
+import { cn } from "@/lib/utils";
+
+export default function PropertyDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isFavorited, setIsFavorited] = useState(false);
+  
+  const property = mockProperties.find(p => p.id === id);
+  
+  if (!property) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-2">Propriété non trouvée</h1>
+          <p className="text-muted-foreground mb-4">Cette annonce n'existe pas ou a été supprimée.</p>
+          <Button onClick={() => navigate('/')}>
+            Retour à l'accueil
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const formatPrice = (price: number, currency: string) => {
+    return new Intl.NumberFormat('fr-FR').format(price) + ' ' + currency;
+  };
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'apartment': return 'Appartement';
+      case 'house': return 'Maison';
+      case 'land': return 'Terrain';
+      default: return type;
+    }
+  };
+
+  const getAmenityIcon = (amenity: string) => {
+    switch (amenity.toLowerCase()) {
+      case 'parking': return Car;
+      case 'sécurité 24/7': return Shield;
+      case 'fibre': return Wifi;
+      case 'climatisation': return Snowflake;
+      case 'ascenseur': return Building;
+      case 'jardin': return TreePine;
+      default: return Eye;
+    }
+  };
+
+  const similarProperties = mockProperties
+    .filter(p => p.id !== property.id && p.location.city === property.location.city)
+    .slice(0, 3);
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-50 w-full border-b bg-gradient-card backdrop-blur-md">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Retour
+            </Button>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsFavorited(!isFavorited)}
+                className={cn(isFavorited && "text-destructive")}
+              >
+                <Heart className={cn("w-4 h-4", isFavorited && "fill-current")} />
+              </Button>
+              <Button variant="ghost" size="sm">
+                <Share2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="container mx-auto px-4 py-6 max-w-6xl">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Image Gallery */}
+            <div className="relative aspect-[16/10] rounded-xl overflow-hidden bg-muted">
+              <img
+                src={property.images[currentImageIndex]}
+                alt={property.title}
+                className="w-full h-full object-cover"
+              />
+              
+              {/* Image Navigation */}
+              {property.images.length > 1 && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                  {property.images.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentImageIndex(index)}
+                      className={cn(
+                        "w-2 h-2 rounded-full transition-all duration-normal",
+                        index === currentImageIndex 
+                          ? "bg-white" 
+                          : "bg-white/50 hover:bg-white/75"
+                      )}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Badges */}
+              <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                {property.isNew && (
+                  <Badge className="bg-success text-success-foreground">
+                    Nouveau
+                  </Badge>
+                )}
+                {property.isFeatured && (
+                  <Badge className="bg-warning text-warning-foreground">
+                    Exclusivité
+                  </Badge>
+                )}
+                {property.isVerified && (
+                  <Badge variant="secondary" className="bg-background/80 text-foreground">
+                    Vérifié
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            {/* Property Info */}
+            <div className="space-y-4">
+              <div>
+                <h1 className="text-2xl lg:text-3xl font-bold mb-2">{property.title}</h1>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <MapPin className="w-4 h-4" />
+                  <span>{property.location.neighborhood}, {property.location.city}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-3xl font-bold text-primary">
+                    {formatPrice(property.price, property.currency)}
+                    {property.purpose === 'rent' && (
+                      <span className="text-lg font-normal text-muted-foreground">/mois</span>
+                    )}
+                  </div>
+                  <div className="text-muted-foreground">
+                    {getTypeLabel(property.type)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Property Details */}
+              {property.type !== 'land' && (
+                <div className="flex items-center gap-6">
+                  {property.bedrooms && (
+                    <div className="flex items-center gap-2">
+                      <Bed className="w-5 h-5 text-muted-foreground" />
+                      <span className="font-medium">{property.bedrooms}</span>
+                      <span className="text-muted-foreground text-sm">chambres</span>
+                    </div>
+                  )}
+                  {property.bathrooms && (
+                    <div className="flex items-center gap-2">
+                      <Bath className="w-5 h-5 text-muted-foreground" />
+                      <span className="font-medium">{property.bathrooms}</span>
+                      <span className="text-muted-foreground text-sm">sdb</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Maximize className="w-5 h-5 text-muted-foreground" />
+                    <span className="font-medium">{property.area}</span>
+                    <span className="text-muted-foreground text-sm">m²</span>
+                  </div>
+                </div>
+              )}
+
+              {property.type === 'land' && (
+                <div className="flex items-center gap-2">
+                  <Maximize className="w-5 h-5 text-muted-foreground" />
+                  <span className="font-medium">{property.area}</span>
+                  <span className="text-muted-foreground text-sm">m² de terrain</span>
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Description */}
+            <div className="space-y-3">
+              <h2 className="text-xl font-semibold">Description</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                {property.type === 'apartment' && 
+                  `Magnifique ${getTypeLabel(property.type).toLowerCase()} situé dans le quartier recherché de ${property.location.neighborhood}. Cet appartement moderne dispose de ${property.bedrooms} chambres spacieuses et ${property.bathrooms} salles de bain. D'une surface de ${property.area}m², il offre un cadre de vie exceptionnel avec des finitions de qualité.`
+                }
+                {property.type === 'house' && 
+                  `Superbe ${getTypeLabel(property.type).toLowerCase()} individuelle de ${property.bedrooms} chambres située à ${property.location.neighborhood}. Cette propriété de ${property.area}m² habitables sur un terrain de ${property.landArea}m² offre un cadre de vie privilégié dans un environnement calme et sécurisé.`
+                }
+                {property.type === 'land' && 
+                  `Terrain à bâtir de ${property.area}m² parfaitement situé à ${property.location.neighborhood}. Idéal pour votre projet de construction, ce terrain bénéficie d'un excellent emplacement avec tous les raccordements nécessaires à proximité.`
+                }
+              </p>
+            </div>
+
+            {/* Amenities */}
+            {property.amenities.length > 0 && (
+              <>
+                <Separator />
+                <div className="space-y-3">
+                  <h2 className="text-xl font-semibold">Commodités</h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {property.amenities.map((amenity) => {
+                      const Icon = getAmenityIcon(amenity);
+                      return (
+                        <div key={amenity} className="flex items-center gap-2 text-sm">
+                          <Icon className="w-4 h-4 text-primary" />
+                          <span>{amenity}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Map */}
+            <Separator />
+            <div className="space-y-3">
+              <h2 className="text-xl font-semibold">Localisation</h2>
+              <div className="h-64 rounded-xl overflow-hidden">
+                <PropertyMap
+                  properties={[property]}
+                  onPropertySelect={() => {}}
+                  apiKey={window.location.hash.includes('mapbox_token=') 
+                    ? window.location.hash.split('mapbox_token=')[1].split('&')[0] 
+                    : undefined
+                  }
+                  className="w-full h-full"
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {property.location.neighborhood}, {property.location.city}
+              </p>
+            </div>
+
+            {/* Similar Properties */}
+            {similarProperties.length > 0 && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <h2 className="text-xl font-semibold">Biens similaires</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {similarProperties.map((similar) => (
+                      <Card 
+                        key={similar.id} 
+                        className="cursor-pointer overflow-hidden hover:shadow-md transition-shadow duration-normal"
+                        onClick={() => navigate(`/property/${similar.id}`)}
+                      >
+                        <div className="aspect-[16/10] overflow-hidden">
+                          <img
+                            src={similar.images[0]}
+                            alt={similar.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="p-3 space-y-2">
+                          <div className="font-semibold text-primary">
+                            {formatPrice(similar.price, similar.currency)}
+                            {similar.purpose === 'rent' && (
+                              <span className="text-xs font-normal text-muted-foreground">/mois</span>
+                            )}
+                          </div>
+                          <h3 className="text-sm font-medium line-clamp-2">{similar.title}</h3>
+                          <div className="text-xs text-muted-foreground">
+                            {similar.location.neighborhood}, {similar.location.city}
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Agent Card */}
+            <Card className="p-6 bg-gradient-card">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={property.agent.avatar}
+                    alt={property.agent.name}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold">{property.agent.name}</h3>
+                      {property.agent.isVerified && (
+                        <div className="w-2 h-2 bg-success rounded-full"></div>
+                      )}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Agent immobilier
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Button className="w-full" size="lg">
+                    <Phone className="w-4 h-4 mr-2" />
+                    Appeler
+                  </Button>
+                  <Button variant="outline" className="w-full" size="lg">
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Message
+                  </Button>
+                  <Button variant="outline" className="w-full" size="lg">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Planifier une visite
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            {/* Property Summary */}
+            <Card className="p-6">
+              <h3 className="font-semibold mb-4">Résumé</h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Type</span>
+                  <span className="font-medium">{getTypeLabel(property.type)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Objectif</span>
+                  <span className="font-medium">{property.purpose === 'rent' ? 'Location' : 'Vente'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Surface</span>
+                  <span className="font-medium">{property.area} m²</span>
+                </div>
+                {property.bedrooms && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Chambres</span>
+                    <span className="font-medium">{property.bedrooms}</span>
+                  </div>
+                )}
+                {property.bathrooms && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Salles de bain</span>
+                    <span className="font-medium">{property.bathrooms}</span>
+                  </div>
+                )}
+                {property.landArea && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Terrain</span>
+                    <span className="font-medium">{property.landArea} m²</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Publié</span>
+                  <span className="font-medium">
+                    {new Date(property.createdAt).toLocaleDateString('fr-FR')}
+                  </span>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
