@@ -120,7 +120,7 @@ export default function PropertyMap({
       const el = document.createElement('div');
       el.className = 'property-marker';
       
-      // Format price for display
+      // Format price for display - très compact
       const formatPrice = (price: number, currency: string) => {
         if (currency === 'XOF' || currency === 'XAF') {
           if (price >= 1000000) {
@@ -136,49 +136,40 @@ export default function PropertyMap({
       const priceText = formatPrice(property.price, property.currency);
       
       el.style.cssText = `
-        background: linear-gradient(135deg, #16a34a, #22c55e);
+        background: #22c55e;
         color: white;
-        border: 2px solid white;
-        border-radius: 12px;
-        padding: 3px 8px;
-        font-size: 10px;
-        font-weight: 700;
+        border: 1px solid white;
+        border-radius: 16px;
+        padding: 2px 6px;
+        font-size: 9px;
+        font-weight: 600;
         cursor: pointer;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
         transition: all 0.2s ease;
         white-space: nowrap;
         position: relative;
-        min-width: 35px;
+        min-width: 28px;
+        max-width: 45px;
         text-align: center;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       `;
       
-      // Add arrow pointing down
-      el.innerHTML = `
-        <div>${priceText}</div>
-        <div style="
-          position: absolute;
-          bottom: -6px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 0;
-          height: 0;
-          border-left: 6px solid transparent;
-          border-right: 6px solid transparent;
-          border-top: 6px solid #16a34a;
-        "></div>
-      `;
+      el.textContent = priceText;
       
       // Hover effect
       el.addEventListener('mouseenter', () => {
-        el.style.transform = 'scale(1.1) translateY(-2px)';
+        el.style.transform = 'scale(1.2)';
         el.style.zIndex = '1000';
-        el.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+        el.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.4)';
       });
       
       el.addEventListener('mouseleave', () => {
-        el.style.transform = 'scale(1) translateY(0)';
+        el.style.transform = 'scale(1)';
         el.style.zIndex = '1';
-        el.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
+        el.style.boxShadow = '0 1px 4px rgba(0, 0, 0, 0.3)';
       });
 
       const marker = new mapboxgl.Marker(el)
