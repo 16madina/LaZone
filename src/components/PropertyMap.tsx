@@ -26,17 +26,19 @@ export default function PropertyMap({
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [showApiKeyInput, setShowApiKeyInput] = useState(!apiKey);
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [inputApiKey, setInputApiKey] = useState('');
 
   // Initialize map
   useEffect(() => {
     if (!mapContainer.current || !apiKey) {
       console.log('🗺️ Map init skipped:', { hasContainer: !!mapContainer.current, hasApiKey: !!apiKey });
+      setShowApiKeyInput(!apiKey); // Show input if no API key
       return;
     }
 
     console.log('🗺️ Initializing map with token:', apiKey.substring(0, 20) + '...');
+    setShowApiKeyInput(false); // Hide input since we have a key
 
     // Set Mapbox access token
     mapboxgl.accessToken = apiKey;
