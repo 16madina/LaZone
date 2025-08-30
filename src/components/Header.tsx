@@ -3,7 +3,7 @@ import CountrySelector from "@/components/CountrySelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Bell, Crown } from "lucide-react";
+import { Bell, Crown, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 
@@ -45,6 +45,15 @@ export default function Header({}: HeaderProps) {
           </div>
 
           <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/integrations')}
+              className="hidden md:flex"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Services
+            </Button>
             <Button variant="ghost" size="sm" onClick={handleLanguageToggle}>
               {t('nav.language')}
             </Button>

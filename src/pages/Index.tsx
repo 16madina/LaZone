@@ -16,6 +16,7 @@ import { extendedMockProperties } from "@/data/extendedMockProperties";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Input } from "@/components/ui/input";
+import AIRecommendations from "@/components/ai/AIRecommendations";
 
 // Generate unique IDs for demo properties to avoid duplicates
 const generateUniqueId = (originalId: string, index: number) => {
@@ -243,7 +244,19 @@ const Index = () => {
 
       <main className="container mx-auto px-4 py-6 pb-24">
         {/* Welcome Stats */}
-        <WelcomeStats />
+          <WelcomeStats />
+          
+          {/* AI Recommendations */}
+          <div className="mb-6">
+            <AIRecommendations
+              userPreferences={{
+                budgetRange: filters.priceRange,
+                preferredAreas: [selectedCountry],
+                propertyTypes: filters.propertyType,
+                mustHaveAmenities: filters.amenities
+              }}
+            />
+          </div>
         
         {/* Active Filters & Controls */}
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">

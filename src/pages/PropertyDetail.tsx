@@ -12,6 +12,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Property } from "@/components/PropertyCard";
 import PropertyMap from "@/components/PropertyMap";
+import VirtualTour from "@/components/vr/VirtualTour";
+import AIRecommendations from "@/components/ai/AIRecommendations";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/utils/currency";
 
@@ -408,7 +410,13 @@ export default function PropertyDetail() {
                     <Calendar className="w-4 h-4 mr-2" />
                     Planifier une visite
                   </Button>
-                </div>
+                {/* Virtual Tour */}
+                <VirtualTour
+                  propertyId={property.id}
+                  images={property.images}
+                  title={property.title}
+                />
+              </div>
               </div>
             </Card>
 
@@ -455,6 +463,19 @@ export default function PropertyDetail() {
               </div>
             </Card>
           </div>
+        </div>
+
+        {/* AI Recommendations */}
+        <div className="mt-8">
+          <AIRecommendations
+            userPreferences={{
+              budgetRange: [property.price * 0.8, property.price * 1.2],
+              preferredAreas: [property.location.neighborhood],
+              propertyTypes: [property.type],
+              mustHaveAmenities: property.amenities.slice(0, 3)
+            }}
+            currentProperty={property}
+          />
         </div>
       </div>
     </div>
