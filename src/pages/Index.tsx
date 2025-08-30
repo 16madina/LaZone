@@ -244,21 +244,17 @@ const Index = () => {
 
       <main className="container mx-auto px-4 py-6 pb-24">
         {/* Welcome Stats */}
-          <WelcomeStats />
-          
-          {/* AI Recommendations */}
-          <div className="mb-6">
-            <AIRecommendations
-              userPreferences={{
-                budgetRange: filters.priceRange,
-                preferredAreas: [selectedCountry],
-                propertyTypes: filters.propertyType,
-                mustHaveAmenities: filters.amenities
-              }}
-            />
-          </div>
+        <WelcomeStats />
         
-        {/* Active Filters & Controls */}
+        {/* Main Content Tabs */}
+        <Tabs defaultValue="properties" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="properties">Propriétés</TabsTrigger>
+            <TabsTrigger value="recommendations">Recommandations IA</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="properties" className="space-y-6">
+            {/* Active Filters & Controls */}
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium">
@@ -359,45 +355,58 @@ const Index = () => {
           </Button>
         </div>
 
-        {/* Property Cards List */}
-        <div className="max-w-full">
-          {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            {/* Property Cards List */}
+            <div className="max-w-full">
+              {loading ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : sortedProperties.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-64 text-center p-8">
+                  <SlidersHorizontal className="w-12 h-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Aucun résultat trouvé</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Essayez de modifier vos critères de recherche ou vos filtres.
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowFilters(true)}
+                  >
+                    Modifier les filtres
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {sortedProperties.map((property) => (
+                    <PropertyCard
+                      key={property.id}
+                      property={property}
+                      onFavorite={toggleFavorite}
+                      isFavorited={favorites.has(property.id)}
+                      onClick={handlePropertyClick}
+                      onContact={() => {
+                        // Handle contact - could open a modal or navigate to contact page
+                        console.log('Contact agent for property:', property.id);
+                      }}
+                      className="w-full"
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-          ) : sortedProperties.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-center p-8">
-              <SlidersHorizontal className="w-12 h-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Aucun résultat trouvé</h3>
-              <p className="text-muted-foreground mb-4">
-                Essayez de modifier vos critères de recherche ou vos filtres.
-              </p>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowFilters(true)}
-              >
-                Modifier les filtres
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {sortedProperties.map((property) => (
-                <PropertyCard
-                  key={property.id}
-                  property={property}
-                  onFavorite={toggleFavorite}
-                  isFavorited={favorites.has(property.id)}
-                  onClick={handlePropertyClick}
-                  onContact={() => {
-                    // Handle contact - could open a modal or navigate to contact page
-                    console.log('Contact agent for property:', property.id);
-                  }}
-                  className="w-full"
-                />
-              ))}
-            </div>
-          )}
-        </div>
+          </TabsContent>
+
+          <TabsContent value="recommendations" className="mt-6">
+            <AIRecommendations
+              userPreferences={{
+                budgetRange: filters.priceRange,
+                preferredAreas: [selectedCountry],
+                propertyTypes: filters.propertyType,
+                mustHaveAmenities: filters.amenities
+              }}
+            />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
