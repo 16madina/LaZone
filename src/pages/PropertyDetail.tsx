@@ -31,50 +31,68 @@ export default function PropertyDetail() {
 
   const fetchProperty = async () => {
     try {
-      const { data, error } = await supabase
-        .from('listings')
-        .select('*')
-        .eq('id', id)
-        .eq('status', 'active')
-        .single();
+      setLoading(true);
+      
+      // First try to fetch from Supabase (for real listings with UUIDs)
+      if (id && id.length > 10) { // UUID-like format
+        const { data, error } = await supabase
+          .from('listings')
+          .select('*')
+          .eq('id', id)
+          .eq('status', 'active')
+          .maybeSingle();
 
-      if (error) throw error;
+        if (!error && data) {
+          // Convert Supabase data to Property format
+          const convertedProperty: Property = {
+            id: data.id,
+            title: data.title,
+            price: data.price,
+            currency: data.currency,
+            location: {
+              city: data.city,
+              neighborhood: data.neighborhood,
+              coordinates: [data.longitude || 0, data.latitude || 0] as [number, number]
+            },
+            images: data.images && data.images.length > 0 ? data.images : ['/placeholder.svg'],
+            type: data.property_type as 'apartment' | 'house' | 'land',
+            purpose: data.purpose as 'rent' | 'sale',
+            bedrooms: data.bedrooms,
+            bathrooms: data.bathrooms,
+            area: data.area,
+            landArea: data.land_area,
+            amenities: data.amenities || [],
+            isVerified: false,
+            isNew: isNewListing(data.created_at),
+            isFeatured: false,
+            agent: {
+              name: 'Agent LaZone',
+              avatar: '/placeholder.svg',
+              isVerified: false
+            },
+            createdAt: data.created_at
+          };
 
-      if (data) {
-        // Convert Supabase data to Property format
-        const convertedProperty: Property = {
-          id: data.id,
-          title: data.title,
-          price: data.price,
-          currency: data.currency,
-          location: {
-            city: data.city,
-            neighborhood: data.neighborhood,
-            coordinates: [data.longitude || 0, data.latitude || 0] as [number, number]
-          },
-          images: data.images && data.images.length > 0 ? data.images : ['/placeholder.svg'],
-          type: data.property_type as 'apartment' | 'house' | 'land',
-          purpose: data.purpose as 'rent' | 'sale',
-          bedrooms: data.bedrooms,
-          bathrooms: data.bathrooms,
-          area: data.area,
-          landArea: data.land_area,
-          amenities: data.amenities || [],
-          isVerified: false,
-          isNew: isNewListing(data.created_at),
-          isFeatured: false,
-          agent: {
-            name: 'Agent LaZone',
-            avatar: '/placeholder.svg',
-            isVerified: false
-          },
-          createdAt: data.created_at
-        };
-
-        setProperty(convertedProperty);
+          setProperty(convertedProperty);
+          return;
+        }
       }
+
+      // Fallback to mock data (for demo purposes)
+      const { comprehensiveMockProperties } = await import('@/data/comprehensiveSeedData');
+      const mockProperty = comprehensiveMockProperties.find(p => p.id === id);
+      
+      if (mockProperty) {
+        setProperty(mockProperty);
+        return;
+      }
+
+      // Property not found in either source
+      setProperty(null);
+      
     } catch (error) {
       console.error('Error fetching property:', error);
+      setProperty(null);
     } finally {
       setLoading(false);
     }
@@ -134,8 +152,61 @@ export default function PropertyDetail() {
     }
   };
 
-  // Get similar properties from Supabase in the future
-  const similarProperties: Property[] = [];
+  // Get similar properties from the same data source
+  const getSimilarProperties = async (): Promise<Property[]> => {
+    if (!property) return [];
+    
+    const { comprehensiveMockProperties } = await import('@/data/comprehensiveSeedData');
+    return comprehensiveMockProperties
+      .filter(p => 
+        p.id !== property.id && 
+        p.location.city === property.location.city &&
+        p.type === property.type
+      )
+      .slice(0, 3);
+  };
+
+  const SimilarProperties = ({ currentProperty }: { currentProperty: Property }) => {
+    const [similarProps, setSimilarProps] = useState<Property[]>([]);
+
+    useEffect(() => {
+      getSimilarProperties().then(setSimilarProps);
+    }, [currentProperty]);
+
+    if (similarProps.length === 0) return null;
+
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {similarProps.map((similar) => (
+          <Card 
+            key={similar.id} 
+            className="cursor-pointer overflow-hidden hover:shadow-md transition-shadow duration-normal"
+            onClick={() => navigate(`/property/${similar.id}`)}
+          >
+            <div className="aspect-[16/10] overflow-hidden">
+              <img
+                src={similar.images[0]}
+                alt={similar.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="p-3 space-y-2">
+              <div className="font-semibold text-primary">
+                {formatPrice(similar.price, similar.currency)}
+                {similar.purpose === 'rent' && (
+                  <span className="text-xs font-normal text-muted-foreground">/mois</span>
+                )}
+              </div>
+              <h3 className="text-sm font-medium line-clamp-2">{similar.title}</h3>
+              <div className="text-xs text-muted-foreground">
+                {similar.location.neighborhood}, {similar.location.city}
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -334,43 +405,11 @@ export default function PropertyDetail() {
             </div>
 
             {/* Similar Properties */}
-            {similarProperties.length > 0 && (
-              <>
-                <Separator />
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold">Biens similaires</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {similarProperties.map((similar) => (
-                      <Card 
-                        key={similar.id} 
-                        className="cursor-pointer overflow-hidden hover:shadow-md transition-shadow duration-normal"
-                        onClick={() => navigate(`/property/${similar.id}`)}
-                      >
-                        <div className="aspect-[16/10] overflow-hidden">
-                          <img
-                            src={similar.images[0]}
-                            alt={similar.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="p-3 space-y-2">
-                          <div className="font-semibold text-primary">
-                            {formatPrice(similar.price, similar.currency)}
-                            {similar.purpose === 'rent' && (
-                              <span className="text-xs font-normal text-muted-foreground">/mois</span>
-                            )}
-                          </div>
-                          <h3 className="text-sm font-medium line-clamp-2">{similar.title}</h3>
-                          <div className="text-xs text-muted-foreground">
-                            {similar.location.neighborhood}, {similar.location.city}
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
+            <Separator />
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold">Biens similaires</h2>
+              <SimilarProperties currentProperty={property} />
+            </div>
           </div>
 
           {/* Sidebar */}
