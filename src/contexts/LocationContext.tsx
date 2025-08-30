@@ -50,6 +50,7 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
     // Initialize state with data from localStorage if available
     const savedCountry = localStorage.getItem('lazone_selected_country');
     const savedCity = localStorage.getItem('lazone_selected_city');
+    const hasSeenLocationPrompt = localStorage.getItem('lazone_location_prompt_shown') === 'true';
     const currency = savedCountry ? CURRENCY_MAP[savedCountry] || 'CFA' : 'CFA';
     
     return {
@@ -60,7 +61,7 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
       currency,
       coordinates: null,
       isLocationDetected: false,
-      showLocationPrompt: !savedCountry // Don't show prompt if we have a saved country
+      showLocationPrompt: !hasSeenLocationPrompt // Only show if user hasn't seen it before
     };
   });
 
@@ -79,6 +80,9 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
         isLocationDetected: true,
         showLocationPrompt: false
       }));
+      
+      // Mark that user has seen the location prompt when location is detected
+      localStorage.setItem('lazone_location_prompt_shown', 'true');
     }
   }, [data]);
 
@@ -124,6 +128,9 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
       ...prev,
       showLocationPrompt: false
     }));
+    
+    // Mark that user has seen the location prompt
+    localStorage.setItem('lazone_location_prompt_shown', 'true');
   };
 
   const resetLocation = () => {
