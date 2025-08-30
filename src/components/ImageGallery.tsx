@@ -19,6 +19,8 @@ export default function ImageGallery({
 }: ImageGalleryProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   // Sync external index changes
   useEffect(() => {
@@ -72,6 +74,60 @@ export default function ImageGallery({
     onImageChange?.(index);
   };
 
+  // Touch/Swipe functionality
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && images.length > 1) {
+      nextImage();
+    }
+    if (isRightSwipe && images.length > 1) {
+      prevImage();
+    }
+  };
+
+  // Mouse functionality for desktop
+  const onMouseStart = (e: React.MouseEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.clientX);
+  };
+
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (touchStart !== null) {
+      setTouchEnd(e.clientX);
+    }
+  };
+
+  const onMouseEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && images.length > 1) {
+      nextImage();
+    }
+    if (isRightSwipe && images.length > 1) {
+      prevImage();
+    }
+  };
+
   return (
     <>
       {/* Main Gallery View */}
@@ -80,6 +136,12 @@ export default function ImageGallery({
         <div 
           className="relative aspect-[16/10] rounded-xl overflow-hidden bg-muted cursor-pointer group"
           onClick={() => handleImageClick(currentIndex)}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+          onMouseDown={onMouseStart}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseEnd}
         >
           <img
             src={images[currentIndex]}
@@ -175,6 +237,12 @@ export default function ImageGallery({
                   nextImage();
                 }
               }}
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
+              onMouseDown={onMouseStart}
+              onMouseMove={onMouseMove}
+              onMouseUp={onMouseEnd}
             >
               <img
                 src={images[currentIndex]}
@@ -193,7 +261,7 @@ export default function ImageGallery({
 
             {/* Navigation hint */}
             <div className="absolute bottom-16 left-1/2 -translate-x-1/2 text-white/70 text-sm text-center">
-              <p>Cliquez sur les côtés pour naviguer</p>
+              <p>Glissez ou cliquez sur les côtés pour naviguer</p>
               <p className="text-xs mt-1">Appuyez sur Échap pour fermer</p>
             </div>
 
