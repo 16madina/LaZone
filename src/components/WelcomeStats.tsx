@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { seedDataStats } from '@/data/comprehensiveSeedData';
 import { useNavigate } from 'react-router-dom';
 import { Globe, TrendingUp, MapPin, Award } from 'lucide-react';
+import LogoProcessor from './LogoProcessor';
 
 const WelcomeStats: React.FC = () => {
   const navigate = useNavigate();
@@ -13,7 +14,11 @@ const WelcomeStats: React.FC = () => {
     <div className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 border border-border rounded-xl p-6 mb-6 relative">
       <div className="flex items-center justify-between mb-4">
         <div className="w-full text-center">
-          <img src="/lovable-uploads/00294d79-52df-4bf7-ba2a-99200bbcf05c.png" alt="LaZone" className="h-12 mx-auto mb-2" />
+          <LogoProcessor 
+            originalSrc="/lovable-uploads/00294d79-52df-4bf7-ba2a-99200bbcf05c.png" 
+            alt="LaZone" 
+            className="h-16 mx-auto mb-2" 
+          />
           <p className="text-lg text-muted-foreground font-poppins">Trouvez votre chez-vous dans votre Zone</p>
           <p className="text-sm text-muted-foreground mt-1">Découvrez des milliers de biens immobiliers à travers l'Afrique</p>
         </div>
