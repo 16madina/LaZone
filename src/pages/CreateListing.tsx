@@ -26,7 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface ListingData {
   purpose: 'rent' | 'sale';
-  propertyType: 'apartment' | 'house' | 'land' | '';
+  propertyType: 'apartment' | 'house' | 'land' | 'commercial' | '';
   title: string;
   description: string;
   price: string;
@@ -116,7 +116,7 @@ export default function CreateListing() {
       case 3:
         if (!formData.title) newErrors.title = 'Le titre est requis';
         if (!formData.area) newErrors.area = 'La surface est requise';
-        if (formData.propertyType !== 'land') {
+        if (formData.propertyType !== 'land' && formData.propertyType !== 'commercial') {
           if (!formData.bedrooms) newErrors.bedrooms = 'Nombre de chambres requis';
           if (!formData.bathrooms) newErrors.bathrooms = 'Nombre de salles de bain requis';
         }
@@ -235,6 +235,7 @@ export default function CreateListing() {
       case 'apartment': return t('property.apartment');
       case 'house': return t('property.house');
       case 'land': return t('property.land');
+      case 'commercial': return 'Espace Commercial';
       default: return type;
     }
   };
@@ -496,27 +497,30 @@ export default function CreateListing() {
 
             {/* Purpose Selection */}
             <div className="space-y-3">
-              <Label>Objectif</Label>
-              <div className="grid grid-cols-2 gap-3">
-                {(['rent', 'sale'] as const).map((purpose) => (
-                  <Button
-                    key={purpose}
-                    variant={formData.purpose === purpose ? "default" : "outline"}
-                    onClick={() => updateFormData({ purpose })}
-                    className="h-12"
-                  >
-                    {purpose === 'rent' ? 'À louer' : 'À vendre'}
-                  </Button>
-                ))}
-              </div>
+                <Label>Objectif</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {(['rent', 'sale'] as const).map((purpose) => (
+                    <Button
+                      key={purpose}
+                      variant={formData.purpose === purpose ? "default" : "outline"}
+                      onClick={() => updateFormData({ purpose })}
+                      className="h-12"
+                    >
+                      {purpose === 'rent' ? 'À louer' : 'À vendre'}
+                    </Button>
+                  ))}
+                </div>
             </div>
 
             {/* Property Type Selection */}
             <div className="space-y-3">
               <Label>Type de bien</Label>
-              <div className="grid grid-cols-3 gap-3">
-                {(['apartment', 'house', 'land'] as const).map((type) => {
-                  const Icon = type === 'apartment' ? Building2 : type === 'house' ? Home : MapPin;
+              <div className="grid grid-cols-2 gap-3">
+                {(['apartment', 'house', 'land', 'commercial'] as const).map((type) => {
+                  const Icon = type === 'apartment' ? Building2 : 
+                              type === 'house' ? Home : 
+                              type === 'land' ? MapPin : 
+                              Building2; // commercial uses Building2 icon
                   return (
                     <Button
                       key={type}
@@ -615,7 +619,7 @@ export default function CreateListing() {
                 />
               </div>
 
-              {formData.propertyType !== 'land' && (
+              {(formData.propertyType !== 'land' && formData.propertyType !== 'commercial') && (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2">
@@ -655,12 +659,36 @@ export default function CreateListing() {
                 </div>
               )}
 
+              {/* Salles de bain pour les espaces commerciaux */}
+              {formData.propertyType === 'commercial' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Bath className="w-4 h-4" />
+                      Salles de bain
+                    </Label>
+                    <Select value={formData.bathrooms} onValueChange={(value) => updateFormData({ bathrooms: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Nombre" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[0,1,2,3,4,5,6].map(num => (
+                          <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.bathrooms && <p className="text-sm text-destructive">{errors.bathrooms}</p>}
+                  </div>
+                  <div></div> {/* Empty div to maintain grid layout */}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Maximize className="w-4 h-4" />
-                    Surface {formData.propertyType === 'land' ? 'totale' : 'habitable'} (m²)
-                  </Label>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Maximize className="w-4 h-4" />
+                      Surface {formData.propertyType === 'land' ? 'totale' : formData.propertyType === 'commercial' ? 'commerciale' : 'habitable'} (m²)
+                    </Label>
                   <Input
                     type="number"
                     value={formData.area}
@@ -715,7 +743,7 @@ export default function CreateListing() {
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-bold">Quel est le prix ?</h2>
               <p className="text-muted-foreground">
-                Définissez le {formData.purpose === 'rent' ? 'loyer mensuel' : 'prix de vente'}
+                Définissez le {(formData.purpose === 'rent' || formData.propertyType === 'commercial') ? 'loyer mensuel' : 'prix de vente'}
               </p>
             </div>
 
@@ -723,7 +751,7 @@ export default function CreateListing() {
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <DollarSign className="w-4 h-4" />
-                  {formData.purpose === 'rent' ? 'Loyer mensuel' : 'Prix de vente'} ({currency})
+                  {formData.purpose === 'rent' || formData.propertyType === 'commercial' ? 'Loyer mensuel' : 'Prix de vente'} ({currency})
                 </Label>
                 <div className="relative">
                   <Input
@@ -744,7 +772,7 @@ export default function CreateListing() {
                 <p className="text-sm text-muted-foreground mb-2">Aperçu du prix</p>
                 <div className="text-2xl font-bold text-primary">
                   {formData.price ? parseInt(formData.price).toLocaleString() : '0'} {currency}
-                  {formData.purpose === 'rent' && <span className="text-base font-normal text-muted-foreground">/mois</span>}
+                  {(formData.purpose === 'rent' || formData.propertyType === 'commercial') && <span className="text-base font-normal text-muted-foreground">/mois</span>}
                 </div>
               </div>
             </div>
@@ -962,9 +990,9 @@ export default function CreateListing() {
                 <div className="p-4 space-y-3">
                   <div className="text-xl font-bold text-primary">
                     {formData.price ? parseInt(formData.price).toLocaleString() : '0'} {currency}
-                    {formData.purpose === 'rent' && (
-                      <span className="text-sm font-normal text-muted-foreground">/mois</span>
-                    )}
+                  {(formData.purpose === 'rent' || formData.propertyType === 'commercial') && (
+                    <span className="text-sm font-normal text-muted-foreground">/mois</span>
+                  )}
                   </div>
                   
                   <h3 className="font-semibold">{formData.title}</h3>
@@ -974,7 +1002,7 @@ export default function CreateListing() {
                     {formData.neighborhood}, {formData.city}
                   </div>
                   
-                  {formData.propertyType !== 'land' && (
+                  {(formData.propertyType !== 'land' && formData.propertyType !== 'commercial') && (
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       {formData.bedrooms && (
                         <div className="flex items-center gap-1">
@@ -992,6 +1020,30 @@ export default function CreateListing() {
                         <Maximize className="w-4 h-4" />
                         <span>{formData.area} m²</span>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Details pour les espaces commerciaux */}
+                  {formData.propertyType === 'commercial' && (
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      {formData.bathrooms && parseInt(formData.bathrooms) > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Bath className="w-4 h-4" />
+                          <span>{formData.bathrooms} SdB</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1">
+                        <Maximize className="w-4 h-4" />
+                        <span>{formData.area} m²</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Details pour les terrains */}
+                  {formData.propertyType === 'land' && (
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <Maximize className="w-4 h-4" />
+                      <span>{formData.area} m²</span>
                     </div>
                   )}
                 </div>
