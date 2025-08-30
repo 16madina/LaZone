@@ -4,7 +4,6 @@ import PropertyFilters, { FilterState } from "@/components/PropertyFilters";
 import PropertyCard, { Property } from "@/components/PropertyCard";
 import PropertyMap from "@/components/PropertyMap";
 import WelcomeStats from "@/components/WelcomeStats";
-import CountrySelector from "@/components/CountrySelector";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -250,11 +249,6 @@ const Index = () => {
       <main className="container mx-auto px-4 py-6">
         {/* Welcome Stats */}
         <WelcomeStats />
-        
-        {/* Country Selector */}
-        <div className="mb-6">
-          <CountrySelector />
-        </div>
         
         {/* Active Filters & Controls */}
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">

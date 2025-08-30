@@ -44,7 +44,7 @@ export default function CountrySelector({ className, variant = 'default' }: Coun
               <ChevronDown className="w-3 h-3" />
             </div>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="z-50 bg-background border border-border shadow-lg">
             {AFRICAN_COUNTRIES.map((country) => (
               <SelectItem key={country.code} value={country.name}>
                 {country.name}
@@ -67,7 +67,7 @@ export default function CountrySelector({ className, variant = 'default' }: Coun
         <SelectTrigger className="min-w-[200px]">
           <SelectValue placeholder="Sélectionnez un pays" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="z-50 bg-background border border-border shadow-lg">
           {AFRICAN_COUNTRIES.map((country) => (
             <SelectItem key={country.code} value={country.name}>
               {country.name}

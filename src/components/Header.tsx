@@ -2,6 +2,7 @@ import { Search, MapPin, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import CountrySelector from "@/components/CountrySelector";
 
 interface HeaderProps {
   searchMode: 'rent' | 'buy';
@@ -26,15 +27,8 @@ export default function Header({
         {/* Brand and Navigation */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-6">
-            {/* Logo */}
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                LaZone
-              </span>
-            </div>
+            {/* Country Selector */}
+            <CountrySelector variant="compact" />
 
             {/* Toggle Rent/Buy */}
             <div className="flex bg-secondary rounded-xl p-1">
