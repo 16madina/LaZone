@@ -337,12 +337,22 @@ const Profile: React.FC = () => {
         <Card className="mb-6">
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
-              <Avatar className="w-16 h-16">
-                <AvatarImage src={avatarPreview || undefined} />
-                <AvatarFallback>
-                  <User className="w-8 h-8" />
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="w-16 h-16">
+                  <AvatarImage src={avatarPreview || undefined} />
+                  <AvatarFallback>
+                    <User className="w-8 h-8" />
+                  </AvatarFallback>
+                </Avatar>
+                <Button 
+                  size="icon" 
+                  variant="secondary"
+                  className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full"
+                  onClick={() => setActiveTab('avatar')}
+                >
+                  <Camera className="w-3 h-3" />
+                </Button>
+              </div>
               
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
