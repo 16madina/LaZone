@@ -487,7 +487,7 @@ export default function CreateListing() {
 
         {/* Step 1: Type & Purpose */}
         {currentStep === 1 && (
-          <Card className="p-6 space-y-6">
+          <Card className="p-8 space-y-8">
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-bold">Quel type de bien proposez-vous ?</h2>
               <p className="text-muted-foreground">
@@ -496,26 +496,26 @@ export default function CreateListing() {
             </div>
 
             {/* Purpose Selection */}
-            <div className="space-y-3">
-                <Label>Objectif</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  {(['rent', 'sale'] as const).map((purpose) => (
-                    <Button
-                      key={purpose}
-                      variant={formData.purpose === purpose ? "default" : "outline"}
-                      onClick={() => updateFormData({ purpose })}
-                      className="h-12"
-                    >
-                      {purpose === 'rent' ? 'À louer' : 'À vendre'}
-                    </Button>
-                  ))}
-                </div>
+            <div className="space-y-4">
+              <Label>Objectif</Label>
+              <div className="grid grid-cols-2 gap-4">
+                {(['rent', 'sale'] as const).map((purpose) => (
+                  <Button
+                    key={purpose}
+                    variant={formData.purpose === purpose ? "default" : "outline"}
+                    onClick={() => updateFormData({ purpose })}
+                    className="h-14 text-base"
+                  >
+                    {purpose === 'rent' ? 'À louer' : 'À vendre'}
+                  </Button>
+                ))}
+              </div>
             </div>
 
             {/* Property Type Selection */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               <Label>Type de bien</Label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 {(['apartment', 'house', 'land', 'commercial'] as const).map((type) => {
                   const Icon = type === 'apartment' ? Building2 : 
                               type === 'house' ? Home : 
@@ -526,10 +526,10 @@ export default function CreateListing() {
                       key={type}
                       variant={formData.propertyType === type ? "default" : "outline"}
                       onClick={() => updateFormData({ propertyType: type })}
-                      className="h-20 flex-col gap-2"
+                      className="h-24 flex-col gap-3 text-base"
                     >
-                      <Icon className="w-6 h-6" />
-                      <span className="text-sm">{getPropertyTypeLabel(type)}</span>
+                      <Icon className="w-7 h-7" />
+                      <span>{getPropertyTypeLabel(type)}</span>
                     </Button>
                   );
                 })}
