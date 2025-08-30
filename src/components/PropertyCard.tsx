@@ -1,7 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Heart, MapPin, Bed, Bath, Maximize, Phone, MessageCircle, Eye } from "lucide-react";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Heart, MapPin, Bed, Bath, Maximize, Phone, MessageCircle, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "@/contexts/LocationContext";
 import { formatPrice } from "@/utils/currency";
@@ -54,6 +56,12 @@ export default function PropertyCard({
   className 
 }: PropertyCardProps) {
   const { currency } = useLocation();
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  // Ensure we always show property details - activate all properties
+  const hasImages = property.images && property.images.length > 0;
+  const displayImages = hasImages ? property.images : ['/placeholder.svg'];
+  const maxVisibleImages = 5;
 
   // Use current currency from location context, fallback to property currency
   const displayCurrency = currency || property.currency;
@@ -75,20 +83,48 @@ export default function PropertyCard({
       )}
       onClick={() => onClick?.(property)}
     >
-      {/* Image Container */}
+      {/* Image Container with Carousel */}
       <div className="relative aspect-[16/10] overflow-hidden">
-        <img
-          src={property.images && property.images.length > 0 && property.images[0] ? property.images[0] : '/placeholder.svg'}
-          alt={property.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-slow"
-          loading="lazy"
-          onError={(e) => {
-            e.currentTarget.src = '/placeholder.svg';
-          }}
-        />
+        {displayImages.length > 1 ? (
+          <Carousel className="w-full h-full">
+            <CarouselContent className="w-full h-full">
+              {displayImages.slice(0, maxVisibleImages).map((image, index) => (
+                <CarouselItem key={index} className="w-full h-full">
+                  <img
+                    src={image}
+                    alt={`${property.title} - Image ${index + 1}`}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.src = '/placeholder.svg';
+                    }}
+                  />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            
+            {/* Navigation Arrows */}
+            <CarouselPrevious 
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/80 backdrop-blur-sm hover:bg-background/90"
+            />
+            <CarouselNext 
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/80 backdrop-blur-sm hover:bg-background/90"
+            />
+          </Carousel>
+        ) : (
+          <img
+            src={displayImages[0]}
+            alt={property.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-slow"
+            loading="lazy"
+            onError={(e) => {
+              e.currentTarget.src = '/placeholder.svg';
+            }}
+          />
+        )}
         
         {/* Overlay Badges */}
-        <div className="absolute top-3 left-3 flex flex-wrap gap-1">
+        <div className="absolute top-3 left-3 flex flex-wrap gap-1 z-10">
           {property.isNew && (
             <Badge className="bg-success text-success-foreground">
               Nouveau
@@ -111,7 +147,7 @@ export default function PropertyCard({
           size="sm"
           variant="ghost"
           className={cn(
-            "absolute top-3 right-3 w-8 h-8 p-0 bg-background/80 backdrop-blur-sm hover:bg-background/90",
+            "absolute top-3 right-3 w-8 h-8 p-0 bg-background/80 backdrop-blur-sm hover:bg-background/90 z-10",
             isFavorited && "text-destructive"
           )}
           onClick={(e) => {
@@ -122,12 +158,25 @@ export default function PropertyCard({
           <Heart className={cn("w-4 h-4", isFavorited && "fill-current")} />
         </Button>
 
-        {/* Image Count */}
-        {property.images && property.images.length > 1 && (
-          <div className="absolute bottom-3 right-3 bg-background/80 backdrop-blur-sm rounded-lg px-2 py-1 text-xs font-medium flex items-center gap-1">
-            <Eye className="w-3 h-3" />
-            {property.images.length}
-          </div>
+        {/* Image Count - Always show in top right corner */}
+        <div className="absolute top-12 right-3 bg-background/80 backdrop-blur-sm rounded-lg px-2 py-1 text-xs font-medium flex items-center gap-1 z-10">
+          <Eye className="w-3 h-3" />
+          {displayImages.length}
+        </div>
+
+        {/* See More Button - Show when more than 5 images */}
+        {hasImages && property.images.length > maxVisibleImages && (
+          <Button
+            size="sm"
+            variant="secondary"
+            className="absolute bottom-3 left-3 text-xs bg-background/80 backdrop-blur-sm hover:bg-background/90 z-10"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick?.(property);
+            }}
+          >
+            Voir plus ({property.images.length - maxVisibleImages}+)
+          </Button>
         )}
       </div>
 
