@@ -13,9 +13,13 @@ import Auth from "./pages/Auth";
 import Stats from "./pages/Stats";
 import PropertyDetail from "./pages/PropertyDetail";
 import NotFound from "./pages/NotFound";
+import Subscription from "./pages/Subscription";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import SubscriptionSuccess from "./pages/SubscriptionSuccess";
 import { LocationProvider } from "./contexts/LocationContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { SubscriptionProvider } from "./contexts/SubscriptionContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import LocationDetector from "./components/LocationDetector";
 import Layout from "./components/Layout";
@@ -25,8 +29,9 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <LocationProvider>
-        <LanguageProvider>
+      <SubscriptionProvider>
+        <LocationProvider>
+          <LanguageProvider>
           <TooltipProvider>
             <Toaster />
             <Sonner />
@@ -63,6 +68,16 @@ const App = () => (
                   />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/stats" element={<Stats />} />
+                  <Route 
+                    path="/subscription" 
+                    element={
+                      <ProtectedRoute>
+                        <Subscription />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route path="/payment-success" element={<PaymentSuccess />} />
+                  <Route path="/subscription-success" element={<SubscriptionSuccess />} />
                   <Route path="/property/:id" element={<PropertyDetail />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
@@ -70,8 +85,9 @@ const App = () => (
               </Layout>
             </BrowserRouter>
           </TooltipProvider>
-        </LanguageProvider>
-      </LocationProvider>
+          </LanguageProvider>
+        </LocationProvider>
+      </SubscriptionProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

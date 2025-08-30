@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLocation } from "@/contexts/LocationContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -60,6 +61,7 @@ export default function CreateListing() {
   const { t } = useLanguage();
   const { selectedCountry, selectedCity, currency } = useLocation();
   const { profile } = useAuth();
+  const { subscription, checkCanCreateListing } = useSubscription();
   const { toast } = useToast();
   
   // Déterminer l'étape de départ selon le type d'utilisateur
@@ -188,6 +190,18 @@ export default function CreateListing() {
           variant: 'destructive',
         });
         navigate('/auth?next=' + encodeURIComponent(window.location.pathname));
+        return;
+      }
+
+      // Check if user can create listing
+      const canCreate = await checkCanCreateListing();
+      if (!canCreate) {
+        toast({
+          title: 'Limite atteinte',
+          description: 'Vous avez atteint votre limite d\'annonces gratuites. Souscrivez à un abonnement pour continuer.',
+          variant: 'destructive',
+        });
+        navigate('/subscription');
         return;
       }
 
