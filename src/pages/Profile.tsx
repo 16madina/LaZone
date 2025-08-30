@@ -409,7 +409,10 @@ const Profile: React.FC = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <Card>
+          <Card 
+            className="cursor-pointer hover:bg-muted/50 transition-colors"
+            onClick={() => navigate('/favorites')}
+          >
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Star className="w-4 h-4 text-primary" />
@@ -419,7 +422,10 @@ const Profile: React.FC = () => {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card 
+            className="cursor-pointer hover:bg-muted/50 transition-colors"
+            onClick={() => setActiveTab('annonces')}
+          >
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold mb-1">{listings.length}</div>
               <p className="text-sm text-muted-foreground">Mes annonces</p>
