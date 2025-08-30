@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { seedDataStats } from '@/data/comprehensiveSeedData';
 import { useNavigate } from 'react-router-dom';
 import { Globe, TrendingUp, MapPin, Award } from 'lucide-react';
-import LogoProcessor from './LogoProcessor';
 
 const WelcomeStats: React.FC = () => {
   const navigate = useNavigate();
