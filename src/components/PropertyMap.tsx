@@ -349,12 +349,19 @@ export default function PropertyMap({
 
       marker.setPopup(popup);
 
-      // Click event - direct navigation
+      // Click event - show popup
       el.addEventListener('click', (e) => {
         e.stopPropagation();
+        onPropertySelect(property);
         
-        // Navigate directly to property detail page
-        window.location.href = `/property/${property.id}`;
+        // Open the popup immediately
+        popup.addTo(map.current!);
+        
+        map.current?.flyTo({
+          center: property.location.coordinates,
+          zoom: 14,
+          duration: 1000
+        });
       });
 
       markers.current.push(marker);
