@@ -41,12 +41,25 @@ interface ListingData {
   images: File[];
   video?: File;
   virtualTour?: File;
+  // Champs spécifiques aux espaces commerciaux
+  commercialType?: string;
+  yearBuilt?: string;
+  floor?: string;
+  parkingSpaces?: string;
 }
 
 const AMENITIES = [
   'Piscine', 'Parking', 'Meublé', 'Sécurité 24/7', 
   'Fibre', 'Climatisation', 'Ascenseur', 'Balcon',
   'Jardin', 'Vue mer', 'Neuf', 'Générateur'
+];
+
+const COMMERCIAL_AMENITIES = [
+  'Vitrine', 'Espace de stockage', 'Accès PMR', 'Climatisation commerciale',
+  'Système d\'alarme', 'Sonorisation', 'Internet haut débit', 'Cuisine équipée',
+  'Licence d\'exploitation', 'Parking clientèle', 'Zone de réception', 'Bureaux intégrés',
+  'Toilettes publiques', 'Éclairage LED', 'Système de ventilation', 'Vestiaires',
+  'Quai de chargement', 'Monte-charge', 'Espace extérieur', 'Terrasse commerciale'
 ];
 
 const STEPS = [
@@ -89,7 +102,11 @@ export default function CreateListing() {
     amenities: [],
     images: [],
     video: undefined,
-    virtualTour: undefined
+    virtualTour: undefined,
+    commercialType: '',
+    yearBuilt: '',
+    floor: '',
+    parkingSpaces: ''
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -630,11 +647,11 @@ export default function CreateListing() {
                       <SelectTrigger>
                         <SelectValue placeholder="Nombre" />
                       </SelectTrigger>
-                      <SelectContent>
-                        {[1,2,3,4,5,6,7,8].map(num => (
-                          <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
-                        ))}
-                      </SelectContent>
+        <SelectContent className="bg-background border z-50">
+          {[1,2,3,4,5,6,7,8].map(num => (
+            <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+          ))}
+        </SelectContent>
                     </Select>
                     {errors.bedrooms && <p className="text-sm text-destructive">{errors.bedrooms}</p>}
                   </div>
@@ -648,11 +665,11 @@ export default function CreateListing() {
                       <SelectTrigger>
                         <SelectValue placeholder="Nombre" />
                       </SelectTrigger>
-                      <SelectContent>
-                        {[1,2,3,4,5,6].map(num => (
-                          <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
-                        ))}
-                      </SelectContent>
+        <SelectContent className="bg-background border z-50">
+          {[1,2,3,4,5,6].map(num => (
+            <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+          ))}
+        </SelectContent>
                     </Select>
                     {errors.bathrooms && <p className="text-sm text-destructive">{errors.bathrooms}</p>}
                   </div>
@@ -661,25 +678,92 @@ export default function CreateListing() {
 
               {/* Salles de bain pour les espaces commerciaux */}
               {formData.propertyType === 'commercial' && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Bath className="w-4 h-4" />
-                      Salles de bain
-                    </Label>
-                    <Select value={formData.bathrooms} onValueChange={(value) => updateFormData({ bathrooms: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Nombre" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[0,1,2,3,4,5,6].map(num => (
-                          <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.bathrooms && <p className="text-sm text-destructive">{errors.bathrooms}</p>}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Bath className="w-4 h-4" />
+                        Salles de bain
+                      </Label>
+                      <Select value={formData.bathrooms} onValueChange={(value) => updateFormData({ bathrooms: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Nombre" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border z-50">
+                          {[0,1,2,3,4,5,6].map(num => (
+                            <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.bathrooms && <p className="text-sm text-destructive">{errors.bathrooms}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Type d'activité</Label>
+                      <Select value={formData.commercialType} onValueChange={(value) => updateFormData({ commercialType: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choisir" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border z-50">
+                          <SelectItem value="bureau">Bureau</SelectItem>
+                          <SelectItem value="boutique">Boutique</SelectItem>
+                          <SelectItem value="restaurant">Restaurant</SelectItem>
+                          <SelectItem value="entrepot">Entrepôt</SelectItem>
+                          <SelectItem value="industrie">Industrie</SelectItem>
+                          <SelectItem value="medical">Cabinet médical</SelectItem>
+                          <SelectItem value="coiffure">Salon de coiffure</SelectItem>
+                          <SelectItem value="pharmacie">Pharmacie</SelectItem>
+                          <SelectItem value="superette">Superette</SelectItem>
+                          <SelectItem value="autre">Autre</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div></div> {/* Empty div to maintain grid layout */}
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Étage</Label>
+                      <Select value={formData.floor} onValueChange={(value) => updateFormData({ floor: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border z-50">
+                          <SelectItem value="rdc">Rez-de-chaussée</SelectItem>
+                          <SelectItem value="1">1er étage</SelectItem>
+                          <SelectItem value="2">2ème étage</SelectItem>
+                          <SelectItem value="3">3ème étage</SelectItem>
+                          <SelectItem value="4">4ème étage</SelectItem>
+                          <SelectItem value="5+">5ème étage ou plus</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Places de parking</Label>
+                      <Select value={formData.parkingSpaces} onValueChange={(value) => updateFormData({ parkingSpaces: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Nombre" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border z-50">
+                          {[0,1,2,3,4,5,10,15,20,30,50].map(num => (
+                            <SelectItem key={num} value={num.toString()}>{num === 0 ? 'Aucune' : num}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Année de construction (optionnel)</Label>
+                    <Input
+                      type="number"
+                      value={formData.yearBuilt}
+                      onChange={(e) => updateFormData({ yearBuilt: e.target.value })}
+                      placeholder="Ex: 2015"
+                      min="1900"
+                      max={new Date().getFullYear()}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -718,7 +802,7 @@ export default function CreateListing() {
               <div className="space-y-3">
                 <Label>Commodités</Label>
                 <div className="flex flex-wrap gap-2">
-                  {AMENITIES.map((amenity) => {
+                  {(formData.propertyType === 'commercial' ? COMMERCIAL_AMENITIES : AMENITIES).map((amenity) => {
                     const isSelected = formData.amenities.includes(amenity);
                     return (
                       <Badge
