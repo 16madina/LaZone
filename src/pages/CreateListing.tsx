@@ -171,6 +171,12 @@ export default function CreateListing() {
       setCurrentStep(prev => Math.min(prev + 1, maxStep));
     } else {
       console.log('Validation failed, staying on current step');
+      // Afficher une notification pour indiquer les erreurs
+      toast({
+        title: 'Informations manquantes',
+        description: 'Veuillez remplir tous les champs obligatoires pour continuer.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -641,13 +647,16 @@ export default function CreateListing() {
 
             <div className="space-y-4 px-2">
               <div className="space-y-2">
-                <Label>Titre de l'annonce</Label>
+                <Label className="text-base font-medium">
+                  Titre de l'annonce <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   value={formData.title}
                   onChange={(e) => updateFormData({ title: e.target.value })}
                   placeholder="Ex: Appartement moderne 3 chambres"
+                  className={errors.title ? "border-destructive" : ""}
                 />
-                {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
+                {errors.title && <p className="text-sm text-destructive font-medium">{errors.title}</p>}
               </div>
 
               <div className="space-y-2">
