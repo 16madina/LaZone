@@ -13,10 +13,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   fallback,
   redirectTo = '/auth',
 }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, profileLoading } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  // Show loading while auth is initializing OR while profile is loading for authenticated users
+  if (loading || (user && profileLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
