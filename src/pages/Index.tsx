@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "@/contexts/LocationContext";
+import { useFavoritesContext } from "@/contexts/FavoritesContext";
 import { supabase } from "@/integrations/supabase/client";
 import { MapPin, List, SlidersHorizontal, ArrowUpDown, Search } from "lucide-react";
 import { extendedMockProperties } from "@/data/extendedMockProperties";
@@ -26,13 +27,13 @@ const generateUniqueId = (originalId: string, index: number) => {
 const Index = () => {
   const navigate = useNavigate();
   const { selectedCountry } = useLocation();
+  const { isFavorite, toggleFavorite } = useFavoritesContext();
   const [searchMode, setSearchMode] = useState<'rent' | 'buy'>('rent');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [sortBy, setSortBy] = useState('date');
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -218,16 +219,6 @@ const Index = () => {
     navigate(`/property/${property.id}`);
   };
 
-  const toggleFavorite = (propertyId: string) => {
-    const newFavorites = new Set(favorites);
-    if (favorites.has(propertyId)) {
-      newFavorites.delete(propertyId);
-    } else {
-      newFavorites.add(propertyId);
-    }
-    setFavorites(newFavorites);
-  };
-
   const { t } = useLanguage();
 
   return (
@@ -381,8 +372,8 @@ const Index = () => {
                     <PropertyCard
                       key={property.id}
                       property={property}
-                      onFavorite={toggleFavorite}
-                      isFavorited={favorites.has(property.id)}
+                      onFavorite={() => toggleFavorite(property.id)}
+                      isFavorited={isFavorite(property.id)}
                       onClick={handlePropertyClick}
                       onContact={() => {
                         // Handle contact - could open a modal or navigate to contact page

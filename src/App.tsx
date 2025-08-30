@@ -24,6 +24,7 @@ import { LocationProvider } from "./contexts/LocationContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SubscriptionProvider } from "./contexts/SubscriptionContext";
+import { FavoritesProvider } from "./contexts/FavoritesContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import LocationDetector from "./components/LocationDetector";
 import Layout from "./components/Layout";
@@ -80,90 +81,92 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <SubscriptionProvider>
-          <LocationProvider>
-            <LanguageProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <LocationDetector />
-                <Layout>
-                  <PerformanceWrapper>
-                    <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/home" element={<Home />} />
-                    <Route path="/map" element={<Map />} />
-                    <Route path="/messages" element={<Messages />} />
-                    <Route 
-                      path="/new" 
-                      element={
-                        <ProtectedRoute>
-                          <CreateListing />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/favorites" 
-                      element={
-                        <ProtectedRoute>
-                          <Favorites />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/profile" 
-                      element={
-                        <ProtectedRoute>
-                          <Profile />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/stats" element={<Stats />} />
-                    <Route 
-                      path="/subscription" 
-                      element={
-                        <ProtectedRoute>
-                          <Subscription />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route path="/payment-success" element={<PaymentSuccess />} />
-                    <Route path="/subscription-success" element={<SubscriptionSuccess />} />
-                    <Route path="/property/:id" element={<PropertyDetail />} />
-                    <Route 
-                      path="/settings" 
-                      element={
-                        <ProtectedRoute>
-                          <Settings />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/admin" 
-                      element={
-                        <ProtectedRoute>
-                          <Admin />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    <Route 
-                      path="/integrations" 
-                      element={
-                        <ProtectedRoute>
-                          <Integrations />
-                        </ProtectedRoute>
-                      } 
-                    />
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                  </PerformanceWrapper>
-                </Layout>
-              </BrowserRouter>
-            </TooltipProvider>
+        <AuthProvider>
+          <SubscriptionProvider>
+            <LocationProvider>
+              <LanguageProvider>
+                 <FavoritesProvider>
+                   <TooltipProvider>
+                     <Toaster />
+                     <Sonner />
+                     <BrowserRouter>
+                       <LocationDetector />
+                       <Layout>
+                         <PerformanceWrapper>
+                           <Routes>
+                           <Route path="/" element={<Home />} />
+                           <Route path="/home" element={<Home />} />
+                           <Route path="/map" element={<Map />} />
+                           <Route path="/messages" element={<Messages />} />
+                           <Route 
+                             path="/new" 
+                             element={
+                               <ProtectedRoute>
+                                 <CreateListing />
+                               </ProtectedRoute>
+                             } 
+                           />
+                           <Route 
+                             path="/favorites" 
+                             element={
+                               <ProtectedRoute>
+                                 <Favorites />
+                               </ProtectedRoute>
+                             } 
+                           />
+                           <Route 
+                             path="/profile" 
+                             element={
+                               <ProtectedRoute>
+                                 <Profile />
+                               </ProtectedRoute>
+                             } 
+                           />
+                           <Route path="/auth" element={<Auth />} />
+                           <Route path="/stats" element={<Stats />} />
+                           <Route 
+                             path="/subscription" 
+                             element={
+                               <ProtectedRoute>
+                                 <Subscription />
+                               </ProtectedRoute>
+                             } 
+                           />
+                           <Route path="/payment-success" element={<PaymentSuccess />} />
+                           <Route path="/subscription-success" element={<SubscriptionSuccess />} />
+                           <Route path="/property/:id" element={<PropertyDetail />} />
+                           <Route 
+                             path="/settings" 
+                             element={
+                               <ProtectedRoute>
+                                 <Settings />
+                               </ProtectedRoute>
+                             } 
+                           />
+                           <Route 
+                             path="/admin" 
+                             element={
+                               <ProtectedRoute>
+                                 <Admin />
+                               </ProtectedRoute>
+                             } 
+                           />
+                           <Route 
+                             path="/integrations" 
+                             element={
+                               <ProtectedRoute>
+                                 <Integrations />
+                               </ProtectedRoute>
+                             } 
+                           />
+                           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                           <Route path="*" element={<NotFound />} />
+                         </Routes>
+                         </PerformanceWrapper>
+                       </Layout>
+                     </BrowserRouter>
+                   </TooltipProvider>
+                 </FavoritesProvider>
             </LanguageProvider>
           </LocationProvider>
         </SubscriptionProvider>
