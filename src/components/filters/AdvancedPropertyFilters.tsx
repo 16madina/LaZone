@@ -92,7 +92,7 @@ export default function AdvancedPropertyFilters({
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6 pb-32 space-y-8">
+          <div className="flex-1 overflow-y-auto p-6 pb-40 space-y-8">
             {/* Search by Location */}
             <div>
               <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
