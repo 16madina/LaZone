@@ -28,7 +28,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { selectedCountry } = useLocation();
   const { isFavorite, toggleFavorite } = useFavoritesContext();
-  const [searchMode, setSearchMode] = useState<'rent' | 'buy'>('rent');
+  const [searchMode, setSearchMode] = useState<'rent' | 'buy' | 'commercial'>('rent');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -39,7 +39,7 @@ const Index = () => {
   
   const [filters, setFilters] = useState<FilterState>({
     propertyType: [],
-    priceRange: [0, searchMode === 'rent' ? 2000000 : 50000000],
+    priceRange: [0, searchMode === 'rent' ? 2000000 : searchMode === 'buy' ? 50000000 : 5000000],
     bedrooms: 'any',
     bathrooms: 'any',
     areaRange: [20, 1000],
@@ -55,7 +55,7 @@ const Index = () => {
   useEffect(() => {
     setFilters(prev => ({
       ...prev,
-      priceRange: [0, searchMode === 'rent' ? 2000000 : 50000000]
+      priceRange: [0, searchMode === 'rent' ? 2000000 : searchMode === 'buy' ? 50000000 : 5000000]
     }));
   }, [searchMode]);
 
@@ -66,7 +66,7 @@ const Index = () => {
         .from('listings')
         .select('*')
         .eq('status', 'active')
-        .eq('purpose', searchMode === 'buy' ? 'sale' : searchMode);
+        .eq('purpose', searchMode === 'buy' ? 'sale' : searchMode === 'commercial' ? 'commercial' : searchMode);
 
       if (selectedCountry) {
         query = query.eq('country', selectedCountry);
@@ -88,8 +88,8 @@ const Index = () => {
           coordinates: [listing.longitude || 0, listing.latitude || 0] as [number, number]
         },
         images: listing.images || ['/placeholder.svg'],
-        type: listing.property_type as 'apartment' | 'house' | 'land',
-        purpose: listing.purpose as 'rent' | 'sale',
+        type: listing.property_type as 'apartment' | 'house' | 'land' | 'commercial',
+        purpose: listing.purpose as 'rent' | 'sale' | 'commercial',
         bedrooms: listing.bedrooms,
         bathrooms: listing.bathrooms,
         area: listing.area,
@@ -109,8 +109,9 @@ const Index = () => {
       // Add demo properties if we have less than 5 real properties
       let finalProperties = convertedProperties;
       if (convertedProperties.length < 5) {
+        const targetPurpose = searchMode === 'buy' ? 'sale' : searchMode === 'commercial' ? 'commercial' : 'rent';
         const demoProperties = extendedMockProperties
-          .filter(prop => prop.purpose === (searchMode === 'buy' ? 'sale' : 'rent'))
+          .filter(prop => prop.purpose === targetPurpose)
           .slice(0, 10 - convertedProperties.length)
           .map((prop, index) => ({
             ...prop,
@@ -124,8 +125,9 @@ const Index = () => {
     } catch (error) {
       console.error('Error fetching listings:', error);
       // Fallback to demo data if there's an error
+      const targetPurpose = searchMode === 'buy' ? 'sale' : searchMode === 'commercial' ? 'commercial' : 'rent';
       const demoProperties = extendedMockProperties
-        .filter(prop => prop.purpose === (searchMode === 'buy' ? 'sale' : 'rent'))
+        .filter(prop => prop.purpose === targetPurpose)
         .slice(0, 10)
         .map((prop, index) => ({
           ...prop,
@@ -150,7 +152,7 @@ const Index = () => {
   const filteredProperties = properties.filter(property => {
     // Type filter
     if (filters.propertyType.length > 0) {
-      const typeMap = { 'apartment': 'Appartement', 'house': 'Maison', 'land': 'Terrain' };
+      const typeMap = { 'apartment': 'Appartement', 'house': 'Maison', 'land': 'Terrain', 'commercial': 'Commercial' };
       if (!filters.propertyType.some(type => type === typeMap[property.type as keyof typeof typeMap])) {
         return false;
       }
@@ -249,7 +251,7 @@ const Index = () => {
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium">
-              {sortedProperties.length} {searchMode === 'rent' ? 'locations' : 'ventes'}
+              {sortedProperties.length} {searchMode === 'rent' ? 'locations' : searchMode === 'buy' ? 'ventes' : 'espaces commerciaux'}
             </span>
             
             {/* Active Filters */}
@@ -275,14 +277,14 @@ const Index = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Toggle Rent/Buy */}
+            {/* Toggle Rent/Buy/Commercial */}
             <div className="flex bg-secondary rounded-xl p-1">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSearchMode('rent')}
                 className={cn(
-                  "px-6 py-2 rounded-lg transition-all duration-normal",
+                  "px-4 py-2 rounded-lg transition-all duration-normal",
                   searchMode === 'rent' 
                     ? "bg-primary text-primary-foreground shadow-primary" 
                     : "text-muted-foreground hover:text-foreground"
@@ -295,13 +297,26 @@ const Index = () => {
                 size="sm"
                 onClick={() => setSearchMode('buy')}
                 className={cn(
-                  "px-6 py-2 rounded-lg transition-all duration-normal",
+                  "px-4 py-2 rounded-lg transition-all duration-normal",
                   searchMode === 'buy' 
                     ? "bg-primary text-primary-foreground shadow-primary" 
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 {t('nav.buy')}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSearchMode('commercial')}
+                className={cn(
+                  "px-3 py-2 rounded-lg transition-all duration-normal text-xs",
+                  searchMode === 'commercial' 
+                    ? "bg-primary text-primary-foreground shadow-primary" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Commercial
               </Button>
             </div>
 

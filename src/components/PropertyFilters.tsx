@@ -20,13 +20,14 @@ interface PropertyFiltersProps {
   onClose: () => void;
   filters: FilterState;
   onFiltersChange: (filters: FilterState) => void;
-  searchMode: 'rent' | 'buy';
+  searchMode: 'rent' | 'buy' | 'commercial';
 }
 
 const PROPERTY_TYPES = [
   { id: 'apartment', label: 'Appartement', icon: Building2 },
   { id: 'house', label: 'Maison', icon: Home },
-  { id: 'land', label: 'Terrain', icon: MapPin }
+  { id: 'land', label: 'Terrain', icon: MapPin },
+  { id: 'commercial', label: 'Commercial', icon: Building2 }
 ];
 
 const AMENITIES = [
@@ -65,8 +66,8 @@ export default function PropertyFilters({
     updateFilters({ amenities: newAmenities });
   };
 
-  const maxPrice = searchMode === 'rent' ? 2000000 : 50000000; // CFA
-  const priceLabel = searchMode === 'rent' ? 'Loyer mensuel' : 'Prix d\'achat';
+  const maxPrice = searchMode === 'rent' ? 2000000 : searchMode === 'buy' ? 50000000 : 5000000; // CFA
+  const priceLabel = searchMode === 'rent' ? 'Loyer mensuel' : searchMode === 'buy' ? 'Prix d\'achat' : 'Loyer commercial';
 
   return (
     <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm animate-fade-in">

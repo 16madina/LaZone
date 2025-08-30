@@ -530,6 +530,187 @@ export const extendedMockProperties: Property[] = [
       isVerified: true
     },
     createdAt: "2024-01-07"
+  },
+
+  // COMMERCIAL PROPERTIES
+  {
+    id: "commercial-1",
+    title: "Boutique moderne - Plateau Abidjan",
+    price: 1200000,
+    currency: "CFA",
+    location: {
+      city: "Abidjan",
+      neighborhood: "Plateau",
+      coordinates: [-4.0267, 5.3197]
+    },
+    images: [
+      "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=500&fit=crop&crop=center"
+    ],
+    type: "commercial",
+    purpose: "commercial",
+    bedrooms: 0,
+    bathrooms: 2,
+    area: 150,
+    amenities: ["Vitrine", "Climatisation", "Parking clientèle", "Sécurité", "Accès handicapés"],
+    isVerified: true,
+    isNew: false,
+    isFeatured: true,
+    agent: {
+      name: "Ibrahim Koné",
+      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=center",
+      isVerified: true
+    },
+    createdAt: "2024-01-20"
+  },
+
+  {
+    id: "commercial-2",
+    title: "Entrepôt logistique - Zone industrielle",
+    price: 2500000,
+    currency: "CFA",
+    location: {
+      city: "Abidjan",
+      neighborhood: "Yopougon",
+      coordinates: [-4.0844, 5.3364]
+    },
+    images: [
+      "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&h=500&fit=crop&crop=center"
+    ],
+    type: "commercial",
+    purpose: "commercial",
+    bedrooms: 0,
+    bathrooms: 2,
+    area: 800,
+    amenities: ["Quai de chargement", "Parking poids lourds", "Sécurité 24/7", "Bureau intégré"],
+    isVerified: true,
+    isNew: true,
+    isFeatured: false,
+    agent: {
+      name: "Fatou Diallo",
+      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=center",
+      isVerified: true
+    },
+    createdAt: "2024-01-18"
+  },
+
+  {
+    id: "commercial-3",
+    title: "Restaurant équipé - Cocody",
+    price: 1800000,
+    currency: "CFA",
+    location: {
+      city: "Abidjan",
+      neighborhood: "Cocody",
+      coordinates: [-4.0167, 5.3436]
+    },
+    images: [
+      "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=500&fit=crop&crop=center"
+    ],
+    type: "commercial",
+    purpose: "commercial",
+    bedrooms: 0,
+    bathrooms: 4,
+    area: 200,
+    amenities: ["Cuisine équipée", "Terrasse", "Parking", "Licence restaurant", "Climatisation"],
+    isVerified: true,
+    isNew: false,
+    isFeatured: true,
+    agent: {
+      name: "Aminata Sankara",
+      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=center",
+      isVerified: true
+    },
+    createdAt: "2024-01-15"
+  },
+
+  {
+    id: "commercial-4",
+    title: "Bureau moderne - Victoria Island Lagos",
+    price: 5000000,
+    currency: "NGN",
+    location: {
+      city: "Lagos",
+      neighborhood: "Victoria Island",
+      coordinates: [3.4273, 6.4281]
+    },
+    images: [
+      "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&h=500&fit=crop&crop=center"
+    ],
+    type: "commercial",
+    purpose: "commercial",
+    bedrooms: 0,
+    bathrooms: 6,
+    area: 400,
+    amenities: ["Open space", "Salles de réunion", "Parking", "Générateur", "Fibre optique", "Ascenseur"],
+    isVerified: true,
+    isNew: true,
+    isFeatured: true,
+    agent: {
+      name: "Chidi Okafor",
+      avatar: "https://images.unsplash.com/photo-1566492031773-4f4e44671d66?w=100&h=100&fit=crop&crop=center",
+      isVerified: true
+    },
+    createdAt: "2024-01-22"
+  },
+
+  {
+    id: "commercial-5",
+    title: "Maquis traditionnel - Marcory",
+    price: 800000,
+    currency: "CFA",
+    location: {
+      city: "Abidjan",
+      neighborhood: "Marcory",
+      coordinates: [-4.0089, 5.2947]
+    },
+    images: [
+      "https://images.unsplash.com/photo-1552566626-52f8b828add9?w=800&h=500&fit=crop&crop=center"
+    ],
+    type: "commercial",
+    purpose: "commercial",
+    bedrooms: 0,
+    bathrooms: 2,
+    area: 120,
+    amenities: ["Bar équipé", "Cuisine traditionnelle", "Espace extérieur", "Parking", "Sonorisation"],
+    isVerified: false,
+    isNew: true,
+    isFeatured: false,
+    agent: {
+      name: "Aya Touré",
+      avatar: "https://images.unsplash.com/photo-1551836022-deb4988cc6c0?w=100&h=100&fit=crop&crop=center",
+      isVerified: false
+    },
+    createdAt: "2024-01-19"
+  },
+
+  {
+    id: "commercial-6",
+    title: "Centre commercial - East Legon Accra",
+    price: 15000,
+    currency: "GHS",
+    location: {
+      city: "Accra",
+      neighborhood: "East Legon",
+      coordinates: [-0.1507, 5.6500]
+    },
+    images: [
+      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800&h=500&fit=crop&crop=center"
+    ],
+    type: "commercial",
+    purpose: "commercial",
+    bedrooms: 0,
+    bathrooms: 8,
+    area: 1200,
+    amenities: ["Multiples boutiques", "Escalators", "Parking 200 places", "Sécurité 24/7", "Générateur"],
+    isVerified: true,
+    isNew: false,
+    isFeatured: true,
+    agent: {
+      name: "Akosua Mensah",
+      avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=center",
+      isVerified: true
+    },
+    createdAt: "2024-01-12"
   }
 ];
 

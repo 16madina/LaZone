@@ -19,8 +19,8 @@ export interface Property {
     coordinates: [number, number];
   };
   images: string[];
-  type: 'apartment' | 'house' | 'land';
-  purpose: 'rent' | 'sale';
+  type: 'apartment' | 'house' | 'land' | 'commercial';
+  purpose: 'rent' | 'sale' | 'commercial';
   bedrooms?: number;
   bathrooms?: number;
   area: number;
@@ -71,6 +71,7 @@ export default function PropertyCard({
       case 'apartment': return 'Appartement';
       case 'house': return 'Maison';
       case 'land': return 'Terrain';
+      case 'commercial': return 'Commercial';
       default: return type;
     }
   };
@@ -188,6 +189,7 @@ export default function PropertyCard({
             <div className="text-xl font-bold text-primary">
               {formatPrice(property.price, displayCurrency)}
               {property.purpose === 'rent' && <span className="text-sm font-normal text-muted-foreground">/mois</span>}
+              {property.purpose === 'commercial' && <span className="text-sm font-normal text-muted-foreground">/mois</span>}
             </div>
             <div className="text-sm text-muted-foreground">
               {getTypeLabel(property.type)}
@@ -212,9 +214,9 @@ export default function PropertyCard({
         </div>
 
         {/* Details */}
-        {property.type !== 'land' && (
+        {property.type !== 'land' && property.type !== 'commercial' && (
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            {property.bedrooms && (
+            {property.bedrooms && property.bedrooms > 0 && (
               <div className="flex items-center gap-1">
                 <Bed className="w-4 h-4" />
                 <span>{property.bedrooms}</span>
@@ -233,10 +235,18 @@ export default function PropertyCard({
           </div>
         )}
 
-        {property.type === 'land' && (
-          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-            <Maximize className="w-4 h-4" />
-            <span>{property.area} m²</span>
+        {(property.type === 'land' || property.type === 'commercial') && (
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            {property.type === 'commercial' && property.bathrooms && (
+              <div className="flex items-center gap-1">
+                <Bath className="w-4 h-4" />
+                <span>{property.bathrooms} SdB</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1">
+              <Maximize className="w-4 h-4" />
+              <span>{property.area} m²</span>
+            </div>
           </div>
         )}
 
