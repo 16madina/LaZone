@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import BottomNav from './nav/BottomNav';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -8,6 +9,7 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
+  const { user } = useAuth();
   
   // Hide bottom nav on specific pages
   const hideBottomNav = location.pathname.startsWith('/auth') || 
@@ -21,7 +23,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {!hideBottomNav && (
         <BottomNav 
           favoritesCount={5} 
-          isAuthenticated={false} 
+          isAuthenticated={!!user} 
           hasProfileNotification={false}
         />
       )}
