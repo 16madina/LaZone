@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_actions: {
+        Row: {
+          action_type: string
+          admin_user_id: string | null
+          created_at: string | null
+          details: Json | null
+          id: string
+          reason: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          admin_user_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          reason?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          admin_user_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          reason?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       listings: {
         Row: {
           address: string
@@ -100,8 +130,12 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_status: string | null
           agency_name: string | null
           agency_phone: string | null
+          ban_reason: string | null
+          banned_at: string | null
+          banned_by: string | null
           city: string | null
           country: string | null
           created_at: string
@@ -120,8 +154,12 @@ export type Database = {
           user_type: string
         }
         Insert: {
+          account_status?: string | null
           agency_name?: string | null
           agency_phone?: string | null
+          ban_reason?: string | null
+          banned_at?: string | null
+          banned_by?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
@@ -140,8 +178,12 @@ export type Database = {
           user_type: string
         }
         Update: {
+          account_status?: string | null
           agency_name?: string | null
           agency_phone?: string | null
+          ban_reason?: string | null
+          banned_at?: string | null
+          banned_by?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
