@@ -65,8 +65,13 @@ const Index = () => {
       let query = supabase
         .from('listings')
         .select('*')
-        .eq('status', 'active')
-        .eq('purpose', searchMode === 'buy' ? 'sale' : searchMode === 'commercial' ? 'commercial' : searchMode);
+        .eq('status', 'active');
+      
+      if (searchMode === 'commercial') {
+        query = query.eq('property_type', 'commercial');
+      } else {
+        query = query.eq('purpose', searchMode === 'buy' ? 'sale' : searchMode);
+      }
 
       if (selectedCountry) {
         query = query.eq('country', selectedCountry);
@@ -109,9 +114,16 @@ const Index = () => {
       // Add demo properties if we have less than 5 real properties
       let finalProperties = convertedProperties;
       if (convertedProperties.length < 5) {
-        const targetPurpose = searchMode === 'buy' ? 'sale' : searchMode === 'commercial' ? 'commercial' : 'rent';
-        const demoProperties = extendedMockProperties
-          .filter(prop => prop.purpose === targetPurpose)
+        let demoProperties;
+        if (searchMode === 'commercial') {
+          demoProperties = extendedMockProperties
+            .filter(prop => prop.type === 'commercial');
+        } else {
+          const targetPurpose = searchMode === 'buy' ? 'sale' : 'rent';
+          demoProperties = extendedMockProperties
+            .filter(prop => prop.purpose === targetPurpose);
+        }
+        demoProperties = demoProperties
           .slice(0, 10 - convertedProperties.length)
           .map((prop, index) => ({
             ...prop,
@@ -125,9 +137,16 @@ const Index = () => {
     } catch (error) {
       console.error('Error fetching listings:', error);
       // Fallback to demo data if there's an error
-      const targetPurpose = searchMode === 'buy' ? 'sale' : searchMode === 'commercial' ? 'commercial' : 'rent';
-      const demoProperties = extendedMockProperties
-        .filter(prop => prop.purpose === targetPurpose)
+      let demoProperties;
+      if (searchMode === 'commercial') {
+        demoProperties = extendedMockProperties
+          .filter(prop => prop.type === 'commercial');
+      } else {
+        const targetPurpose = searchMode === 'buy' ? 'sale' : 'rent';
+        demoProperties = extendedMockProperties
+          .filter(prop => prop.purpose === targetPurpose);
+      }
+      demoProperties = demoProperties
         .slice(0, 10)
         .map((prop, index) => ({
           ...prop,
