@@ -323,10 +323,6 @@ export default function PropertyDetail() {
                 <PropertyMap
                   properties={[property]}
                   onPropertySelect={() => {}}
-                  apiKey={window.location.hash.includes('mapbox_token=') 
-                    ? window.location.hash.split('mapbox_token=')[1].split('&')[0] 
-                    : undefined
-                  }
                   className="w-full h-full"
                 />
               </div>

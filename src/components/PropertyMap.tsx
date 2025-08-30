@@ -4,6 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { Property } from './PropertyCard';
 import { Button } from '@/components/ui/button';
 import { Layers, Maximize2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PropertyMapProps {
   properties: Property[];
@@ -26,11 +27,46 @@ export default function PropertyMap({
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
-  const [inputApiKey, setInputApiKey] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
+
+  // Fetch Mapbox token from Supabase Edge Function
+  useEffect(() => {
+    const fetchMapboxToken = async () => {
+      try {
+        // Use provided apiKey if available
+        if (apiKey) {
+          setMapboxToken(apiKey);
+          setIsLoading(false);
+          return;
+        }
+
+        // Otherwise, fetch from Supabase Edge Function
+        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        
+        if (error) throw error;
+        
+        if (data?.mapboxToken) {
+          setMapboxToken(data.mapboxToken);
+        } else {
+          setError('Token Mapbox non disponible');
+        }
+      } catch (err) {
+        console.error('Error fetching Mapbox token:', err);
+        setError('Erreur lors du chargement de la carte');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMapboxToken();
+  }, [apiKey]);
 
   // Initialize map
   useEffect(() => {
+    if (!mapboxToken || isLoading) return;
+
     // Wait a bit for the container to be ready
     const initMap = () => {
       if (!mapContainer.current) {
@@ -39,14 +75,7 @@ export default function PropertyMap({
         return;
       }
 
-      if (!apiKey) {
-        console.log('🗺️ No API key provided');
-        setShowApiKeyInput(true);
-        return;
-      }
-
-      console.log('🗺️ Initializing map with token:', apiKey.substring(0, 20) + '...');
-      setShowApiKeyInput(false);
+      console.log('🗺️ Initializing map with token:', mapboxToken.substring(0, 20) + '...');
 
       // Clean up existing map
       if (map.current) {
@@ -55,7 +84,7 @@ export default function PropertyMap({
       }
 
       // Set Mapbox access token
-      mapboxgl.accessToken = apiKey;
+      mapboxgl.accessToken = mapboxToken;
       
       try {
         map.current = new mapboxgl.Map({
@@ -80,7 +109,7 @@ export default function PropertyMap({
 
         map.current.on('error', (e) => {
           console.error('🚨 Map error:', e);
-          setShowApiKeyInput(true);
+          setError('Erreur lors du chargement de la carte');
         });
 
         // Listen for map movements
@@ -92,7 +121,7 @@ export default function PropertyMap({
 
       } catch (error) {
         console.error('🚨 Error initializing map:', error);
-        setShowApiKeyInput(true);
+        setError('Erreur lors de l\'initialisation de la carte');
       }
     };
 
@@ -104,7 +133,7 @@ export default function PropertyMap({
         map.current = null;
       }
     };
-  }, [apiKey, onMapBoundsChange]);
+  }, [mapboxToken, isLoading, onMapBoundsChange]);
 
   // Update markers when properties change
   useEffect(() => {
@@ -364,15 +393,46 @@ export default function PropertyMap({
 
   const handleApiKeySubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputApiKey.trim()) {
-      // Save to localStorage for persistence
-      localStorage.setItem('mapbox_token', inputApiKey.trim());
-      // Trigger a page reload to apply the new token
-      window.location.reload();
-    }
+    // This function is no longer needed but kept for compatibility
   };
 
-  if (!apiKey || showApiKeyInput) {
+  if (isLoading) {
+    return (
+      <div className={`relative bg-card border border-border rounded-xl p-8 ${className}`}>
+        <div className="text-center space-y-6">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-semibold text-foreground">Chargement de la carte</h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+              Préparation de la carte interactive...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={`relative bg-card border border-border rounded-xl p-8 ${className}`}>
+        <div className="text-center space-y-6">
+          <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
+            <Layers className="w-8 h-8 text-destructive" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-semibold text-foreground">Erreur de carte</h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+              {error}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!mapboxToken) {
     return (
       <div className={`relative bg-card border border-border rounded-xl p-8 ${className}`}>
         <div className="text-center space-y-6">
@@ -397,18 +457,8 @@ export default function PropertyMap({
 
           <form onSubmit={handleApiKeySubmit} className="space-y-4 max-w-sm mx-auto">
             <div className="space-y-2">
-              <input
-                type="text"
-                placeholder="pk.eyJ1IjoiYWJjZGVmZy1leGFtcGxl..."
-                value={inputApiKey}
-                onChange={(e) => setInputApiKey(e.target.value)}
-                className="w-full px-4 py-3 border border-border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-              />
-              <p className="text-xs text-muted-foreground">Le token commence par "pk."</p>
+              <p className="text-sm text-muted-foreground">Configuration en cours...</p>
             </div>
-            <Button type="submit" className="w-full h-11" disabled={!inputApiKey.trim()}>
-              🗺️ Activer la carte
-            </Button>
           </form>
         </div>
       </div>
