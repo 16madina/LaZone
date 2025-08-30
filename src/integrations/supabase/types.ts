@@ -101,6 +101,7 @@ export type Database = {
           created_at: string
           first_name: string | null
           id: string
+          is_canvasser: boolean | null
           last_name: string | null
           neighborhood: string | null
           phone: string | null
@@ -119,6 +120,7 @@ export type Database = {
           created_at?: string
           first_name?: string | null
           id?: string
+          is_canvasser?: boolean | null
           last_name?: string | null
           neighborhood?: string | null
           phone?: string | null
@@ -137,6 +139,7 @@ export type Database = {
           created_at?: string
           first_name?: string | null
           id?: string
+          is_canvasser?: boolean | null
           last_name?: string | null
           neighborhood?: string | null
           phone?: string | null

@@ -44,6 +44,7 @@ interface Profile {
   phone?: string;
   agency_phone?: string;
   responsible_mobile?: string;
+  is_canvasser?: boolean;
 }
 
 interface Listing {
@@ -313,6 +314,11 @@ const Profile: React.FC = () => {
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <h2 className="text-lg font-semibold">{getDisplayName()}</h2>
+                  {profile?.is_canvasser && profile.user_type === 'particulier' && (
+                    <Badge variant="secondary" className="text-blue-600 border-blue-200 bg-blue-50">
+                      Démarcheur
+                    </Badge>
+                  )}
                   <Badge variant="outline" className="text-orange-600 border-orange-200">
                     <AlertCircle className="w-3 h-3 mr-1" />
                     Non vérifié

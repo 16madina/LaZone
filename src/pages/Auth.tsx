@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Mail, Lock, User, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from '@/contexts/LocationContext';
@@ -29,6 +30,7 @@ const Auth: React.FC = () => {
   const [lastName, setLastName] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
   const [phone, setPhone] = useState('');
+  const [isCanvasser, setIsCanvasser] = useState(false);
   
   // Champs agence
   const [agencyName, setAgencyName] = useState('');
@@ -67,7 +69,8 @@ const Auth: React.FC = () => {
               country: selectedCountry,
               city: selectedCity,
               neighborhood,
-              phone
+              phone,
+              is_canvasser: isCanvasser
             }
           : {
               user_type: userType,
@@ -314,6 +317,17 @@ const Auth: React.FC = () => {
                                 required
                               />
                             </div>
+                          </div>
+
+                          <div className="flex items-center space-x-3 p-3 border rounded-md">
+                            <Checkbox
+                              id="canvasser"
+                              checked={isCanvasser}
+                              onCheckedChange={(checked) => setIsCanvasser(checked === true)}
+                            />
+                            <Label htmlFor="canvasser" className="text-sm cursor-pointer">
+                              Êtes-vous démarcheur ?
+                            </Label>
                           </div>
                         </>
                       ) : (
