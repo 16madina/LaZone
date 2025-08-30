@@ -14,8 +14,8 @@ const WelcomeStats: React.FC = () => {
     <div className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 border border-border rounded-xl p-6 mb-6 relative">
       <div className="flex items-center justify-between mb-4">
         <div className="w-full text-center">
-          <LogoProcessor 
-            originalSrc="/lovable-uploads/00294d79-52df-4bf7-ba2a-99200bbcf05c.png" 
+          <img 
+            src="/lovable-uploads/60a1c819-ca10-453c-9506-9107d58ed82e.png" 
             alt="LaZone" 
             className="h-16 mx-auto mb-2" 
           />
