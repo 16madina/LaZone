@@ -13,8 +13,9 @@ const WelcomeStats: React.FC = () => {
     <div className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 border border-border rounded-xl p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Bienvenue sur LaZone</h2>
-          <p className="text-sm text-muted-foreground">Découvrez {seedDataStats.totalProperties} biens immobiliers à travers l'Afrique</p>
+          <h1 className="text-4xl font-bold text-blue-600 mb-2">LaZone</h1>
+          <p className="text-lg text-muted-foreground">Trouvez votre chez-vous dans votre Zone</p>
+          <p className="text-sm text-muted-foreground mt-1">Découvrez {seedDataStats.totalProperties} biens immobiliers à travers l'Afrique</p>
         </div>
         <Button 
           variant="outline" 
@@ -27,53 +28,53 @@ const WelcomeStats: React.FC = () => {
       </div>
       
       <div className="flex overflow-x-auto gap-3 pb-2">
-        <Card className="bg-background/50 border-border/50 flex-shrink-0 min-w-[80px]">
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 flex-shrink-0 min-w-[80px] hover:shadow-md transition-all duration-200">
           <CardContent className="p-3 text-center">
-            <Globe className="h-6 w-6 mx-auto mb-1 text-primary" />
-            <div className="text-lg font-bold">{Object.keys(seedDataStats.byCountry).length}</div>
-            <p className="text-xs text-muted-foreground">Pays</p>
+            <Globe className="h-6 w-6 mx-auto mb-1 text-blue-600" />
+            <div className="text-lg font-bold text-blue-800">{Object.keys(seedDataStats.byCountry).length}</div>
+            <p className="text-xs text-blue-600">Pays</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-background/50 border-border/50 flex-shrink-0 min-w-[80px]">
+        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 flex-shrink-0 min-w-[80px] hover:shadow-md transition-all duration-200">
           <CardContent className="p-3 text-center">
-            <TrendingUp className="h-6 w-6 mx-auto mb-1 text-primary" />
-            <div className="text-lg font-bold">{seedDataStats.new}</div>
-            <p className="text-xs text-muted-foreground">Nouveau</p>
+            <TrendingUp className="h-6 w-6 mx-auto mb-1 text-green-600" />
+            <div className="text-lg font-bold text-green-800">{seedDataStats.new}</div>
+            <p className="text-xs text-green-600">Nouveau</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-background/50 border-border/50 flex-shrink-0 min-w-[80px]">
+        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 flex-shrink-0 min-w-[80px] hover:shadow-md transition-all duration-200">
           <CardContent className="p-3 text-center">
-            <MapPin className="h-6 w-6 mx-auto mb-1 text-primary" />
-            <div className="text-lg font-bold">{seedDataStats.featured}</div>
-            <p className="text-xs text-muted-foreground">Premium</p>
+            <MapPin className="h-6 w-6 mx-auto mb-1 text-orange-600" />
+            <div className="text-lg font-bold text-orange-800">{seedDataStats.featured}</div>
+            <p className="text-xs text-orange-600">Premium</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-background/50 border-border/50 flex-shrink-0 min-w-[80px]">
+        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 flex-shrink-0 min-w-[80px] hover:shadow-md transition-all duration-200">
           <CardContent className="p-3 text-center">
-            <Award className="h-6 w-6 mx-auto mb-1 text-primary" />
-            <div className="text-lg font-bold">{seedDataStats.verified}</div>
-            <p className="text-xs text-muted-foreground">Vérifiés</p>
+            <Award className="h-6 w-6 mx-auto mb-1 text-purple-600" />
+            <div className="text-lg font-bold text-purple-800">{seedDataStats.verified}</div>
+            <p className="text-xs text-purple-600">Vérifiés</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="flex flex-wrap gap-2 mt-4">
-        <Badge variant="secondary" className="text-xs">
+        <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors">
           {seedDataStats.byPurpose.rent} locations
         </Badge>
-        <Badge variant="secondary" className="text-xs">
+        <Badge variant="secondary" className="text-xs bg-green-100 text-green-800 hover:bg-green-200 transition-colors">
           {seedDataStats.byPurpose.sale} ventes
         </Badge>
-        <Badge variant="outline" className="text-xs">
+        <Badge variant="outline" className="text-xs border-orange-200 text-orange-700 hover:bg-orange-50 transition-colors">
           {seedDataStats.byType.apartment} apparts
         </Badge>
-        <Badge variant="outline" className="text-xs">
+        <Badge variant="outline" className="text-xs border-purple-200 text-purple-700 hover:bg-purple-50 transition-colors">
           {seedDataStats.byType.house} maisons
         </Badge>
-        <Badge variant="outline" className="text-xs">
+        <Badge variant="outline" className="text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50 transition-colors">
           {seedDataStats.byType.land} terrains
         </Badge>
       </div>
