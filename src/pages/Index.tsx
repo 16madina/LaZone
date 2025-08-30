@@ -11,9 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "@/contexts/LocationContext";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, List, SlidersHorizontal, ArrowUpDown } from "lucide-react";
+import { MapPin, List, SlidersHorizontal, ArrowUpDown, Search } from "lucide-react";
 import { extendedMockProperties } from "@/data/extendedMockProperties";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { Input } from "@/components/ui/input";
 
 // Mapping des anciens IDs de démonstration vers les nouveaux UUIDs
 const demoIdMapping: { [key: string]: string } = {
@@ -228,14 +230,11 @@ const Index = () => {
     setFavorites(newFavorites);
   };
 
+  const { t } = useLanguage();
+
   return (
     <div className="min-h-screen bg-background">
-      <Header
-        searchQuery={searchQuery}
-        onSearchQueryChange={setSearchQuery}
-        onFiltersToggle={() => setShowFilters(!showFilters)}
-        showFilters={showFilters}
-      />
+      <Header />
 
       <PropertyFilters
         isOpen={showFilters}
@@ -292,7 +291,7 @@ const Index = () => {
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                A louer
+                {t('nav.rent')}
               </Button>
               <Button
                 variant="ghost"
@@ -305,7 +304,7 @@ const Index = () => {
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                A vendre
+                {t('nav.buy')}
               </Button>
             </div>
 
@@ -324,6 +323,30 @@ const Index = () => {
             </Select>
 
           </div>
+        </div>
+
+        {/* Search Bar and Filters - Moved below */}
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Input
+              placeholder={t('search.placeholder')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-3 bg-background/60 backdrop-blur-sm border-border/60 focus:border-primary/60 focus:ring-1 focus:ring-primary/20 rounded-xl"
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+            className={cn(
+              "px-4 py-3 border-border/60 rounded-xl transition-all duration-normal",
+              showFilters && "bg-primary text-primary-foreground border-primary"
+            )}
+          >
+            <SlidersHorizontal className="w-5 h-5" />
+          </Button>
         </div>
 
         {/* Property Cards List */}
