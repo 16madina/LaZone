@@ -16,7 +16,7 @@ const WelcomeStats: React.FC = () => {
           <img 
             src="/lovable-uploads/d8a038f0-277b-4996-9094-f1add36cc02f.png" 
             alt="LaZone" 
-            className="h-24 mx-auto mb-2" 
+            className="h-32 mx-auto mb-2" 
           />
           <p className="text-lg text-muted-foreground font-poppins">Trouvez votre chez-vous dans votre Zone</p>
           <p className="text-sm text-muted-foreground mt-1">Découvrez des milliers de biens immobiliers à travers l'Afrique</p>
