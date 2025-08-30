@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -9,18 +9,93 @@ import {
   MapPin, Bed, Bath, Maximize, Car, Shield, Wifi, 
   Snowflake, Building, TreePine, Eye, Star
 } from "lucide-react";
-import { mockProperties } from "@/data/mockProperties";
+import { supabase } from "@/integrations/supabase/client";
 import { Property } from "@/components/PropertyCard";
 import PropertyMap from "@/components/PropertyMap";
 import { cn } from "@/lib/utils";
+import { formatPrice } from "@/utils/currency";
 
 export default function PropertyDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
-  
-  const property = mockProperties.find(p => p.id === id);
+  const [property, setProperty] = useState<Property | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProperty();
+  }, [id]);
+
+  const fetchProperty = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('id', id)
+        .eq('status', 'active')
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        // Convert Supabase data to Property format
+        const convertedProperty: Property = {
+          id: data.id,
+          title: data.title,
+          price: data.price,
+          currency: data.currency,
+          location: {
+            city: data.city,
+            neighborhood: data.neighborhood,
+            coordinates: [data.longitude || 0, data.latitude || 0] as [number, number]
+          },
+          images: data.images && data.images.length > 0 ? data.images : ['/placeholder.svg'],
+          type: data.property_type as 'apartment' | 'house' | 'land',
+          purpose: data.purpose as 'rent' | 'sale',
+          bedrooms: data.bedrooms,
+          bathrooms: data.bathrooms,
+          area: data.area,
+          landArea: data.land_area,
+          amenities: data.amenities || [],
+          isVerified: false,
+          isNew: isNewListing(data.created_at),
+          isFeatured: false,
+          agent: {
+            name: 'Agent LaZone',
+            avatar: '/placeholder.svg',
+            isVerified: false
+          },
+          createdAt: data.created_at
+        };
+
+        setProperty(convertedProperty);
+      }
+    } catch (error) {
+      console.error('Error fetching property:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isNewListing = (createdAt: string): boolean => {
+    const created = new Date(createdAt);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - created.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= 3;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
   
   if (!property) {
     return (
@@ -35,10 +110,6 @@ export default function PropertyDetail() {
       </div>
     );
   }
-
-  const formatPrice = (price: number, currency: string) => {
-    return new Intl.NumberFormat('fr-FR').format(price) + ' ' + currency;
-  };
 
   const getTypeLabel = (type: string) => {
     switch (type) {
@@ -61,9 +132,8 @@ export default function PropertyDetail() {
     }
   };
 
-  const similarProperties = mockProperties
-    .filter(p => p.id !== property.id && p.location.city === property.location.city)
-    .slice(0, 3);
+  // Get similar properties from Supabase in the future
+  const similarProperties: Property[] = [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -160,15 +230,15 @@ export default function PropertyDetail() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-3xl font-bold text-primary">
-                    {formatPrice(property.price, property.currency)}
-                    {property.purpose === 'rent' && (
-                      <span className="text-lg font-normal text-muted-foreground">/mois</span>
-                    )}
-                  </div>
-                  <div className="text-muted-foreground">
-                    {getTypeLabel(property.type)}
-                  </div>
+                <div className="text-3xl font-bold text-primary">
+                  {formatPrice(property.price, property.currency)}
+                  {property.purpose === 'rent' && (
+                    <span className="text-lg font-normal text-muted-foreground">/mois</span>
+                  )}
+                </div>
+                <div className="text-muted-foreground">
+                  {getTypeLabel(property.type)}
+                </div>
                 </div>
               </div>
 

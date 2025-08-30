@@ -225,7 +225,7 @@ export default function CreateListing() {
           neighborhood: formData.neighborhood,
           country: selectedCountry,
           amenities: formData.amenities,
-          images: [], // TODO: Handle image upload later
+          images: ['/placeholder.svg'], // Default placeholder image
           status: 'active'
         });
 

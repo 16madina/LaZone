@@ -78,10 +78,13 @@ export default function PropertyCard({
       {/* Image Container */}
       <div className="relative aspect-[16/10] overflow-hidden">
         <img
-          src={property.images[0]}
+          src={property.images && property.images.length > 0 && property.images[0] ? property.images[0] : '/placeholder.svg'}
           alt={property.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-slow"
           loading="lazy"
+          onError={(e) => {
+            e.currentTarget.src = '/placeholder.svg';
+          }}
         />
         
         {/* Overlay Badges */}
@@ -120,7 +123,7 @@ export default function PropertyCard({
         </Button>
 
         {/* Image Count */}
-        {property.images.length > 1 && (
+        {property.images && property.images.length > 1 && (
           <div className="absolute bottom-3 right-3 bg-background/80 backdrop-blur-sm rounded-lg px-2 py-1 text-xs font-medium flex items-center gap-1">
             <Eye className="w-3 h-3" />
             {property.images.length}
