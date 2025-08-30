@@ -13,11 +13,12 @@ import { Progress } from "@/components/ui/progress";
 import { 
   ArrowLeft, ArrowRight, Home, Building2, MapPin, 
   Upload, X, Camera, DollarSign, Bed, Bath, 
-  Maximize, TreePine, Car, Shield 
+  Maximize, TreePine, Car, Shield, User, Users 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLocation } from "@/contexts/LocationContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -45,6 +46,7 @@ const AMENITIES = [
 ];
 
 const STEPS = [
+  { id: 0, title: 'Type de poster', icon: User },
   { id: 1, title: 'Type & Purpose', icon: Home },
   { id: 2, title: 'Localisation', icon: MapPin },
   { id: 3, title: 'Détails', icon: Building2 },
@@ -57,8 +59,14 @@ export default function CreateListing() {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { selectedCountry, selectedCity, currency } = useLocation();
+  const { profile } = useAuth();
   const { toast } = useToast();
-  const [currentStep, setCurrentStep] = useState(1);
+  
+  // Déterminer l'étape de départ selon le type d'utilisateur
+  const initialStep = profile?.user_type === 'agence' ? 1 : 0;
+  
+  const [currentStep, setCurrentStep] = useState(initialStep);
+  const [posterType, setPosterType] = useState<'particulier' | 'demarcheur'>('particulier');
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<ListingData>({
     purpose: 'rent',
@@ -87,6 +95,9 @@ export default function CreateListing() {
     const newErrors: { [key: string]: string } = {};
 
     switch (step) {
+      case 0:
+        // Pas de validation nécessaire pour le choix du type de poster
+        break;
       case 1:
         if (!formData.propertyType) newErrors.propertyType = 'Sélectionnez un type de bien';
         break;
@@ -121,7 +132,8 @@ export default function CreateListing() {
     
     if (validateStep(currentStep)) {
       console.log('Validation passed, moving to next step');
-      setCurrentStep(prev => Math.min(prev + 1, STEPS.length));
+      const maxStep = profile?.user_type === 'agence' ? 6 : 7; // Ajuster selon le type d'utilisateur
+      setCurrentStep(prev => Math.min(prev + 1, maxStep));
     } else {
       console.log('Validation failed, staying on current step');
     }
@@ -129,7 +141,8 @@ export default function CreateListing() {
 
   const prevStep = () => {
     console.log('PrevStep clicked, current step:', currentStep);
-    setCurrentStep(prev => Math.max(prev - 1, 1));
+    const minStep = profile?.user_type === 'agence' ? 1 : 0; // Ajuster selon le type d'utilisateur
+    setCurrentStep(prev => Math.max(prev - 1, minStep));
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -223,7 +236,9 @@ export default function CreateListing() {
     }
   };
 
-  const progress = (currentStep / STEPS.length) * 100;
+  const progress = profile?.user_type === 'agence' 
+    ? ((currentStep - 1) / 6) * 100  // 6 étapes pour les agences (1-6)
+    : (currentStep / 6) * 100;       // 7 étapes pour les particuliers (0-6)
 
   return (
     <div className="min-h-screen bg-background">
@@ -244,7 +259,10 @@ export default function CreateListing() {
             <div className="text-center">
               <h1 className="text-lg font-semibold">Créer une annonce</h1>
               <p className="text-sm text-muted-foreground">
-                Étape {currentStep} sur {STEPS.length}
+                {profile?.user_type === 'agence' 
+                  ? `Étape ${currentStep} sur 6`
+                  : `Étape ${currentStep + 1} sur 7`
+                }
               </p>
             </div>
             
@@ -258,6 +276,64 @@ export default function CreateListing() {
       </header>
 
       <div className="container mx-auto px-4 py-6 max-w-2xl pb-24">
+        {/* Step 0: Type de poster (seulement pour les particuliers) */}
+        {currentStep === 0 && profile?.user_type !== 'agence' && (
+          <Card className="p-6 space-y-6">
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-bold">Comment souhaitez-vous poster cette annonce ?</h2>
+              <p className="text-muted-foreground">
+                Choisissez votre mode de publication
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div 
+                className={cn(
+                  "p-4 border-2 rounded-lg cursor-pointer transition-all",
+                  posterType === 'particulier' 
+                    ? "border-primary bg-primary/5" 
+                    : "border-border hover:border-primary/50"
+                )}
+                onClick={() => setPosterType('particulier')}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="mt-1">
+                    <User className="w-6 h-6" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg">Poster comme particulier</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Vous postez votre propre bien immobilier
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div 
+                className={cn(
+                  "p-4 border-2 rounded-lg cursor-pointer transition-all",
+                  posterType === 'demarcheur' 
+                    ? "border-primary bg-primary/5" 
+                    : "border-border hover:border-primary/50"
+                )}
+                onClick={() => setPosterType('demarcheur')}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="mt-1">
+                    <Users className="w-6 h-6" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg">Poster comme démarcheur</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Vous postez le bien d'un autre particulier qui n'a pas le temps
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* Step 1: Type & Purpose */}
         {currentStep === 1 && (
           <Card className="p-6 space-y-6">
@@ -663,22 +739,26 @@ export default function CreateListing() {
           <Button
             variant="outline"
             onClick={prevStep}
-            disabled={currentStep === 1}
+            disabled={currentStep === (profile?.user_type === 'agence' ? 1 : 0)}
             className="flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
             Précédent
           </Button>
 
-          {currentStep < STEPS.length ? (
+          {currentStep < 6 ? (
             <Button onClick={nextStep} className="flex items-center gap-2">
               Suivant
               <ArrowRight className="w-4 h-4" />
             </Button>
           ) : (
-            <Button onClick={handleSubmit} className="flex items-center gap-2">
-              <Upload className="w-4 h-4" />
-              Publier l'annonce
+            <Button onClick={handleSubmit} disabled={isLoading} className="flex items-center gap-2">
+              {isLoading ? 'Publication...' : (
+                <>
+                  <Upload className="w-4 h-4" />
+                  Publier l'annonce
+                </>
+              )}
             </Button>
           )}
         </div>
