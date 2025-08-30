@@ -1,9 +1,11 @@
 import { Button } from "@/components/ui/button";
 import CountrySelector from "@/components/CountrySelector";
+import NotificationCenter from "@/components/notifications/NotificationCenter";
+import ChatSystem from "@/components/chat/ChatSystem";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Bell, Crown } from "lucide-react";
+import { Crown } from "lucide-react";
 
 interface HeaderProps {}
 
@@ -47,14 +49,8 @@ export default function Header({}: HeaderProps) {
             <Button variant="ghost" size="sm" onClick={handleLanguageToggle}>
               {t('nav.language')}
             </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleNotificationClick}
-              className="p-2"
-            >
-              <Bell className="w-5 h-5" />
-            </Button>
+            <NotificationCenter />
+            <ChatSystem />
             <Button 
               variant="ghost" 
               size="sm" 
