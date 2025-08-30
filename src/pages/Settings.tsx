@@ -115,7 +115,7 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
-      <div className="py-4 space-y-6">
+      <div className="p-4 space-y-6">
         {/* Profil */}
         <Card>
           <CardHeader>
