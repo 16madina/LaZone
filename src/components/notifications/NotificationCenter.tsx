@@ -67,7 +67,12 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
         .limit(50);
 
       if (error) throw error;
-      setNotifications(data || []);
+      setNotifications((data || []).map(item => ({
+        ...item,
+        type: ['info', 'success', 'warning', 'error'].includes(item.type) 
+          ? item.type as 'info' | 'success' | 'warning' | 'error'
+          : 'info'
+      })));
     } catch (error) {
       console.error('Error fetching notifications:', error);
       toast({

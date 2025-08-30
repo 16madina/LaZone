@@ -399,7 +399,7 @@ export function AgentDashboard() {
                 <div>
                   <div className="flex justify-between mb-2">
                     <span className="text-sm">Temps de réponse</span>
-                    <span className="text-sm text-muted-foreground">< 30 min</span>
+                    <span className="text-sm text-muted-foreground">&lt; 30 min</span>
                   </div>
                   <Progress value={80} className="h-2" />
                 </div>

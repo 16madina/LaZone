@@ -3,10 +3,9 @@ import CountrySelector from "@/components/CountrySelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Bell, Crown, MessageCircle } from "lucide-react";
+import { Bell, Crown } from "lucide-react";
 import { useState } from "react";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
-import { ChatSystem } from "@/components/chat/ChatSystem";
 
 interface HeaderProps {}
 
@@ -15,7 +14,6 @@ export default function Header({}: HeaderProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showChat, setShowChat] = useState(false);
 
   const handleLanguageToggle = () => {
     setLanguage(language === 'fr' ? 'en' : 'fr');
@@ -31,10 +29,6 @@ export default function Header({}: HeaderProps) {
 
   const handleNotificationClick = () => {
     setShowNotifications(true);
-  };
-
-  const handleChatClick = () => {
-    setShowChat(true);
   };
 
   const handleSubscriptionClick = () => {
@@ -65,14 +59,6 @@ export default function Header({}: HeaderProps) {
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={handleChatClick}
-              className="p-2"
-            >
-              <MessageCircle className="w-5 h-5" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
               onClick={handleSubscriptionClick}
               className="p-2 text-yellow-600 hover:text-yellow-700"
             >
@@ -89,11 +75,6 @@ export default function Header({}: HeaderProps) {
       <NotificationCenter 
         isOpen={showNotifications}
         onClose={() => setShowNotifications(false)}
-      />
-      
-      <ChatSystem
-        isOpen={showChat}
-        onClose={() => setShowChat(false)}
       />
     </header>
   );

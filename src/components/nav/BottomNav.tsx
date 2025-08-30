@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { Home, Map, Plus, Heart, User } from 'lucide-react';
+import { Home, Map, Plus, MessageCircle, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ChatSystem } from '@/components/chat/ChatSystem';
 
 interface BottomNavProps {
-  favoritesCount?: number;
+  messagesCount?: number;
   isAuthenticated?: boolean;
   hasProfileNotification?: boolean;
 }
@@ -40,10 +41,10 @@ const navItems: NavItem[] = [
     protected: true,
   },
   {
-    id: 'favorites',
-    label: 'Favoris',
-    path: '/favorites', 
-    icon: Heart,
+    id: 'messages',
+    label: 'Messages',
+    path: '/messages',
+    icon: MessageCircle,
   },
   {
     id: 'profile',
@@ -54,12 +55,13 @@ const navItems: NavItem[] = [
 ];
 
 export const BottomNav: React.FC<BottomNavProps> = ({
-  favoritesCount = 0,
+  messagesCount = 0,
   isAuthenticated = false,
   hasProfileNotification = false,
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [showChat, setShowChat] = useState(false);
   
   const currentPath = location.pathname;
 
@@ -71,6 +73,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   };
 
   const handleNavigation = (item: NavItem) => {
+    if (item.id === 'messages') {
+      setShowChat(true);
+      return;
+    }
+    
     if (item.protected && !isAuthenticated) {
       navigate(`/auth?next=${encodeURIComponent(item.path)}`);
       return;
@@ -115,13 +122,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             active ? 'fill-current drop-shadow-sm' : ''
           }`} />
           
-          {/* Favorites badge */}
-          {item.id === 'favorites' && favoritesCount > 0 && (
+          {/* Messages badge */}
+          {item.id === 'messages' && messagesCount > 0 && (
             <Badge 
               variant="destructive" 
               className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs animate-pulse"
             >
-              {favoritesCount > 99 ? '99+' : favoritesCount}
+              {messagesCount > 99 ? '99+' : messagesCount}
             </Badge>
           )}
           
@@ -152,6 +159,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       <div className="flex items-end justify-around px-2 pt-2">
         {navItems.map(renderNavItem)}
       </div>
+      
+      <ChatSystem
+        isOpen={showChat}
+        onClose={() => setShowChat(false)}
+      />
     </nav>
   );
 };

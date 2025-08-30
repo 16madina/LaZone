@@ -82,7 +82,12 @@ export function ReviewSystem({
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setReviews(data || []);
+      setReviews((data || []).map(item => ({
+        ...item,
+        review_type: ['listing', 'agent'].includes(item.review_type) 
+          ? item.review_type as 'listing' | 'agent'
+          : 'agent'
+      })));
     } catch (error) {
       console.error('Error fetching reviews:', error);
       toast({
