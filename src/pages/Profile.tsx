@@ -122,6 +122,7 @@ const Profile: React.FC = () => {
         .eq('role', 'admin')
         .maybeSingle();
 
+      console.log('Admin role check:', { userId, data, error, isAdmin: !!data });
       setIsAdmin(!!data);
     } catch (error) {
       console.error('Error checking admin role:', error);

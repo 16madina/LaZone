@@ -11,6 +11,7 @@ import CreateListing from "./pages/CreateListing";
 import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
+import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
 import Stats from "./pages/Stats";
 import PropertyDetail from "./pages/PropertyDetail";
@@ -106,6 +107,14 @@ const App = () => {
                       element={
                         <ProtectedRoute>
                           <Settings />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    <Route 
+                      path="/admin" 
+                      element={
+                        <ProtectedRoute>
+                          <Admin />
                         </ProtectedRoute>
                       } 
                     />
