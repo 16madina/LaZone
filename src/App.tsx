@@ -19,6 +19,7 @@ import NotFound from "./pages/NotFound";
 import Subscription from "./pages/Subscription";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import SubscriptionSuccess from "./pages/SubscriptionSuccess";
+import Integrations from "./pages/Integrations";
 import { LocationProvider } from "./contexts/LocationContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -26,6 +27,33 @@ import { SubscriptionProvider } from "./contexts/SubscriptionContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import LocationDetector from "./components/LocationDetector";
 import Layout from "./components/Layout";
+import { usePerformanceMonitor } from "./hooks/usePerformanceMonitor";
+
+// Performance monitoring wrapper component
+const PerformanceWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { trackError } = usePerformanceMonitor();
+
+  useEffect(() => {
+    // Global error handler for performance tracking
+    const handleError = (event: ErrorEvent) => {
+      trackError('javascript', event.message);
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      trackError('promise_rejection', event.reason?.toString() || 'Unknown promise rejection');
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, [trackError]);
+
+  return <>{children}</>;
+};
 
 const queryClient = new QueryClient();
 
@@ -61,7 +89,8 @@ const App = () => {
               <BrowserRouter>
                 <LocationDetector />
                 <Layout>
-                  <Routes>
+                  <PerformanceWrapper>
+                    <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/home" element={<Home />} />
                     <Route path="/map" element={<Map />} />
@@ -118,9 +147,18 @@ const App = () => {
                         </ProtectedRoute>
                       } 
                     />
+                    <Route 
+                      path="/integrations" 
+                      element={
+                        <ProtectedRoute>
+                          <Integrations />
+                        </ProtectedRoute>
+                      } 
+                    />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
+                  </PerformanceWrapper>
                 </Layout>
               </BrowserRouter>
             </TooltipProvider>
