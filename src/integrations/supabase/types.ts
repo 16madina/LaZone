@@ -420,6 +420,81 @@ export type Database = {
         }
         Relationships: []
       }
+      properties: {
+        Row: {
+          address: string | null
+          amenities: string[] | null
+          area: number
+          bathrooms: number
+          bedrooms: number
+          city: string
+          country: string
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          images: string[] | null
+          is_featured: boolean | null
+          latitude: number | null
+          longitude: number | null
+          neighborhood: string | null
+          price: number
+          status: string
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          amenities?: string[] | null
+          area?: number
+          bathrooms?: number
+          bedrooms?: number
+          city: string
+          country: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          is_featured?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          neighborhood?: string | null
+          price: number
+          status?: string
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          amenities?: string[] | null
+          area?: number
+          bathrooms?: number
+          bedrooms?: number
+          city?: string
+          country?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          is_featured?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          neighborhood?: string | null
+          price?: number
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       reviews: {
         Row: {
           comment: string | null
