@@ -71,6 +71,10 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
         console.error('Error fetching subscription from DB:', dbError);
       }
 
+      // Vérifier si l'utilisateur est admin
+      const { data: isAdmin, error: roleError } = await supabase
+        .rpc('has_role', { _user_id: user.id, _role: 'admin' });
+
       // Check if user can create listing
       const { data: canCreateData, error: canCreateError } = await supabase
         .rpc('can_create_listing', { user_id_param: user.id });
@@ -80,10 +84,10 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       }
 
       setSubscription({
-        subscribed: subData?.subscribed || false,
-        subscription_type: subData?.subscription_type || dbData?.subscription_type,
+        subscribed: subData?.subscribed || isAdmin || false, // Les admins sont considérés comme "abonnés" pour l'UI
+        subscription_type: isAdmin ? 'admin' : (subData?.subscription_type || dbData?.subscription_type),
         subscription_end: subData?.subscription_end || dbData?.subscription_end,
-        listings_remaining: dbData?.listings_remaining || 0,
+        listings_remaining: isAdmin ? 999999 : (dbData?.listings_remaining || 0), // Nombre illimité pour les admins
         can_create_listing: canCreateData || false,
       });
     } catch (error) {
@@ -98,6 +102,14 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     if (!user) return false;
 
     try {
+      // Vérifier d'abord si l'utilisateur est admin
+      const { data: isAdmin, error: roleError } = await supabase
+        .rpc('has_role', { _user_id: user.id, _role: 'admin' });
+
+      if (!roleError && isAdmin) {
+        return true; // Les admins peuvent toujours créer des annonces
+      }
+
       const { data, error } = await supabase
         .rpc('can_create_listing', { user_id_param: user.id });
 
