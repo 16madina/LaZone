@@ -108,10 +108,12 @@ const Auth: React.FC = () => {
           title: 'Connexion réussie',
           description: 'Bienvenue sur LaZone !',
         });
+
+        // Attendre un peu avant la redirection pour laisser le contexte se mettre à jour
+        setTimeout(() => {
+          navigate(nextUrl);
+        }, 500);
       }
-      
-      // Redirect to the next URL or home
-      navigate(nextUrl);
     } catch (error: any) {
       toast({
         title: 'Erreur',
