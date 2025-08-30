@@ -87,7 +87,7 @@ const Favorites: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="py-4">
         {favoriteProperties.length === 0 ? (
           <EmptyState />
         ) : (

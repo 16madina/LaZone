@@ -16,7 +16,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                        location.pathname.startsWith('/property/');
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background p-4">
       {children}
       
       {/* Bottom Navigation - Hidden on specific pages */}

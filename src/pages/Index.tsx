@@ -241,7 +241,7 @@ const Index = () => {
         searchMode={searchMode}
       />
 
-      <main className="container mx-auto px-4 py-6 pb-24">
+      <main className="container mx-auto py-6 pb-24">
         {/* Welcome Stats */}
         <WelcomeStats />
         
