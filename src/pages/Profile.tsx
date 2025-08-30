@@ -31,7 +31,8 @@ import {
   Trash2,
   Upload,
   CheckCircle,
-  MessageCircle
+  MessageCircle,
+  Crown
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -87,6 +88,7 @@ const Profile: React.FC = () => {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('annonces');
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -100,13 +102,29 @@ const Profile: React.FC = () => {
         setUser(user);
         await Promise.all([
           fetchProfile(user.id),
-          fetchListings(user.id)
+          fetchListings(user.id),
+          checkAdminRole(user.id)
         ]);
       }
     } catch (error) {
       console.error('Error checking auth:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkAdminRole = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      setIsAdmin(!!data);
+    } catch (error) {
+      console.error('Error checking admin role:', error);
     }
   };
 
@@ -326,9 +344,26 @@ const Profile: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="text-xl font-bold">Profil</h1>
-          <Button variant="ghost" size="sm">
-            <Settings className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => navigate('/admin')}
+                title="Admin Panel"
+              >
+                <Crown className="w-5 h-5 text-yellow-600" />
+              </Button>
+            )}
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate('/settings')}
+              title="Paramètres"
+            >
+              <Settings className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -435,11 +470,10 @@ const Profile: React.FC = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="annonces">Annonces</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="verification">Vérification</TabsTrigger>
-            <TabsTrigger value="parametres">Paramètres</TabsTrigger>
             <TabsTrigger value="aide">Aide</TabsTrigger>
           </TabsList>
 
@@ -621,40 +655,6 @@ const Profile: React.FC = () => {
                   
                   <Button className="w-full">
                     Commencer la vérification
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="parametres" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="w-5 h-5" />
-                  Paramètres du compte
-                </CardTitle>
-                <CardDescription>
-                  Gérez les paramètres de votre compte
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <Button variant="outline" className="w-full justify-start">
-                    <User className="w-4 h-4 mr-2" />
-                    Modifier le profil
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <Shield className="w-4 h-4 mr-2" />
-                    Sécurité et mot de passe
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <Bell className="w-4 h-4 mr-2" />
-                    Préférences de notification
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <Settings className="w-4 h-4 mr-2" />
-                    Paramètres de confidentialité
                   </Button>
                 </div>
               </CardContent>
