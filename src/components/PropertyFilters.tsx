@@ -195,7 +195,26 @@ export default function PropertyFilters({
 
             {/* Amenities */}
             <div>
-              <h3 className="text-sm font-medium mb-3">Commodités</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium">Commodités</h3>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    updateFilters({
+                      propertyType: [],
+                      priceRange: [0, maxPrice],
+                      bedrooms: 'any',
+                      bathrooms: 'any',
+                      areaRange: [20, 1000],
+                      amenities: []
+                    });
+                  }}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Annuler tous les filtres
+                </Button>
+              </div>
               <div className="flex flex-wrap gap-2">
                 {AMENITIES.map((amenity) => {
                   const isSelected = filters.amenities.includes(amenity);
@@ -213,6 +232,23 @@ export default function PropertyFilters({
                     </Badge>
                   );
                 })}
+              </div>
+              
+              {/* Action buttons for amenities */}
+              <div className="flex gap-3 mt-4 pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => updateFilters({ amenities: [] })}
+                >
+                  Annuler
+                </Button>
+                <Button 
+                  className="flex-1"
+                  onClick={onClose}
+                >
+                  Sauvegarder
+                </Button>
               </div>
             </div>
           </div>
