@@ -132,7 +132,7 @@ export default function CreateListing() {
         break;
       case 3:
         if (!formData.title) newErrors.title = 'Le titre est requis';
-        if (!formData.area) newErrors.area = 'La surface est requise';
+        if (formData.propertyType === 'land' && !formData.area) newErrors.area = 'La surface est requise pour les terrains';
         if (formData.propertyType !== 'land' && formData.propertyType !== 'commercial') {
           if (!formData.bedrooms) newErrors.bedrooms = 'Nombre de chambres requis';
           if (!formData.bathrooms) newErrors.bathrooms = 'Nombre de salles de bain requis';
@@ -771,7 +771,7 @@ export default function CreateListing() {
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2">
                       <Maximize className="w-4 h-4" />
-                      Surface {formData.propertyType === 'land' ? 'totale' : formData.propertyType === 'commercial' ? 'commerciale' : 'habitable'} (m²)
+                      Surface {formData.propertyType === 'land' ? 'totale (obligatoire)' : formData.propertyType === 'commercial' ? 'commerciale (optionnelle)' : 'habitable (optionnelle)'} (m²)
                     </Label>
                   <Input
                     type="number"
