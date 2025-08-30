@@ -17,12 +17,9 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Input } from "@/components/ui/input";
 
-// Mapping des anciens IDs de démonstration vers les nouveaux UUIDs
-const demoIdMapping: { [key: string]: string } = {
-  '1': '00000000-0000-0000-0000-000000000001',
-  '10': '00000000-0000-0000-0000-000000000010',
-  '17': '00000000-0000-0000-0000-000000000017',
-  '18': '00000000-0000-0000-0000-000000000018',
+// Generate unique IDs for demo properties to avoid duplicates
+const generateUniqueId = (originalId: string, index: number) => {
+  return `demo-${originalId}-${index}-${Date.now()}`;
 };
 
 const Index = () => {
@@ -113,10 +110,10 @@ const Index = () => {
         const demoProperties = extendedMockProperties
           .filter(prop => prop.purpose === (searchMode === 'buy' ? 'sale' : 'rent'))
           .slice(0, 10 - convertedProperties.length)
-          .map(prop => ({
+          .map((prop, index) => ({
             ...prop,
-            // Map ancien ID vers nouveau UUID si disponible
-            id: demoIdMapping[prop.id] || prop.id
+            // Generate unique ID to avoid duplicates
+            id: generateUniqueId(prop.id, index)
           }));
         finalProperties = [...convertedProperties, ...demoProperties];
       }
@@ -128,10 +125,10 @@ const Index = () => {
       const demoProperties = extendedMockProperties
         .filter(prop => prop.purpose === (searchMode === 'buy' ? 'sale' : 'rent'))
         .slice(0, 10)
-        .map(prop => ({
+        .map((prop, index) => ({
           ...prop,
-          // Map ancien ID vers nouveau UUID si disponible
-          id: demoIdMapping[prop.id] || prop.id
+          // Generate unique ID to avoid duplicates
+          id: generateUniqueId(prop.id, index)
         }));
       setProperties(demoProperties);
     } finally {
@@ -244,7 +241,7 @@ const Index = () => {
         searchMode={searchMode}
       />
 
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-4 py-6 pb-24">
         {/* Welcome Stats */}
         <WelcomeStats />
         
