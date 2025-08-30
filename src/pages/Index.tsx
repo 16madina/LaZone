@@ -9,10 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { filterProperties } from '@/data/mockProperties';
-import { comprehensiveMockProperties, propertiesByCountry } from '@/data/comprehensiveSeedData';
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "@/contexts/LocationContext";
+import { supabase } from "@/integrations/supabase/client";
 import { MapPin, List, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 
 const Index = () => {
@@ -25,6 +24,8 @@ const Index = () => {
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [sortBy, setSortBy] = useState('date');
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const [filters, setFilters] = useState<FilterState>({
     propertyType: [],
@@ -35,6 +36,11 @@ const Index = () => {
     amenities: []
   });
 
+  // Fetch listings from Supabase
+  useEffect(() => {
+    fetchListings();
+  }, [selectedCountry, searchMode]);
+
   // Update price range when search mode changes
   useEffect(() => {
     setFilters(prev => ({
@@ -43,16 +49,108 @@ const Index = () => {
     }));
   }, [searchMode]);
 
-  // Get properties for the selected country, fallback to all if no country selected
-  const countryProperties = selectedCountry && propertiesByCountry[selectedCountry] 
-    ? propertiesByCountry[selectedCountry] 
-    : comprehensiveMockProperties;
+  const fetchListings = async () => {
+    try {
+      setLoading(true);
+      let query = supabase
+        .from('listings')
+        .select('*')
+        .eq('status', 'active')
+        .eq('purpose', searchMode === 'buy' ? 'sale' : searchMode);
 
-  // Filter and sort properties (map 'buy' to 'sale' for data compatibility)
-  const filteredProperties = filterProperties(
-    countryProperties.filter(p => p.purpose === (searchMode === 'buy' ? 'sale' : searchMode)),
-    filters
-  );
+      if (selectedCountry) {
+        query = query.eq('country', selectedCountry);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+      
+      if (error) throw error;
+
+      // Convert Supabase data to Property format
+      const convertedProperties: Property[] = (data || []).map(listing => ({
+        id: listing.id,
+        title: listing.title,
+        price: listing.price,
+        currency: listing.currency,
+        location: {
+          city: listing.city,
+          neighborhood: listing.neighborhood,
+          coordinates: [listing.longitude || 0, listing.latitude || 0] as [number, number]
+        },
+        images: listing.images || ['/placeholder.svg'],
+        type: listing.property_type as 'apartment' | 'house' | 'land',
+        purpose: listing.purpose as 'rent' | 'sale',
+        bedrooms: listing.bedrooms,
+        bathrooms: listing.bathrooms,
+        area: listing.area,
+        landArea: listing.land_area,
+        amenities: listing.amenities || [],
+        isVerified: false,
+        isNew: isNewListing(listing.created_at),
+        isFeatured: false,
+        agent: {
+          name: 'Agent LaZone',
+          avatar: '/placeholder.svg',
+          isVerified: false
+        },
+        createdAt: listing.created_at
+      }));
+
+      setProperties(convertedProperties);
+    } catch (error) {
+      console.error('Error fetching listings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isNewListing = (createdAt: string): boolean => {
+    const created = new Date(createdAt);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - created.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= 3;
+  };
+
+  // Filter properties based on filters
+  const filteredProperties = properties.filter(property => {
+    // Type filter
+    if (filters.propertyType.length > 0) {
+      const typeMap = { 'apartment': 'Appartement', 'house': 'Maison', 'land': 'Terrain' };
+      if (!filters.propertyType.some(type => type === typeMap[property.type as keyof typeof typeMap])) {
+        return false;
+      }
+    }
+
+    // Price filter
+    if (property.price < filters.priceRange[0] || property.price > filters.priceRange[1]) {
+      return false;
+    }
+
+    // Bedrooms filter
+    if (filters.bedrooms !== 'any' && property.bedrooms && property.bedrooms < parseInt(filters.bedrooms)) {
+      return false;
+    }
+
+    // Bathrooms filter  
+    if (filters.bathrooms !== 'any' && property.bathrooms && property.bathrooms < parseInt(filters.bathrooms)) {
+      return false;
+    }
+
+    // Area filter
+    if (property.area < filters.areaRange[0] || property.area > filters.areaRange[1]) {
+      return false;
+    }
+
+    // Amenities filter
+    if (filters.amenities.length > 0) {
+      if (!filters.amenities.every(amenity => property.amenities.includes(amenity))) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 
   // Apply text search
   const searchedProperties = searchQuery 
@@ -174,7 +272,11 @@ const Index = () => {
 
         {/* Property Cards List */}
         <div className="max-w-full">
-          {sortedProperties.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : sortedProperties.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-center p-8">
               <SlidersHorizontal className="w-12 h-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">Aucun résultat trouvé</h3>

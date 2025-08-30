@@ -133,6 +133,33 @@ const Profile: React.FC = () => {
     }
   };
 
+  const handleDeleteListing = async (listingId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette annonce ?')) return;
+    
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .delete()
+        .eq('id', listingId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setListings(listings.filter(l => l.id !== listingId));
+      toast({
+        title: 'Succès',
+        description: 'Annonce supprimée avec succès',
+      });
+    } catch (error) {
+      console.error('Error deleting listing:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Erreur lors de la suppression',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleLogin = () => {
     navigate('/auth?next=' + encodeURIComponent('/profile'));
   };
@@ -433,15 +460,15 @@ const Profile: React.FC = () => {
                             </div>
                             
                             <div className="flex items-center gap-1 mt-3">
-                              <Button size="sm" variant="outline" className="h-7 px-2">
+                              <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => navigate(`/property/${listing.id}`)}>
                                 <Eye className="w-3 h-3 mr-1" />
                                 Voir
                               </Button>
-                              <Button size="sm" variant="outline" className="h-7 px-2">
+                              <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => navigate(`/edit-listing/${listing.id}`)}>
                                 <Edit className="w-3 h-3 mr-1" />
                                 Modifier
                               </Button>
-                              <Button size="sm" variant="outline" className="h-7 px-2 text-destructive hover:text-destructive">
+                              <Button size="sm" variant="outline" className="h-7 px-2 text-destructive hover:text-destructive" onClick={() => handleDeleteListing(listing.id)}>
                                 <Trash2 className="w-3 h-3" />
                               </Button>
                             </div>
