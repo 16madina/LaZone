@@ -44,39 +44,6 @@ export type Database = {
         }
         Relationships: []
       }
-      conversations: {
-        Row: {
-          buyer_id: string
-          created_at: string
-          id: string
-          last_message_at: string | null
-          listing_id: string | null
-          seller_id: string
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          buyer_id: string
-          created_at?: string
-          id?: string
-          last_message_at?: string | null
-          listing_id?: string | null
-          seller_id: string
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          buyer_id?: string
-          created_at?: string
-          id?: string
-          last_message_at?: string | null
-          listing_id?: string | null
-          seller_id?: string
-          status?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       listings: {
         Row: {
           address: string
@@ -161,87 +128,11 @@ export type Database = {
         }
         Relationships: []
       }
-      messages: {
-        Row: {
-          conversation_id: string
-          created_at: string
-          id: string
-          message: string
-          message_type: string
-          read: boolean
-          sender_id: string
-        }
-        Insert: {
-          conversation_id: string
-          created_at?: string
-          id?: string
-          message: string
-          message_type?: string
-          read?: boolean
-          sender_id: string
-        }
-        Update: {
-          conversation_id?: string
-          created_at?: string
-          id?: string
-          message?: string
-          message_type?: string
-          read?: boolean
-          sender_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "messages_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      notifications: {
-        Row: {
-          action_url: string | null
-          created_at: string
-          id: string
-          message: string
-          read: boolean
-          title: string
-          type: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          action_url?: string | null
-          created_at?: string
-          id?: string
-          message: string
-          read?: boolean
-          title: string
-          type?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          action_url?: string | null
-          created_at?: string
-          id?: string
-          message?: string
-          read?: boolean
-          title?: string
-          type?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           account_status: string | null
           agency_name: string | null
           agency_phone: string | null
-          agent_rating: number | null
-          agent_verified: boolean | null
           ban_reason: string | null
           banned_at: string | null
           banned_by: string | null
@@ -251,28 +142,21 @@ export type Database = {
           first_name: string | null
           id: string
           is_canvasser: boolean | null
-          languages_spoken: string[] | null
           last_name: string | null
-          license_number: string | null
           listing_count: number | null
           neighborhood: string | null
           phone: string | null
           responsible_first_name: string | null
           responsible_last_name: string | null
           responsible_mobile: string | null
-          specializations: string[] | null
-          total_reviews: number | null
           updated_at: string
           user_id: string
           user_type: string
-          years_experience: number | null
         }
         Insert: {
           account_status?: string | null
           agency_name?: string | null
           agency_phone?: string | null
-          agent_rating?: number | null
-          agent_verified?: boolean | null
           ban_reason?: string | null
           banned_at?: string | null
           banned_by?: string | null
@@ -282,28 +166,21 @@ export type Database = {
           first_name?: string | null
           id?: string
           is_canvasser?: boolean | null
-          languages_spoken?: string[] | null
           last_name?: string | null
-          license_number?: string | null
           listing_count?: number | null
           neighborhood?: string | null
           phone?: string | null
           responsible_first_name?: string | null
           responsible_last_name?: string | null
           responsible_mobile?: string | null
-          specializations?: string[] | null
-          total_reviews?: number | null
           updated_at?: string
           user_id: string
           user_type: string
-          years_experience?: number | null
         }
         Update: {
           account_status?: string | null
           agency_name?: string | null
           agency_phone?: string | null
-          agent_rating?: number | null
-          agent_verified?: boolean | null
           ban_reason?: string | null
           banned_at?: string | null
           banned_by?: string | null
@@ -313,70 +190,18 @@ export type Database = {
           first_name?: string | null
           id?: string
           is_canvasser?: boolean | null
-          languages_spoken?: string[] | null
           last_name?: string | null
-          license_number?: string | null
           listing_count?: number | null
           neighborhood?: string | null
           phone?: string | null
           responsible_first_name?: string | null
           responsible_last_name?: string | null
           responsible_mobile?: string | null
-          specializations?: string[] | null
-          total_reviews?: number | null
           updated_at?: string
           user_id?: string
           user_type?: string
-          years_experience?: number | null
         }
         Relationships: []
-      }
-      reviews: {
-        Row: {
-          comment: string | null
-          created_at: string
-          id: string
-          listing_id: string | null
-          rating: number
-          review_type: string
-          reviewed_user_id: string
-          reviewer_id: string
-          title: string | null
-          updated_at: string
-        }
-        Insert: {
-          comment?: string | null
-          created_at?: string
-          id?: string
-          listing_id?: string | null
-          rating: number
-          review_type?: string
-          reviewed_user_id: string
-          reviewer_id: string
-          title?: string | null
-          updated_at?: string
-        }
-        Update: {
-          comment?: string | null
-          created_at?: string
-          id?: string
-          listing_id?: string | null
-          rating?: number
-          review_type?: string
-          reviewed_user_id?: string
-          reviewer_id?: string
-          title?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reviews_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: false
-            referencedRelation: "listings"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       subscribers: {
         Row: {
