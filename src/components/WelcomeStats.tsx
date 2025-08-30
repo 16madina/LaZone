@@ -13,11 +13,18 @@ const WelcomeStats: React.FC = () => {
     <div className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 border border-border rounded-xl p-6 mb-6 relative">
       <div className="flex items-center justify-between mb-4">
         <div className="w-full text-center">
-          <img 
-            src="/lovable-uploads/4d577f4a-d17b-4de7-a923-6b61b3219983.png" 
-            alt="LaZone" 
-            className="h-16 mx-auto mb-2" 
-          />
+          <div className="flex items-center justify-center mb-2">
+            <img 
+              src="/lovable-uploads/ee8d0e76-4802-4b20-995c-2363dd503234.png" 
+              alt="LaZone Icon" 
+              className="h-12 mr-2" 
+            />
+            <img 
+              src="/lovable-uploads/4d577f4a-d17b-4de7-a923-6b61b3219983.png" 
+              alt="LaZone" 
+              className="h-16" 
+            />
+          </div>
           <p className="text-lg text-muted-foreground font-poppins">Trouvez votre chez-vous dans votre Zone</p>
           <p className="text-sm text-muted-foreground mt-1">Découvrez des milliers de biens immobiliers à travers l'Afrique</p>
         </div>
