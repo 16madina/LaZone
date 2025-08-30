@@ -141,7 +141,9 @@ export default function CreateListing() {
         break;
       case 3:
         if (!formData.title) newErrors.title = 'Le titre est requis';
-        if (!formData.area) newErrors.area = 'La surface est requise';
+        if (!formData.area || parseFloat(formData.area) <= 0 || isNaN(parseFloat(formData.area))) {
+          newErrors.area = 'La surface est requise et doit être un nombre valide';
+        }
         if (formData.propertyType !== 'land' && formData.propertyType !== 'commercial') {
           if (!formData.bedrooms) newErrors.bedrooms = 'Nombre de chambres requis';
           if (!formData.bathrooms) newErrors.bathrooms = 'Nombre de salles de bain requis';
@@ -385,7 +387,7 @@ export default function CreateListing() {
           currency,
           bedrooms: formData.bedrooms ? parseInt(formData.bedrooms) : null,
           bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : null,
-          area: formData.area ? parseFloat(formData.area) : 0,
+          area: parseFloat(formData.area) || 1,
           land_area: formData.landArea ? parseFloat(formData.landArea) : null,
           address: formData.address,
           city: formData.city,
