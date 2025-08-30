@@ -13,6 +13,7 @@ import { useLocation } from "@/contexts/LocationContext";
 import { supabase } from "@/integrations/supabase/client";
 import { MapPin, List, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import { extendedMockProperties } from "@/data/extendedMockProperties";
+import { cn } from "@/lib/utils";
 
 // Mapping des anciens IDs de démonstration vers les nouveaux UUIDs
 const demoIdMapping: { [key: string]: string } = {
@@ -230,8 +231,6 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header
-        searchMode={searchMode}
-        onSearchModeChange={setSearchMode}
         searchQuery={searchQuery}
         onSearchQueryChange={setSearchQuery}
         onFiltersToggle={() => setShowFilters(!showFilters)}
@@ -280,6 +279,36 @@ const Index = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Toggle Rent/Buy */}
+            <div className="flex bg-secondary rounded-xl p-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSearchMode('rent')}
+                className={cn(
+                  "px-6 py-2 rounded-lg transition-all duration-normal",
+                  searchMode === 'rent' 
+                    ? "bg-primary text-primary-foreground shadow-primary" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                A louer
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSearchMode('buy')}
+                className={cn(
+                  "px-6 py-2 rounded-lg transition-all duration-normal",
+                  searchMode === 'buy' 
+                    ? "bg-primary text-primary-foreground shadow-primary" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                A vendre
+              </Button>
+            </div>
+
             {/* Sort */}
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-40">

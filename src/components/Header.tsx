@@ -5,8 +5,6 @@ import { cn } from "@/lib/utils";
 import CountrySelector from "@/components/CountrySelector";
 
 interface HeaderProps {
-  searchMode: 'rent' | 'buy';
-  onSearchModeChange: (mode: 'rent' | 'buy') => void;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
   onFiltersToggle: () => void;
@@ -14,8 +12,6 @@ interface HeaderProps {
 }
 
 export default function Header({ 
-  searchMode, 
-  onSearchModeChange, 
   searchQuery, 
   onSearchQueryChange,
   onFiltersToggle,
@@ -29,36 +25,6 @@ export default function Header({
           <div className="flex items-center space-x-6">
             {/* Country Selector */}
             <CountrySelector variant="compact" />
-
-            {/* Toggle Rent/Buy */}
-            <div className="flex bg-secondary rounded-xl p-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onSearchModeChange('rent')}
-                className={cn(
-                  "px-6 py-2 rounded-lg transition-all duration-normal",
-                  searchMode === 'rent' 
-                    ? "bg-primary text-primary-foreground shadow-primary" 
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Louer
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onSearchModeChange('buy')}
-                className={cn(
-                  "px-6 py-2 rounded-lg transition-all duration-normal",
-                  searchMode === 'buy' 
-                    ? "bg-primary text-primary-foreground shadow-primary" 
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Acheter
-              </Button>
-            </div>
           </div>
 
           <div className="flex items-center space-x-2">
