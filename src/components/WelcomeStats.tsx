@@ -17,7 +17,7 @@ const WelcomeStats: React.FC = () => {
             <img 
               src="/lovable-uploads/ee8d0e76-4802-4b20-995c-2363dd503234.png" 
               alt="LaZone Icon" 
-              className="h-12 mr-2" 
+              className="h-14 mr-1" 
             />
             <img 
               src="/lovable-uploads/4d577f4a-d17b-4de7-a923-6b61b3219983.png" 
