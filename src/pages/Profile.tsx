@@ -86,7 +86,7 @@ const Profile: React.FC = () => {
   const [notifications, setNotifications] = useState(true);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('avatar');
+  const [activeTab, setActiveTab] = useState('annonces');
 
   useEffect(() => {
     checkAuth();
@@ -344,14 +344,30 @@ const Profile: React.FC = () => {
                     <User className="w-8 h-8" />
                   </AvatarFallback>
                 </Avatar>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                  id="avatar-upload-main"
+                />
                 <Button 
                   size="icon" 
                   variant="secondary"
                   className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full"
-                  onClick={() => setActiveTab('avatar')}
+                  onClick={() => document.getElementById('avatar-upload-main')?.click()}
                 >
                   <Camera className="w-3 h-3" />
                 </Button>
+                {avatarFile && (
+                  <Button 
+                    size="sm" 
+                    className="absolute -top-2 -right-2 h-6 px-2 text-xs"
+                    onClick={handleAvatarUpload}
+                  >
+                    Sauvegarder
+                  </Button>
+                )}
               </div>
               
               <div className="flex-1">
@@ -413,55 +429,13 @@ const Profile: React.FC = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
-            <TabsTrigger value="avatar">Avatar</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="annonces">Annonces</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="verification">Vérification</TabsTrigger>
             <TabsTrigger value="parametres">Paramètres</TabsTrigger>
             <TabsTrigger value="aide">Aide</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="avatar" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Camera className="w-5 h-5" />
-                  Photo de profil
-                </CardTitle>
-                <CardDescription>
-                  Téléchargez une photo de profil pour personnaliser votre compte
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex flex-col items-center gap-4">
-                  <Avatar className="w-24 h-24">
-                    <AvatarImage src={avatarPreview || undefined} />
-                    <AvatarFallback>
-                      <User className="w-12 h-12" />
-                    </AvatarFallback>
-                  </Avatar>
-                  
-                  <div className="flex flex-col gap-2 w-full max-w-sm">
-                    <Label htmlFor="avatar-upload">Choisir une photo</Label>
-                    <Input
-                      id="avatar-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleAvatarChange}
-                      className="cursor-pointer"
-                    />
-                    {avatarFile && (
-                      <Button onClick={handleAvatarUpload} className="w-full">
-                        <Upload className="w-4 h-4 mr-2" />
-                        Sauvegarder la photo
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="annonces" className="mt-6">
             <Card>
