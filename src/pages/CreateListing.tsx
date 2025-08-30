@@ -205,6 +205,38 @@ export default function CreateListing() {
         return;
       }
 
+      // Upload images to Supabase Storage
+      let imageUrls: string[] = [];
+      
+      if (formData.images.length > 0) {
+        for (let i = 0; i < formData.images.length; i++) {
+          const file = formData.images[i];
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${user.id}/${Date.now()}_${i}.${fileExt}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('listing-images')
+            .upload(fileName, file);
+          
+          if (uploadError) {
+            console.error('Error uploading image:', uploadError);
+            continue; // Skip this image but continue with others
+          }
+          
+          // Get public URL
+          const { data } = supabase.storage
+            .from('listing-images')
+            .getPublicUrl(fileName);
+          
+          imageUrls.push(data.publicUrl);
+        }
+      }
+      
+      // If no images were uploaded successfully, use placeholder
+      if (imageUrls.length === 0) {
+        imageUrls = ['/placeholder.svg'];
+      }
+
       // Create the listing in database
       const { error } = await supabase
         .from('listings')
@@ -225,7 +257,7 @@ export default function CreateListing() {
           neighborhood: formData.neighborhood,
           country: selectedCountry,
           amenities: formData.amenities,
-          images: ['/placeholder.svg'], // Default placeholder image
+          images: imageUrls,
           status: 'active'
         });
 
