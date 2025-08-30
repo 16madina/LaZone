@@ -103,6 +103,7 @@ export type Database = {
           id: string
           is_canvasser: boolean | null
           last_name: string | null
+          listing_count: number | null
           neighborhood: string | null
           phone: string | null
           responsible_first_name: string | null
@@ -122,6 +123,7 @@ export type Database = {
           id?: string
           is_canvasser?: boolean | null
           last_name?: string | null
+          listing_count?: number | null
           neighborhood?: string | null
           phone?: string | null
           responsible_first_name?: string | null
@@ -141,6 +143,7 @@ export type Database = {
           id?: string
           is_canvasser?: boolean | null
           last_name?: string | null
+          listing_count?: number | null
           neighborhood?: string | null
           phone?: string | null
           responsible_first_name?: string | null
@@ -152,12 +155,54 @@ export type Database = {
         }
         Relationships: []
       }
+      subscribers: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          listings_remaining: number | null
+          stripe_customer_id: string | null
+          subscribed: boolean
+          subscription_end: string | null
+          subscription_type: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          listings_remaining?: number | null
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_type?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          listings_remaining?: number | null
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_type?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_create_listing: {
+        Args: { user_id_param: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
