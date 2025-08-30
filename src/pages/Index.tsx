@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { useLocation } from "@/contexts/LocationContext";
 import { supabase } from "@/integrations/supabase/client";
 import { MapPin, List, SlidersHorizontal, ArrowUpDown } from "lucide-react";
+import { extendedMockProperties } from "@/data/extendedMockProperties";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -96,9 +97,23 @@ const Index = () => {
         createdAt: listing.created_at
       }));
 
-      setProperties(convertedProperties);
+      // Add demo properties if we have less than 5 real properties
+      let finalProperties = convertedProperties;
+      if (convertedProperties.length < 5) {
+        const demoProperties = extendedMockProperties
+          .filter(prop => prop.purpose === (searchMode === 'buy' ? 'sale' : 'rent'))
+          .slice(0, 10 - convertedProperties.length);
+        finalProperties = [...convertedProperties, ...demoProperties];
+      }
+
+      setProperties(finalProperties);
     } catch (error) {
       console.error('Error fetching listings:', error);
+      // Fallback to demo data if there's an error
+      const demoProperties = extendedMockProperties
+        .filter(prop => prop.purpose === (searchMode === 'buy' ? 'sale' : 'rent'))
+        .slice(0, 10);
+      setProperties(demoProperties);
     } finally {
       setLoading(false);
     }
