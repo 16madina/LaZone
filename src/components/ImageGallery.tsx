@@ -94,34 +94,6 @@ export default function ImageGallery({
             </div>
           </div>
 
-          {/* Navigation arrows on main image */}
-          {images.length > 1 && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  prevImage();
-                }}
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  nextImage();
-                }}
-              >
-                <ChevronRight className="w-5 h-5" />
-              </Button>
-            </>
-          )}
 
           {/* Image counter */}
           {images.length > 1 && (
@@ -188,35 +160,6 @@ export default function ImageGallery({
               <X className="w-6 h-6" />
             </Button>
 
-            {/* Navigation - Always visible with better styling */}
-            {images.length > 1 && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20 h-16 w-16 rounded-full bg-black/30 backdrop-blur-sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    prevImage();
-                  }}
-                >
-                  <ChevronLeft className="w-8 h-8" />
-                </Button>
-                
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20 h-16 w-16 rounded-full bg-black/30 backdrop-blur-sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    nextImage();
-                  }}
-                >
-                  <ChevronRight className="w-8 h-8" />
-                </Button>
-              </>
-            )}
-
             {/* Main image in modal - click to navigate */}
             <div 
               className="relative max-w-full max-h-full cursor-pointer select-none"
@@ -250,7 +193,7 @@ export default function ImageGallery({
 
             {/* Navigation hint */}
             <div className="absolute bottom-16 left-1/2 -translate-x-1/2 text-white/70 text-sm text-center">
-              <p>Utilisez les flèches ou cliquez sur les côtés pour naviguer</p>
+              <p>Cliquez sur les côtés pour naviguer</p>
               <p className="text-xs mt-1">Appuyez sur Échap pour fermer</p>
             </div>
 
