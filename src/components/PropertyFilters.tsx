@@ -32,7 +32,10 @@ const PROPERTY_TYPES = [
 const AMENITIES = [
   'Piscine', 'Parking', 'Meublé', 'Sécurité 24/7', 
   'Fibre', 'Climatisation', 'Ascenseur', 'Balcon',
-  'Jardin', 'Vue mer', 'Neuf'
+  'Jardin', 'Vue mer', 'Neuf', 'Salle de sport',
+  'Cuisine équipée', 'Terrasse', 'Cave', 'Garage',
+  'Concierge', 'Buanderie', 'Cheminée', 'Dressing',
+  'Bureau', 'Internet haut débit', 'Système d\'alarme'
 ];
 
 export default function PropertyFilters({ 
@@ -78,7 +81,7 @@ export default function PropertyFilters({
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-8">
+          <div className="flex-1 overflow-y-auto p-6 pb-24 space-y-8">
             {/* Property Type */}
             <div>
               <h3 className="text-sm font-medium mb-3">Type de bien</h3>
