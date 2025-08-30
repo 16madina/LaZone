@@ -23,11 +23,13 @@ import {
   UserCheck,
   Shield,
   History,
-  Phone
+  Phone,
+  TrendingUp
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { formatPrice } from '@/utils/currency';
+import PropertyStats from '@/components/PropertyStats';
 
 interface UserRole {
   id: string;
@@ -506,11 +508,12 @@ const Admin: React.FC = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="users">Utilisateurs</TabsTrigger>
             <TabsTrigger value="listings">Annonces</TabsTrigger>
             <TabsTrigger value="roles">Rôles</TabsTrigger>
             <TabsTrigger value="actions">Historique</TabsTrigger>
+            <TabsTrigger value="stats">Statistiques</TabsTrigger>
           </TabsList>
 
           {/* Users Management Tab */}
@@ -781,6 +784,24 @@ const Admin: React.FC = () => {
                     })}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Statistics Tab */}
+          <TabsContent value="stats" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5" />
+                  Statistiques détaillées
+                </CardTitle>
+                <CardDescription>
+                  Vue d'ensemble des propriétés et statistiques de la plateforme
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PropertyStats />
               </CardContent>
             </Card>
           </TabsContent>

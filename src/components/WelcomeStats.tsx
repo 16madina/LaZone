@@ -28,14 +28,6 @@ const WelcomeStats: React.FC = () => {
           <p className="text-lg text-muted-foreground font-poppins">Trouvez votre chez-vous dans votre Zone</p>
           <p className="text-sm text-muted-foreground mt-1">Découvrez des milliers de biens immobiliers à travers l'Afrique</p>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => navigate('/stats')}
-          className="shrink-0 absolute top-4 right-4"
-        >
-          Voir détails
-        </Button>
       </div>
       
       <div className="flex overflow-x-auto gap-3 pb-2">
