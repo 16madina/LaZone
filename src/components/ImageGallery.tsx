@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
@@ -19,6 +19,36 @@ export default function ImageGallery({
 }: ImageGalleryProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
+
+  // Sync external index changes
+  useEffect(() => {
+    setCurrentIndex(initialIndex);
+  }, [initialIndex]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!isOpen) return;
+      
+      switch (event.key) {
+        case 'ArrowLeft':
+          event.preventDefault();
+          prevImage();
+          break;
+        case 'ArrowRight':
+          event.preventDefault();
+          nextImage();
+          break;
+        case 'Escape':
+          event.preventDefault();
+          setIsOpen(false);
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, currentIndex]);
 
   const handleImageClick = (index: number) => {
     setCurrentIndex(index);
@@ -70,7 +100,7 @@ export default function ImageGallery({
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"
                 onClick={(e) => {
                   e.stopPropagation();
                   prevImage();
@@ -82,7 +112,7 @@ export default function ImageGallery({
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"
                 onClick={(e) => {
                   e.stopPropagation();
                   nextImage();
@@ -146,26 +176,29 @@ export default function ImageGallery({
 
       {/* Full Screen Modal */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-7xl w-full h-full md:h-[90vh] p-0 bg-black/95">
+        <DialogContent className="max-w-full w-full h-full p-0 bg-black/95 border-0">
           <div className="relative w-full h-full flex items-center justify-center">
             {/* Close button */}
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-4 right-4 z-50 text-white hover:bg-white/20"
+              className="absolute top-4 right-4 z-50 text-white hover:bg-white/20 h-12 w-12"
               onClick={() => setIsOpen(false)}
             >
               <X className="w-6 h-6" />
             </Button>
 
-            {/* Navigation */}
+            {/* Navigation - Always visible with better styling */}
             {images.length > 1 && (
               <>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20"
-                  onClick={prevImage}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20 h-16 w-16 rounded-full bg-black/30 backdrop-blur-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    prevImage();
+                  }}
                 >
                   <ChevronLeft className="w-8 h-8" />
                 </Button>
@@ -173,35 +206,64 @@ export default function ImageGallery({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20"
-                  onClick={nextImage}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20 h-16 w-16 rounded-full bg-black/30 backdrop-blur-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    nextImage();
+                  }}
                 >
                   <ChevronRight className="w-8 h-8" />
                 </Button>
               </>
             )}
 
-            {/* Main image in modal */}
-            <img
-              src={images[currentIndex]}
-              alt={`${title} - Image ${currentIndex + 1}`}
-              className="max-w-full max-h-full object-contain"
-            />
+            {/* Main image in modal - click to navigate */}
+            <div 
+              className="relative max-w-full max-h-full cursor-pointer select-none"
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const width = rect.width;
+                
+                // Click on left side = previous, right side = next
+                if (x < width / 2) {
+                  prevImage();
+                } else {
+                  nextImage();
+                }
+              }}
+            >
+              <img
+                src={images[currentIndex]}
+                alt={`${title} - Image ${currentIndex + 1}`}
+                className="max-w-full max-h-full object-contain"
+                draggable={false}
+              />
+            </div>
 
             {/* Image counter in modal */}
             {images.length > 1 && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-lg">
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-lg backdrop-blur-sm">
                 {currentIndex + 1} / {images.length}
               </div>
             )}
 
+            {/* Navigation hint */}
+            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 text-white/70 text-sm text-center">
+              <p>Utilisez les flèches ou cliquez sur les côtés pour naviguer</p>
+              <p className="text-xs mt-1">Appuyez sur Échap pour fermer</p>
+            </div>
+
             {/* Thumbnail strip in modal */}
-            {images.length > 1 && (
-              <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-2 max-w-md overflow-x-auto pb-2">
+            {images.length > 1 && images.length <= 8 && (
+              <div className="absolute bottom-28 left-1/2 -translate-x-1/2 flex gap-2 max-w-md overflow-x-auto pb-2">
                 {images.map((image, index) => (
                   <button
                     key={index}
-                    onClick={() => setCurrentIndex(index)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentIndex(index);
+                    }}
                     className={cn(
                       "flex-shrink-0 w-12 h-8 rounded overflow-hidden border transition-all duration-200",
                       index === currentIndex 
@@ -213,6 +275,7 @@ export default function ImageGallery({
                       src={image}
                       alt={`Miniature ${index + 1}`}
                       className="w-full h-full object-cover"
+                      draggable={false}
                     />
                   </button>
                 ))}
