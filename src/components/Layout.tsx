@@ -22,7 +22,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Bottom Navigation - Hidden on specific pages */}
       {!hideBottomNav && (
         <BottomNav 
-          messagesCount={5} 
+          messagesCount={0} 
           isAuthenticated={!!user} 
           hasProfileNotification={false}
         />
