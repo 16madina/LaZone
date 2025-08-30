@@ -13,7 +13,8 @@ import { Progress } from "@/components/ui/progress";
 import { 
   ArrowLeft, ArrowRight, Home, Building2, MapPin, 
   Upload, X, Camera, DollarSign, Bed, Bath, 
-  Maximize, TreePine, Car, Shield, User, Users 
+  Maximize, TreePine, Car, Shield, User, Users,
+  Video, Rotate3D, Play, Pause, Volume2 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -38,6 +39,8 @@ interface ListingData {
   neighborhood: string;
   amenities: string[];
   images: File[];
+  video?: File;
+  virtualTour?: File;
 }
 
 const AMENITIES = [
@@ -52,7 +55,7 @@ const STEPS = [
   { id: 2, title: 'Localisation', icon: MapPin },
   { id: 3, title: 'Détails', icon: Building2 },
   { id: 4, title: 'Prix', icon: DollarSign },
-  { id: 5, title: 'Photos', icon: Camera },
+  { id: 5, title: 'Médias', icon: Camera },
   { id: 6, title: 'Aperçu', icon: Upload }
 ];
 
@@ -84,7 +87,9 @@ export default function CreateListing() {
     city: selectedCity || '',
     neighborhood: '',
     amenities: [],
-    images: []
+    images: [],
+    video: undefined,
+    virtualTour: undefined
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -121,6 +126,8 @@ export default function CreateListing() {
         break;
       case 5:
         if (formData.images.length === 0) newErrors.images = 'Au moins une photo est requise';
+        if (formData.images.length > 20) newErrors.images = 'Maximum 20 photos autorisées';
+        if (formData.video && formData.video.size > 100 * 1024 * 1024) newErrors.video = 'La vidéo ne doit pas dépasser 100 MB';
         break;
     }
 
@@ -149,7 +156,66 @@ export default function CreateListing() {
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
+    const totalImages = formData.images.length + files.length;
+    
+    if (totalImages > 20) {
+      toast({
+        title: 'Limite dépassée',
+        description: 'Vous ne pouvez ajouter que 20 photos maximum.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     updateFormData({ images: [...formData.images, ...files] });
+  };
+
+  const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Vérifier la taille (100 MB max)
+    if (file.size > 100 * 1024 * 1024) {
+      toast({
+        title: 'Fichier trop volumineux',
+        description: 'La vidéo ne doit pas dépasser 100 MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Vérifier la durée (1 minute max)
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+      if (video.duration > 60) {
+        toast({
+          title: 'Vidéo trop longue',
+          description: 'La vidéo ne doit pas dépasser 1 minute.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      updateFormData({ video: file });
+    };
+    video.src = URL.createObjectURL(file);
+  };
+
+  const handleVirtualTourUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Vérifier la taille (50 MB max pour vue 360°)
+    if (file.size > 50 * 1024 * 1024) {
+      toast({
+        title: 'Fichier trop volumineux',
+        description: 'La vue 360° ne doit pas dépasser 50 MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    updateFormData({ virtualTour: file });
   };
 
   const removeImage = (index: number) => {
@@ -207,6 +273,8 @@ export default function CreateListing() {
 
       // Upload images to Supabase Storage
       let imageUrls: string[] = [];
+      let videoUrl: string | null = null;
+      let virtualTourUrl: string | null = null;
       
       if (formData.images.length > 0) {
         for (let i = 0; i < formData.images.length; i++) {
@@ -229,6 +297,40 @@ export default function CreateListing() {
             .getPublicUrl(fileName);
           
           imageUrls.push(data.publicUrl);
+        }
+      }
+      
+      // Upload video if present
+      if (formData.video) {
+        const fileExt = formData.video.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}_video.${fileExt}`;
+        
+        const { error: videoUploadError } = await supabase.storage
+          .from('listing-videos')
+          .upload(fileName, formData.video);
+        
+        if (!videoUploadError) {
+          const { data } = supabase.storage
+            .from('listing-videos')
+            .getPublicUrl(fileName);
+          videoUrl = data.publicUrl;
+        }
+      }
+
+      // Upload virtual tour if present
+      if (formData.virtualTour) {
+        const fileExt = formData.virtualTour.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}_tour.${fileExt}`;
+        
+        const { error: tourUploadError } = await supabase.storage
+          .from('virtual-tours')
+          .upload(fileName, formData.virtualTour);
+        
+        if (!tourUploadError) {
+          const { data } = supabase.storage
+            .from('virtual-tours')
+            .getPublicUrl(fileName);
+          virtualTourUrl = data.publicUrl;
         }
       }
       
@@ -258,6 +360,8 @@ export default function CreateListing() {
           country: selectedCountry,
           amenities: formData.amenities,
           images: imageUrls,
+          video_url: videoUrl,
+          virtual_tour_url: virtualTourUrl,
           status: 'active'
         });
 
@@ -647,21 +751,30 @@ export default function CreateListing() {
           </Card>
         )}
 
-        {/* Step 5: Photos */}
+        {/* Step 5: Médias */}
         {currentStep === 5 && (
-          <Card className="p-6 space-y-6">
+          <Card className="p-6 space-y-8">
             <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold">Ajoutez des photos</h2>
+              <h2 className="text-2xl font-bold">Ajoutez vos médias</h2>
               <p className="text-muted-foreground">
-                Les photos attirent plus de visiteurs
+                Photos, vidéo et vue 360° pour mettre en valeur votre bien
               </p>
             </div>
 
+            {/* Photos Section */}
             <div className="space-y-4">
-              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-                <Camera className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground mb-4">
-                  Glissez vos photos ici ou cliquez pour les sélectionner
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Camera className="w-5 h-5" />
+                  Photos ({formData.images.length}/20)
+                </h3>
+                <Badge variant="secondary">Obligatoire</Badge>
+              </div>
+              
+              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground mb-3">
+                  Ajoutez jusqu'à 20 photos de votre bien
                 </p>
                 <input
                   type="file"
@@ -671,37 +784,154 @@ export default function CreateListing() {
                   className="hidden"
                   id="imageUpload"
                 />
-                <Button asChild>
+                <Button asChild disabled={formData.images.length >= 20}>
                   <label htmlFor="imageUpload" className="cursor-pointer">
                     <Upload className="w-4 h-4 mr-2" />
-                    Choisir des photos
+                    {formData.images.length === 0 ? 'Choisir des photos' : 'Ajouter plus de photos'}
                   </label>
                 </Button>
               </div>
 
               {formData.images.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {formData.images.map((image, index) => (
                     <div key={index} className="relative group">
                       <img
                         src={URL.createObjectURL(image)}
                         alt={`Upload ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-lg"
+                        className="w-full h-20 object-cover rounded-lg"
                       />
                       <Button
                         size="sm"
                         variant="destructive"
-                        className="absolute top-1 right-1 w-6 h-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-1 right-1 w-5 h-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={() => removeImage(index)}
                       >
                         <X className="w-3 h-3" />
                       </Button>
+                      {index === 0 && (
+                        <Badge className="absolute bottom-1 left-1 text-xs">Photo principale</Badge>
+                      )}
                     </div>
                   ))}
                 </div>
               )}
 
               {errors.images && <p className="text-sm text-destructive">{errors.images}</p>}
+            </div>
+
+            <Separator />
+
+            {/* Video Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Video className="w-5 h-5" />
+                  Vidéo (max 1 minute)
+                </h3>
+                <Badge variant="outline">Optionnel</Badge>
+              </div>
+
+              {!formData.video ? (
+                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                  <Video className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground mb-3">
+                    Ajoutez une vidéo de présentation (max 1 minute, 100 MB)
+                  </p>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={handleVideoUpload}
+                    className="hidden"
+                    id="videoUpload"
+                  />
+                  <Button asChild variant="outline">
+                    <label htmlFor="videoUpload" className="cursor-pointer">
+                      <Upload className="w-4 h-4 mr-2" />
+                      Choisir une vidéo
+                    </label>
+                  </Button>
+                </div>
+              ) : (
+                <div className="border rounded-lg p-4 bg-card">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Video className="w-8 h-8 text-primary" />
+                      <div>
+                        <p className="font-medium">{formData.video.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {(formData.video.size / (1024 * 1024)).toFixed(1)} MB
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => updateFormData({ video: undefined })}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {errors.video && <p className="text-sm text-destructive">{errors.video}</p>}
+            </div>
+
+            <Separator />
+
+            {/* Virtual Tour Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Rotate3D className="w-5 h-5" />
+                  Vue 360°
+                </h3>
+                <Badge variant="outline">Optionnel</Badge>
+              </div>
+
+              {!formData.virtualTour ? (
+                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                  <Rotate3D className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground mb-3">
+                    Ajoutez une visite virtuelle 360° (max 50 MB)
+                  </p>
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={handleVirtualTourUpload}
+                    className="hidden"
+                    id="virtualTourUpload"
+                  />
+                  <Button asChild variant="outline">
+                    <label htmlFor="virtualTourUpload" className="cursor-pointer">
+                      <Upload className="w-4 h-4 mr-2" />
+                      Choisir une vue 360°
+                    </label>
+                  </Button>
+                </div>
+              ) : (
+                <div className="border rounded-lg p-4 bg-card">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Rotate3D className="w-8 h-8 text-primary" />
+                      <div>
+                        <p className="font-medium">{formData.virtualTour.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {(formData.virtualTour.size / (1024 * 1024)).toFixed(1)} MB
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => updateFormData({ virtualTour: undefined })}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
         )}
