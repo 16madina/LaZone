@@ -39,6 +39,8 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string
+          video_url: string | null
+          virtual_tour_url: string | null
         }
         Insert: {
           address: string
@@ -64,6 +66,8 @@ export type Database = {
           title: string
           updated_at?: string
           user_id: string
+          video_url?: string | null
+          virtual_tour_url?: string | null
         }
         Update: {
           address?: string
@@ -89,6 +93,8 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+          video_url?: string | null
+          virtual_tour_url?: string | null
         }
         Relationships: []
       }
