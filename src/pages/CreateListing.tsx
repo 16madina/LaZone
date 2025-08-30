@@ -586,6 +586,22 @@ export default function CreateListing() {
             </div>
 
             <div className="space-y-4">
+              {/* Pays automatiquement détecté */}
+              {selectedCountry && (
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-green-500" />
+                    Pays (détecté automatiquement)
+                  </Label>
+                  <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
+                    <p className="text-sm font-medium text-green-700 dark:text-green-300 flex items-center gap-2">
+                      <Shield className="w-4 h-4" />
+                      {selectedCountry}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Ville</Label>
