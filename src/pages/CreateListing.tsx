@@ -46,6 +46,10 @@ interface ListingData {
   yearBuilt?: string;
   floor?: string;
   parkingSpaces?: string;
+  // Champs pour les prix
+  isNegotiable: boolean;
+  securityDeposit?: string; // en nombre de mois
+  advancePayment?: string; // en nombre de mois
 }
 
 const AMENITIES = [
@@ -106,7 +110,10 @@ export default function CreateListing() {
     commercialType: '',
     yearBuilt: '',
     floor: '',
-    parkingSpaces: ''
+    parkingSpaces: '',
+    isNegotiable: false,
+    securityDeposit: '',
+    advancePayment: ''
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -857,8 +864,78 @@ export default function CreateListing() {
                 <div className="text-2xl font-bold text-primary">
                   {formData.price ? parseInt(formData.price).toLocaleString() : '0'} {currency}
                   {(formData.purpose === 'rent' || formData.propertyType === 'commercial') && <span className="text-base font-normal text-muted-foreground">/mois</span>}
+                  {formData.isNegotiable && <span className="text-sm text-orange-600 ml-2">(Négociable)</span>}
                 </div>
               </div>
+
+              {/* Prix négociable */}
+              <div className="flex items-center space-x-3">
+                <Checkbox 
+                  id="negotiable"
+                  checked={formData.isNegotiable}
+                  onCheckedChange={(checked) => updateFormData({ isNegotiable: checked === true })}
+                />
+                <Label htmlFor="negotiable" className="text-sm font-medium cursor-pointer">
+                  Prix négociable
+                </Label>
+              </div>
+
+              {/* Caution et mois d'avance pour les locations */}
+              {(formData.purpose === 'rent' || formData.propertyType === 'commercial') && (
+                <div className="space-y-4 p-4 bg-secondary/30 rounded-lg">
+                  <h4 className="font-medium text-base">Conditions de location</h4>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Caution</Label>
+                      <Select value={formData.securityDeposit} onValueChange={(value) => updateFormData({ securityDeposit: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border z-50">
+                          <SelectItem value="1">1 mois</SelectItem>
+                          <SelectItem value="2">2 mois</SelectItem>
+                          <SelectItem value="3">3 mois</SelectItem>
+                          <SelectItem value="4">4 mois</SelectItem>
+                          <SelectItem value="5">5 mois</SelectItem>
+                          <SelectItem value="6">6 mois</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Mois d'avance</Label>
+                      <Select value={formData.advancePayment} onValueChange={(value) => updateFormData({ advancePayment: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border z-50">
+                          <SelectItem value="1">1 mois</SelectItem>
+                          <SelectItem value="2">2 mois</SelectItem>
+                          <SelectItem value="3">3 mois</SelectItem>
+                          <SelectItem value="4">4 mois</SelectItem>
+                          <SelectItem value="5">5 mois</SelectItem>
+                          <SelectItem value="6">6 mois</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="text-sm text-muted-foreground">
+                    {formData.securityDeposit && formData.advancePayment && formData.price && (
+                      <div className="mt-2 p-2 bg-background rounded border">
+                        <p>Total à prévoir à la signature :</p>
+                        <p className="font-semibold text-primary">
+                          {(parseInt(formData.price) * (parseInt(formData.securityDeposit) + parseInt(formData.advancePayment))).toLocaleString()} {currency}
+                        </p>
+                        <p className="text-xs">
+                          ({formData.securityDeposit} mois caution + {formData.advancePayment} mois d'avance)
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
         )}
