@@ -56,8 +56,8 @@ export default function PropertyDetail() {
               coordinates: [data.longitude || 0, data.latitude || 0] as [number, number]
             },
             images: data.images && data.images.length > 0 ? data.images : ['/placeholder.svg'],
-            type: data.property_type as 'apartment' | 'house' | 'land',
-            purpose: data.purpose as 'rent' | 'sale',
+            type: data.property_type as 'apartment' | 'house' | 'land' | 'commercial',
+            purpose: data.purpose as 'rent' | 'sale' | 'commercial',
             bedrooms: data.bedrooms,
             bathrooms: data.bathrooms,
             area: data.area,
@@ -80,8 +80,8 @@ export default function PropertyDetail() {
       }
 
       // Fallback to mock data (for demo purposes)
-      const { comprehensiveMockProperties } = await import('@/data/comprehensiveSeedData');
-      const mockProperty = comprehensiveMockProperties.find(p => p.id === id);
+      const { extendedMockProperties } = await import('@/data/extendedMockProperties');
+      const mockProperty = extendedMockProperties.find(p => p.id === id);
       
       if (mockProperty) {
         setProperty(mockProperty);
@@ -137,6 +137,7 @@ export default function PropertyDetail() {
       case 'apartment': return 'Appartement';
       case 'house': return 'Maison';
       case 'land': return 'Terrain';
+      case 'commercial': return 'Espace Commercial';
       default: return type;
     }
   };
@@ -157,8 +158,8 @@ export default function PropertyDetail() {
   const getSimilarProperties = async (): Promise<Property[]> => {
     if (!property) return [];
     
-    const { comprehensiveMockProperties } = await import('@/data/comprehensiveSeedData');
-    return comprehensiveMockProperties
+    const { extendedMockProperties } = await import('@/data/extendedMockProperties');
+    return extendedMockProperties
       .filter(p => 
         p.id !== property.id && 
         p.location.city === property.location.city &&
@@ -194,7 +195,7 @@ export default function PropertyDetail() {
             <div className="p-3 space-y-2">
               <div className="font-semibold text-primary">
                 {formatPrice(similar.price, similar.currency)}
-                {similar.purpose === 'rent' && (
+                {(similar.purpose === 'rent' || similar.purpose === 'commercial') && (
                   <span className="text-xs font-normal text-muted-foreground">/mois</span>
                 )}
               </div>
@@ -289,7 +290,7 @@ export default function PropertyDetail() {
                 <div>
                 <div className="text-3xl font-bold text-primary">
                   {formatPrice(property.price, property.currency)}
-                  {property.purpose === 'rent' && (
+                  {(property.purpose === 'rent' || property.purpose === 'commercial') && (
                     <span className="text-lg font-normal text-muted-foreground">/mois</span>
                   )}
                 </div>
@@ -302,7 +303,7 @@ export default function PropertyDetail() {
               {/* Property Details */}
               {property.type !== 'land' && (
                 <div className="flex items-center gap-6">
-                  {property.bedrooms && (
+                  {property.bedrooms && property.bedrooms > 0 && (
                     <div className="flex items-center gap-2">
                       <Bed className="w-5 h-5 text-muted-foreground" />
                       <span className="font-medium">{property.bedrooms}</span>
@@ -313,7 +314,9 @@ export default function PropertyDetail() {
                     <div className="flex items-center gap-2">
                       <Bath className="w-5 h-5 text-muted-foreground" />
                       <span className="font-medium">{property.bathrooms}</span>
-                      <span className="text-muted-foreground text-sm">sdb</span>
+                      <span className="text-muted-foreground text-sm">
+                        {property.type === 'commercial' ? 'SdB' : 'sdb'}
+                      </span>
                     </div>
                   )}
                   <div className="flex items-center gap-2">
@@ -347,6 +350,9 @@ export default function PropertyDetail() {
                 }
                 {property.type === 'land' && 
                   `Terrain à bâtir de ${property.area}m² parfaitement situé à ${property.location.neighborhood}. Idéal pour votre projet de construction, ce terrain bénéficie d'un excellent emplacement avec tous les raccordements nécessaires à proximité.`
+                }
+                {property.type === 'commercial' && 
+                  `${getTypeLabel(property.type)} de ${property.area}m² parfaitement situé dans le quartier dynamique de ${property.location.neighborhood}. Cet espace offre une excellente visibilité et un emplacement stratégique pour votre activité commerciale. Idéal pour boutique, bureau, restaurant ou tout autre projet commercial.`
                 }
               </p>
             </div>
@@ -453,7 +459,9 @@ export default function PropertyDetail() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Objectif</span>
-                  <span className="font-medium">{property.purpose === 'rent' ? 'Location' : 'Vente'}</span>
+                  <span className="font-medium">
+                    {property.purpose === 'rent' ? 'Location' : property.purpose === 'commercial' ? 'Location commerciale' : 'Vente'}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Surface</span>
