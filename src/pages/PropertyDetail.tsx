@@ -14,6 +14,7 @@ import { Property } from "@/components/PropertyCard";
 import PropertyMap from "@/components/PropertyMap";
 import VirtualTour from "@/components/vr/VirtualTour";
 import AIRecommendations from "@/components/ai/AIRecommendations";
+import ImageGallery from "@/components/ImageGallery";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/utils/currency";
 
@@ -246,33 +247,16 @@ export default function PropertyDetail() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Image Gallery */}
-            <div className="relative aspect-[16/10] rounded-xl overflow-hidden bg-muted">
-              <img
-                src={property.images[currentImageIndex]}
-                alt={property.title}
-                className="w-full h-full object-cover"
+            <div className="relative">
+              <ImageGallery 
+                images={property.images}
+                initialIndex={currentImageIndex}
+                title={property.title}
+                onImageChange={setCurrentImageIndex}
               />
               
-              {/* Image Navigation */}
-              {property.images.length > 1 && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                  {property.images.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentImageIndex(index)}
-                      className={cn(
-                        "w-2 h-2 rounded-full transition-all duration-normal",
-                        index === currentImageIndex 
-                          ? "bg-white" 
-                          : "bg-white/50 hover:bg-white/75"
-                      )}
-                    />
-                  ))}
-                </div>
-              )}
-
               {/* Badges */}
-              <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+              <div className="absolute top-4 left-4 flex flex-wrap gap-2 pointer-events-none">
                 {property.isNew && (
                   <Badge className="bg-success text-success-foreground">
                     Nouveau
