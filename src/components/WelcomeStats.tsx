@@ -14,7 +14,7 @@ const WelcomeStats: React.FC = () => {
       <div className="flex items-center justify-between mb-4">
         <div className="w-full text-center">
           <img 
-            src="/lovable-uploads/d8a038f0-277b-4996-9094-f1add36cc02f.png" 
+            src="/lovable-uploads/4d577f4a-d17b-4de7-a923-6b61b3219983.png" 
             alt="LaZone" 
             className="h-16 mx-auto mb-2" 
           />
