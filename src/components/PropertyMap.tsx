@@ -372,7 +372,7 @@ export default function PropertyMap({
     }
   };
 
-  if (showApiKeyInput || !apiKey) {
+  if (!apiKey || showApiKeyInput) {
     return (
       <div className={`relative bg-card border border-border rounded-xl p-8 ${className}`}>
         <div className="text-center space-y-6">

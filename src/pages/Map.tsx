@@ -21,7 +21,8 @@ const Map: React.FC = () => {
   const [showList, setShowList] = useState(false);
   const [sortBy, setSortBy] = useState('date');
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [mapboxToken, setMapboxToken] = useState<string>('');
+  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
+  const [tokenLoaded, setTokenLoaded] = useState(false);
 
   // Extract and persist Mapbox token
   useEffect(() => {
@@ -31,6 +32,7 @@ const Map: React.FC = () => {
       if (savedToken) {
         console.log('🗺️ Token Mapbox chargé depuis localStorage:', savedToken.substring(0, 20) + '...');
         setMapboxToken(savedToken);
+        setTokenLoaded(true);
         return;
       }
 
@@ -45,7 +47,13 @@ const Map: React.FC = () => {
         localStorage.setItem('mapbox_token', decodedToken);
         // Clean URL
         window.history.replaceState(null, '', window.location.pathname);
+        setTokenLoaded(true);
+        return;
       }
+
+      // No token found
+      setMapboxToken('');
+      setTokenLoaded(true);
     };
 
     loadToken();
@@ -193,13 +201,15 @@ const Map: React.FC = () => {
 
       {/* Map Container */}
       <div className="flex-1 relative">
-        <PropertyMap
-          properties={sortedProperties}
-          selectedProperty={selectedProperty}
-          onPropertySelect={handlePropertySelect}
-          className="h-full w-full"
-          apiKey={mapboxToken}
-        />
+        {tokenLoaded && (
+          <PropertyMap
+            properties={sortedProperties}
+            selectedProperty={selectedProperty}
+            onPropertySelect={handlePropertySelect}
+            className="h-full w-full"
+            apiKey={mapboxToken || undefined}
+          />
+        )}
 
         {/* List Overlay */}
         {showList && (
