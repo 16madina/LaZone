@@ -474,8 +474,18 @@ const Profile: React.FC = () => {
                         <div key={listing.id}>
                           <div className="p-4 hover:bg-muted/50 transition-colors">
                             <div className="flex items-start gap-3">
-                              <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center flex-shrink-0">
-                                <PropertyIcon className="w-6 h-6 text-muted-foreground" />
+                              <div className="w-12 h-12 bg-muted rounded-md overflow-hidden flex-shrink-0">
+                                {listing.images && listing.images.length > 0 ? (
+                                  <img 
+                                    src={listing.images[0]} 
+                                    alt={listing.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center bg-muted">
+                                    <PropertyIcon className="w-6 h-6 text-muted-foreground" />
+                                  </div>
+                                )}
                               </div>
                               
                               <div className="flex-1 min-w-0">
