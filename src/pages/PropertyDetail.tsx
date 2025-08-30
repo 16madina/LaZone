@@ -56,6 +56,7 @@ export default function PropertyDetail() {
               coordinates: [data.longitude || 0, data.latitude || 0] as [number, number]
             },
             images: data.images && data.images.length > 0 ? data.images : ['/placeholder.svg'],
+            videoUrl: data.video_url,
             type: data.property_type as 'apartment' | 'house' | 'land' | 'commercial',
             purpose: data.purpose as 'rent' | 'sale' | 'commercial',
             bedrooms: data.bedrooms,
@@ -337,6 +338,26 @@ export default function PropertyDetail() {
             </div>
 
             <Separator />
+
+            {/* Video Section */}
+            {property.videoUrl && (
+              <>
+                <div className="space-y-3">
+                  <h2 className="text-xl font-semibold">Vidéo</h2>
+                  <div className="aspect-video rounded-xl overflow-hidden">
+                    <video 
+                      controls 
+                      className="w-full h-full object-cover"
+                      poster={property.images[0]}
+                    >
+                      <source src={property.videoUrl} type="video/mp4" />
+                      Votre navigateur ne supporte pas la lecture de vidéos.
+                    </video>
+                  </div>
+                </div>
+                <Separator />
+              </>
+            )}
 
             {/* Description */}
             <div className="space-y-3">

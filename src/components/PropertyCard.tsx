@@ -19,6 +19,7 @@ export interface Property {
     coordinates: [number, number];
   };
   images: string[];
+  videoUrl?: string;
   type: 'apartment' | 'house' | 'land' | 'commercial';
   purpose: 'rent' | 'sale' | 'commercial';
   bedrooms?: number;
