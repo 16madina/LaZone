@@ -13,8 +13,8 @@ export const mockProperties: Property[] = [
       coordinates: [-4.0167, 5.3436]
     },
     images: [
-      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=500&fit=crop&crop=center",
-      "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&h=500&fit=crop&crop=center"
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=500&fit=crop&crop=center", // Appartement moderne
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=500&fit=crop&crop=center"  // Salon appartement
     ],
     type: "apartment",
     purpose: "rent",
@@ -44,8 +44,8 @@ export const mockProperties: Property[] = [
       coordinates: [-3.9833, 5.3617]
     },
     images: [
-      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=500&fit=crop&crop=center",
-      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&h=500&fit=crop&crop=center"
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=500&fit=crop&crop=center", // Villa moderne
+      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&h=500&fit=crop&crop=center"  // Villa avec piscine
     ],
     type: "house",
     purpose: "sale",
@@ -76,7 +76,7 @@ export const mockProperties: Property[] = [
       coordinates: [-4.0333, 5.3167]
     },
     images: [
-      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=500&fit=crop&crop=center"
+      "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&h=500&fit=crop&crop=center" // Studio moderne
     ],
     type: "apartment",
     purpose: "rent",
@@ -106,7 +106,7 @@ export const mockProperties: Property[] = [
       coordinates: [-3.7333, 5.2167]
     },
     images: [
-      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&h=500&fit=crop&crop=center"
+      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&h=500&fit=crop&crop=center" // Terrain constructible
     ],
     type: "land",
     purpose: "sale",
@@ -134,7 +134,7 @@ export const mockProperties: Property[] = [
       coordinates: [-4.0000, 5.2833]
     },
     images: [
-      "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=500&fit=crop&crop=center"
+      "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=500&fit=crop&crop=center" // Duplex moderne
     ],
     type: "apartment",
     purpose: "rent",
@@ -164,7 +164,7 @@ export const mockProperties: Property[] = [
       coordinates: [-4.0833, 5.3333]
     },
     images: [
-      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800&h=500&fit=crop&crop=center"
+      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800&h=500&fit=crop&crop=center" // Maison familiale
     ],
     type: "house", 
     purpose: "sale",
@@ -196,7 +196,7 @@ export const mockProperties: Property[] = [
       coordinates: [-17.5167, 14.7500]
     },
     images: [
-      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=500&fit=crop&crop=center"
+      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=500&fit=crop&crop=center" // Villa moderne Dakar
     ],
     type: "house",
     purpose: "rent",
@@ -227,7 +227,7 @@ export const mockProperties: Property[] = [
       coordinates: [-17.4500, 14.7167]
     },
     images: [
-      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=500&fit=crop&crop=center"
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=500&fit=crop&crop=center" // Appartement standing
     ],
     type: "apartment",
     purpose: "sale",

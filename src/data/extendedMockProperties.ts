@@ -14,7 +14,7 @@ export const extendedMockProperties: Property[] = [
       coordinates: [-4.0167, 5.3436]
     },
     images: [
-      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=500&fit=crop&crop=center"
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=500&fit=crop&crop=center" // Appartement moderne
     ],
     type: "apartment",
     purpose: "rent",
@@ -45,7 +45,7 @@ export const extendedMockProperties: Property[] = [
       coordinates: [3.4273, 6.4281]
     },
     images: [
-      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=500&fit=crop&crop=center"
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=500&fit=crop&crop=center" // Villa moderne Lagos
     ],
     type: "house",
     purpose: "rent",
@@ -76,7 +76,7 @@ export const extendedMockProperties: Property[] = [
       coordinates: [3.4736, 6.4350]
     },
     images: [
-      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=500&fit=crop&crop=center"
+      "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&h=500&fit=crop&crop=center" // Appartement Lekki
     ],
     type: "apartment",
     purpose: "rent",
@@ -107,7 +107,7 @@ export const extendedMockProperties: Property[] = [
       coordinates: [-0.1507, 5.6500]
     },
     images: [
-      "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800&h=500&fit=crop&crop=center"
+      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=500&fit=crop&crop=center" // Maison Ghana
     ],
     type: "house",
     purpose: "rent",
@@ -138,7 +138,7 @@ export const extendedMockProperties: Property[] = [
       coordinates: [-0.1726, 5.6037]
     },
     images: [
-      "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=500&fit=crop&crop=center"
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=500&fit=crop&crop=center" // Appartement Accra
     ],
     type: "apartment",
     purpose: "rent",
@@ -169,7 +169,7 @@ export const extendedMockProperties: Property[] = [
       coordinates: [36.7833, -1.3000]
     },
     images: [
-      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=500&fit=crop&crop=center"
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=500&fit=crop&crop=center" // Penthouse Nairobi
     ],
     type: "apartment",
     purpose: "rent",
@@ -199,7 +199,7 @@ export const extendedMockProperties: Property[] = [
       coordinates: [36.6833, -1.3333]
     },
     images: [
-      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=500&fit=crop&crop=center"
+      "https://images.unsplash.com/photo-1572120360610-d971b9d7767c?w=800&h=500&fit=crop&crop=center" // Maison Karen
     ],
     type: "house",
     purpose: "sale",
@@ -231,7 +231,7 @@ export const extendedMockProperties: Property[] = [
       coordinates: [9.7043, 4.0511]
     },
     images: [
-      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&h=500&fit=crop&crop=center"
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=500&fit=crop&crop=center" // Villa Cameroun
     ],
     type: "house",
     purpose: "rent",
@@ -263,7 +263,7 @@ export const extendedMockProperties: Property[] = [
       coordinates: [-7.6167, 33.5833]
     },
     images: [
-      "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&h=500&fit=crop&crop=center"
+      "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=500&fit=crop&crop=center" // Appartement Casablanca
     ],
     type: "apartment",
     purpose: "rent",
@@ -293,7 +293,7 @@ export const extendedMockProperties: Property[] = [
       coordinates: [-7.6500, 33.5667]
     },
     images: [
-      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=500&fit=crop&crop=center"
+      "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&h=500&fit=crop&crop=center" // Villa Ain Diab
     ],
     type: "house",
     purpose: "sale",

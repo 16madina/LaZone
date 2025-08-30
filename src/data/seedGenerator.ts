@@ -131,6 +131,38 @@ export const agentNames: Record<string, string[]> = {
   ZA: ["Nomsa Mthembu", "David Van Der Merwe", "Thandiwe Nkomo", "Johan Botha"],
 };
 
+// Real estate images by property type
+export const realEstateImages = {
+  apartment: [
+    "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=500&fit=crop&crop=center", // Modern apartment living room
+    "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=500&fit=crop&crop=center", // Apartment interior
+    "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&h=500&fit=crop&crop=center", // Modern studio
+    "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=500&fit=crop&crop=center", // Duplex interior
+    "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=500&fit=crop&crop=center", // Luxury apartment
+    "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=800&h=500&fit=crop&crop=center", // Apartment bedroom
+    "https://images.unsplash.com/photo-1493663284031-b7e3aaa4cab7?w=800&h=500&fit=crop&crop=center", // Apartment kitchen
+    "https://images.unsplash.com/photo-1586105251261-72a756497a11?w=800&h=500&fit=crop&crop=center", // Modern condo
+  ],
+  house: [
+    "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=500&fit=crop&crop=center", // Modern villa
+    "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&h=500&fit=crop&crop=center", // House with pool
+    "https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800&h=500&fit=crop&crop=center", // Family house
+    "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&h=500&fit=crop&crop=center", // Contemporary villa
+    "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&h=500&fit=crop&crop=center", // Beautiful house
+    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=500&fit=crop&crop=center", // House exterior
+    "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&h=500&fit=crop&crop=center", // Modern house
+    "https://images.unsplash.com/photo-1572120360610-d971b9d7767c?w=800&h=500&fit=crop&crop=center", // House with garden
+  ],
+  land: [
+    "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&h=500&fit=crop&crop=center", // Empty land
+    "https://images.unsplash.com/photo-1516156008625-3a9d6067fab5?w=800&h=500&fit=crop&crop=center", // Building plot
+    "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=500&fit=crop&crop=center", // Land with trees
+    "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&h=500&fit=crop&crop=center", // Open field
+    "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=500&fit=crop&crop=center", // Rural land
+    "https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&h=500&fit=crop&crop=center", // Agricultural land
+  ]
+};
+
 // Property titles by type and language
 export const propertyTitles = {
   apartment: {
@@ -222,10 +254,10 @@ export function generateSeedData(): Property[] {
           coordinates: coords
         },
         images: [
-          `https://picsum.photos/800/600?random=${currentId}`,
-          `https://picsum.photos/800/600?random=${currentId + 1000}`,
-          `https://picsum.photos/800/600?random=${currentId + 2000}`
-        ],
+          realEstateImages[propertyType][Math.floor(Math.random() * realEstateImages[propertyType].length)],
+          realEstateImages[propertyType][Math.floor(Math.random() * realEstateImages[propertyType].length)],
+          realEstateImages[propertyType][Math.floor(Math.random() * realEstateImages[propertyType].length)]
+        ].filter((img, index, array) => array.indexOf(img) === index), // Remove duplicates
         type: propertyType,
         purpose,
         bedrooms,
