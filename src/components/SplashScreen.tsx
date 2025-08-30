@@ -32,13 +32,13 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-gradient-to-br from-blue-900 via-blue-800 to-slate-900 flex items-center justify-center overflow-hidden">
       {/* Animated rays of light */}
       <div className="absolute inset-0">
         {[...Array(8)].map((_, i) => (
           <div
             key={i}
-            className="absolute top-1/2 left-1/2 w-1 bg-gradient-to-t from-transparent via-amber-400/20 to-transparent origin-bottom"
+            className="absolute top-1/2 left-1/2 w-1 bg-gradient-to-t from-transparent via-blue-400/20 to-transparent origin-bottom"
             style={{
               height: '200vh',
               transform: `translate(-50%, -50%) rotate(${i * 45}deg)`,
@@ -49,12 +49,12 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
         ))}
       </div>
 
-      {/* Floating golden particles */}
+      {/* Floating blue particles */}
       <div className="absolute inset-0">
         {[...Array(15)].map((_, i) => (
           <div
             key={i}
-            className="absolute w-1 h-1 bg-amber-400 rounded-full opacity-70"
+            className="absolute w-1 h-1 bg-blue-400 rounded-full opacity-70"
             style={{
               left: `${20 + Math.random() * 60}%`,
               top: `${20 + Math.random() * 60}%`,
@@ -76,24 +76,24 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
             : 'scale-125 opacity-0 rotate-12'
         }`}>
           {/* Multiple glow layers for depth */}
-          <div className="absolute -inset-8 bg-gradient-radial from-amber-400/40 via-amber-500/20 to-transparent rounded-full blur-2xl animate-pulse"></div>
-          <div className="absolute -inset-4 bg-gradient-radial from-amber-300/30 to-transparent rounded-full blur-xl animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+          <div className="absolute -inset-8 bg-gradient-radial from-blue-400/40 via-blue-500/20 to-transparent rounded-full blur-2xl animate-pulse"></div>
+          <div className="absolute -inset-4 bg-gradient-radial from-blue-300/30 to-transparent rounded-full blur-xl animate-pulse" style={{ animationDelay: '0.5s' }}></div>
           
           {/* Logo image with enhanced effects */}
           <div className="relative">
             <img
-              src="/lovable-uploads/2ff8f912-8300-40dc-8ca0-8a89a0f05380.png"
+              src="/lovable-uploads/83c5d50b-f3ab-4fc9-b897-2f44c7023df8.png"
               alt="LaZone Logo"
               className={`relative w-40 h-40 md:w-48 md:h-48 object-contain drop-shadow-2xl transition-all duration-1000 ${
                 animationPhase === 'pulse' ? 'animate-pulse filter brightness-110' : ''
               }`}
               style={{
-                filter: animationPhase === 'pulse' ? 'drop-shadow(0 0 30px rgba(251, 191, 36, 0.6))' : ''
+                filter: animationPhase === 'pulse' ? 'drop-shadow(0 0 30px rgba(59, 130, 246, 0.6))' : ''
               }}
             />
             
             {/* Subtle rotating ring */}
-            <div className="absolute inset-0 border border-amber-400/30 rounded-full animate-spin-slow opacity-60"></div>
+            <div className="absolute inset-0 border border-blue-400/30 rounded-full animate-spin-slow opacity-60"></div>
           </div>
         </div>
 
@@ -105,7 +105,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
             ? 'opacity-100 translate-y-0 blur-0'
             : 'opacity-0 translate-y-4'
         }`}>
-          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 bg-clip-text text-transparent mb-3 text-center">
+          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-blue-300 via-blue-400 to-blue-500 bg-clip-text text-transparent mb-3 text-center">
             LaZone
           </h1>
           <p className="text-gray-300 text-base md:text-lg text-center font-light tracking-wider max-w-md">
@@ -122,7 +122,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
             : 'opacity-0'
         }`}>
           <div className="w-32 h-0.5 bg-gray-700 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full animate-pulse" 
+            <div className="h-full bg-gradient-to-r from-blue-400 to-blue-500 rounded-full animate-pulse" 
                  style={{ 
                    width: animationPhase === 'pulse' ? '100%' : '0%',
                    transition: 'width 2s ease-out'
@@ -133,7 +133,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
       </div>
 
       {/* Subtle bottom gradient */}
-      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-amber-500/5 to-transparent"></div>
+      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-blue-500/5 to-transparent"></div>
     </div>
   );
 }
