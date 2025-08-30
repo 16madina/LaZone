@@ -81,7 +81,7 @@ export default function PropertyFilters({
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6 pb-24 space-y-8">
+          <div className="flex-1 overflow-y-auto p-6 pb-32 space-y-8">
             {/* Property Type */}
             <div>
               <h3 className="text-sm font-medium mb-3">Type de bien</h3>
@@ -217,7 +217,7 @@ export default function PropertyFilters({
           </div>
 
           {/* Footer */}
-          <div className="p-6 border-t bg-gradient-card">
+          <div className="p-6 border-t bg-gradient-card sticky bottom-0 z-10">
             <div className="flex gap-3">
               <Button 
                 variant="outline" 
