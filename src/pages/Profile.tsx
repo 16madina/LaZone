@@ -5,6 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { 
   User, 
   Settings, 
@@ -24,7 +28,10 @@ import {
   Building2,
   Eye,
   Edit,
-  Trash2
+  Trash2,
+  Upload,
+  CheckCircle,
+  MessageCircle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -77,6 +84,9 @@ const Profile: React.FC = () => {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState(true);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('avatar');
 
   useEffect(() => {
     checkAuth();
@@ -216,33 +226,35 @@ const Profile: React.FC = () => {
     return { phone: phone || '', location };
   };
 
-  const menuItems = [
-    {
-      icon: Bell,
-      label: 'Notifications',
-      action: () => {},
-      hasSwitch: true,
-      switchValue: notifications,
-      onSwitchChange: setNotifications
-    },
-    {
-      icon: Settings,
-      label: 'Paramètres du compte',
-      action: () => navigate('/settings')
-    },
-    {
-      icon: Shield,
-      label: 'Vérification du compte',
-      action: () => navigate('/verification'),
-      badge: 'Action requise',
-      badgeVariant: 'destructive' as const
-    },
-    {
-      icon: HelpCircle,
-      label: 'Aide et support',
-      action: () => navigate('/help')
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-  ];
+  };
+
+  const handleAvatarUpload = async () => {
+    if (!avatarFile || !user) return;
+    
+    try {
+      // Here you would upload to Supabase Storage
+      toast({
+        title: 'Succès',
+        description: 'Photo de profil mise à jour',
+      });
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Erreur lors de la mise à jour',
+        variant: 'destructive',
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -320,23 +332,17 @@ const Profile: React.FC = () => {
         </div>
       </div>
 
-      <div className="p-4 space-y-6">
+      <div className="p-4">
         {/* User Info Card */}
-        <Card>
+        <Card className="mb-6">
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
-              <div className="relative">
-                <div className="w-16 h-16 bg-muted rounded-full overflow-hidden flex items-center justify-center">
-                  <User className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <Button 
-                  size="icon" 
-                  variant="secondary"
-                  className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full"
-                >
-                  <Camera className="w-3 h-3" />
-                </Button>
-              </div>
+              <Avatar className="w-16 h-16">
+                <AvatarImage src={avatarPreview || undefined} />
+                <AvatarFallback>
+                  <User className="w-8 h-8" />
+                </AvatarFallback>
+              </Avatar>
               
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
@@ -346,10 +352,6 @@ const Profile: React.FC = () => {
                       Démarcheur
                     </Badge>
                   )}
-                  <Badge variant="outline" className="text-orange-600 border-orange-200">
-                    <AlertCircle className="w-3 h-3 mr-1" />
-                    Non vérifié
-                  </Badge>
                 </div>
                 
                 <div className="space-y-1 text-sm text-muted-foreground">
@@ -380,7 +382,7 @@ const Profile: React.FC = () => {
         </Card>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 mb-6">
           <Card>
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
@@ -399,131 +401,305 @@ const Profile: React.FC = () => {
           </Card>
         </div>
 
-        {/* Mes Annonces */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-base">Mes annonces</CardTitle>
-            <Button size="sm" onClick={() => navigate('/new')}>
-              <Plus className="w-4 h-4 mr-1" />
-              Nouvelle
-            </Button>
-          </CardHeader>
-          <CardContent className="p-0">
-            {listings.length === 0 ? (
-              <div className="p-6 text-center text-muted-foreground">
-                <Building2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p className="mb-2">Aucune annonce pour le moment</p>
-                <p className="text-sm mb-4">Créez votre première annonce pour commencer à louer ou vendre vos biens.</p>
-                <Button onClick={() => navigate('/new')}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Créer une annonce
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
+            <TabsTrigger value="avatar">Avatar</TabsTrigger>
+            <TabsTrigger value="annonces">Annonces</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            <TabsTrigger value="verification">Vérification</TabsTrigger>
+            <TabsTrigger value="parametres">Paramètres</TabsTrigger>
+            <TabsTrigger value="aide">Aide</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="avatar" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Camera className="w-5 h-5" />
+                  Photo de profil
+                </CardTitle>
+                <CardDescription>
+                  Téléchargez une photo de profil pour personnaliser votre compte
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex flex-col items-center gap-4">
+                  <Avatar className="w-24 h-24">
+                    <AvatarImage src={avatarPreview || undefined} />
+                    <AvatarFallback>
+                      <User className="w-12 h-12" />
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  <div className="flex flex-col gap-2 w-full max-w-sm">
+                    <Label htmlFor="avatar-upload">Choisir une photo</Label>
+                    <Input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarChange}
+                      className="cursor-pointer"
+                    />
+                    {avatarFile && (
+                      <Button onClick={handleAvatarUpload} className="w-full">
+                        <Upload className="w-4 h-4 mr-2" />
+                        Sauvegarder la photo
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="annonces" className="mt-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5" />
+                  Mes annonces
+                </CardTitle>
+                <Button size="sm" onClick={() => navigate('/new')}>
+                  <Plus className="w-4 h-4 mr-1" />
+                  Nouvelle
                 </Button>
-              </div>
-            ) : (
-              <div className="space-y-0">
-                {listings.map((listing, index) => {                  
-                  const PropertyIcon = getPropertyIcon(listing.property_type);
-                  return (
-                    <div key={listing.id}>
-                      <div className="p-4 hover:bg-muted/50 transition-colors">
-                        <div className="flex items-start gap-3">
-                          <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center flex-shrink-0">
-                            <PropertyIcon className="w-6 h-6 text-muted-foreground" />
-                          </div>
-                          
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-medium text-sm truncate">{listing.title}</h3>
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {listing.neighborhood}, {listing.city}
-                                </p>
-                                <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                                  <span>{listing.area} m²</span>
-                                  {listing.bedrooms && (
-                                    <span>{listing.bedrooms} ch.</span>
-                                  )}
-                                  <Badge variant={listing.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                                    {listing.status === 'active' ? 'Actif' : 'Inactif'}
-                                  </Badge>
-                                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {listings.length === 0 ? (
+                  <div className="p-6 text-center text-muted-foreground">
+                    <Building2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p className="mb-2">Aucune annonce pour le moment</p>
+                    <p className="text-sm mb-4">Créez votre première annonce pour commencer à louer ou vendre vos biens.</p>
+                    <Button onClick={() => navigate('/new')}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Créer une annonce
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-0">
+                    {listings.map((listing, index) => {                  
+                      const PropertyIcon = getPropertyIcon(listing.property_type);
+                      return (
+                        <div key={listing.id}>
+                          <div className="p-4 hover:bg-muted/50 transition-colors">
+                            <div className="flex items-start gap-3">
+                              <div className="w-12 h-12 bg-muted rounded-md flex items-center justify-center flex-shrink-0">
+                                <PropertyIcon className="w-6 h-6 text-muted-foreground" />
                               </div>
                               
-                              <div className="text-right flex-shrink-0">
-                                <p className="font-semibold text-sm">
-                                  {formatPrice(listing.price, listing.currency)}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {listing.purpose === 'rent' ? '/mois' : ''}
-                                </p>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="font-medium text-sm truncate">{listing.title}</h3>
+                                    <p className="text-xs text-muted-foreground truncate">
+                                      {listing.neighborhood}, {listing.city}
+                                    </p>
+                                    <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                                      <span>{listing.area} m²</span>
+                                      {listing.bedrooms && (
+                                        <span>{listing.bedrooms} ch.</span>
+                                      )}
+                                      <Badge variant={listing.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                                        {listing.status === 'active' ? 'Actif' : 'Inactif'}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="text-right flex-shrink-0">
+                                    <p className="font-semibold text-sm">
+                                      {formatPrice(listing.price, listing.currency)}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {listing.purpose === 'rent' ? '/mois' : ''}
+                                    </p>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center gap-1 mt-3">
+                                  <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => navigate(`/property/${listing.id}`)}>
+                                    <Eye className="w-3 h-3 mr-1" />
+                                    Voir
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => navigate(`/edit-listing/${listing.id}`)}>
+                                    <Edit className="w-3 h-3 mr-1" />
+                                    Modifier
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="h-7 px-2 text-destructive hover:text-destructive" onClick={() => handleDeleteListing(listing.id)}>
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
                               </div>
                             </div>
-                            
-                            <div className="flex items-center gap-1 mt-3">
-                              <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => navigate(`/property/${listing.id}`)}>
-                                <Eye className="w-3 h-3 mr-1" />
-                                Voir
-                              </Button>
-                              <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => navigate(`/edit-listing/${listing.id}`)}>
-                                <Edit className="w-3 h-3 mr-1" />
-                                Modifier
-                              </Button>
-                              <Button size="sm" variant="outline" className="h-7 px-2 text-destructive hover:text-destructive" onClick={() => handleDeleteListing(listing.id)}>
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
                           </div>
+                          {index < listings.length - 1 && <Separator />}
                         </div>
-                      </div>
-                      {index < listings.length - 1 && <Separator />}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* Menu */}
-        <Card>
-          <CardContent className="p-0">
-            {menuItems.map((item, index) => (
-              <div key={item.label}>
-                <button
-                  onClick={item.action}
-                  className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <item.icon className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium">{item.label}</span>
+          <TabsContent value="notifications" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="w-5 h-5" />
+                  Notifications
+                </CardTitle>
+                <CardDescription>
+                  Gérez vos préférences de notifications
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Notifications push</p>
+                      <p className="text-sm text-muted-foreground">Recevoir des notifications sur votre appareil</p>
+                    </div>
+                    <Switch checked={notifications} onCheckedChange={setNotifications} />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Notifications par email</p>
+                      <p className="text-sm text-muted-foreground">Recevoir des emails pour les mises à jour importantes</p>
+                    </div>
+                    <Switch />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Messages des acheteurs</p>
+                      <p className="text-sm text-muted-foreground">Notifications quand quelqu'un vous contacte</p>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="verification" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="w-5 h-5" />
+                  Vérification du compte
+                </CardTitle>
+                <CardDescription>
+                  Vérifiez votre identité pour augmenter la confiance
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                    <AlertCircle className="w-5 h-5 text-orange-600" />
+                    <div className="flex-1">
+                      <p className="font-medium text-orange-800">Compte non vérifié</p>
+                      <p className="text-sm text-orange-700">Vérifiez votre identité pour accéder à toutes les fonctionnalités</p>
+                    </div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    {item.badge && (
-                      <Badge variant={item.badgeVariant || 'secondary'}>
-                        {item.badge}
-                      </Badge>
-                    )}
-                    {item.hasSwitch ? (
-                      <Switch 
-                        checked={item.switchValue}
-                        onCheckedChange={item.onSwitchChange}
-                      />
-                    ) : (
-                      <span className="text-muted-foreground">›</span>
-                    )}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <span>Email vérifié</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <AlertCircle className="w-5 h-5 text-orange-600" />
+                      <span>Téléphone non vérifié</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <AlertCircle className="w-5 h-5 text-orange-600" />
+                      <span>Identité non vérifiée</span>
+                    </div>
                   </div>
-                </button>
-                {index < menuItems.length - 1 && <Separator />}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+                  
+                  <Button className="w-full">
+                    Commencer la vérification
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="parametres" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="w-5 h-5" />
+                  Paramètres du compte
+                </CardTitle>
+                <CardDescription>
+                  Gérez les paramètres de votre compte
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Button variant="outline" className="w-full justify-start">
+                    <User className="w-4 h-4 mr-2" />
+                    Modifier le profil
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start">
+                    <Shield className="w-4 h-4 mr-2" />
+                    Sécurité et mot de passe
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start">
+                    <Bell className="w-4 h-4 mr-2" />
+                    Préférences de notification
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Paramètres de confidentialité
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="aide" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <HelpCircle className="w-5 h-5" />
+                  Aide et support
+                </CardTitle>
+                <CardDescription>
+                  Obtenez de l'aide ou contactez notre support
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Button variant="outline" className="w-full justify-start">
+                    <HelpCircle className="w-4 h-4 mr-2" />
+                    Centre d'aide
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start">
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Contacter le support
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Signaler un problème
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start">
+                    <Star className="w-4 h-4 mr-2" />
+                    Évaluer l'application
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Logout */}
         <Button 
           variant="outline" 
-          className="w-full justify-start text-destructive" 
+          className="w-full justify-start text-destructive mt-6" 
           size="lg"
           onClick={handleLogout}
         >
