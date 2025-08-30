@@ -73,11 +73,6 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   };
 
   const handleNavigation = (item: NavItem) => {
-    if (item.id === 'messages') {
-      setShowChat(true);
-      return;
-    }
-    
     if (item.protected && !isAuthenticated) {
       navigate(`/auth?next=${encodeURIComponent(item.path)}`);
       return;
@@ -159,11 +154,6 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       <div className="flex items-end justify-around px-2 pt-2">
         {navItems.map(renderNavItem)}
       </div>
-      
-      <ChatSystem
-        isOpen={showChat}
-        onClose={() => setShowChat(false)}
-      />
     </nav>
   );
 };

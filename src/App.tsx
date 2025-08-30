@@ -27,6 +27,7 @@ import { SubscriptionProvider } from "./contexts/SubscriptionContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import LocationDetector from "./components/LocationDetector";
 import Layout from "./components/Layout";
+import Messages from "./pages/Messages";
 import { usePerformanceMonitor } from "./hooks/usePerformanceMonitor";
 
 // Performance monitoring wrapper component
@@ -94,6 +95,7 @@ const App = () => {
                     <Route path="/" element={<Home />} />
                     <Route path="/home" element={<Home />} />
                     <Route path="/map" element={<Map />} />
+                    <Route path="/messages" element={<Messages />} />
                     <Route 
                       path="/new" 
                       element={
