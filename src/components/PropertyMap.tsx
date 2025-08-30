@@ -13,6 +13,7 @@ interface PropertyMapProps {
   onMapBoundsChange?: (bounds: mapboxgl.LngLatBounds) => void;
   className?: string;
   apiKey?: string;
+  userLocation?: [number, number] | null;
 }
 
 export default function PropertyMap({ 
@@ -21,7 +22,8 @@ export default function PropertyMap({
   onPropertySelect,
   onMapBoundsChange,
   className = '',
-  apiKey
+  apiKey,
+  userLocation
 }: PropertyMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -90,8 +92,8 @@ export default function PropertyMap({
         map.current = new mapboxgl.Map({
           container: mapContainer.current,
           style: 'mapbox://styles/mapbox/light-v11',
-          center: [-4.0333, 5.3167], // Abidjan, Côte d'Ivoire
-          zoom: 11,
+          center: [-4.0333, 5.3167], // Default: Abidjan, Côte d'Ivoire
+          zoom: 6, // Start with wider view
           pitch: 0,
         });
 
@@ -105,6 +107,15 @@ export default function PropertyMap({
         map.current.on('load', () => {
           console.log('🗺️ Map loaded successfully!');
           setMapLoaded(true);
+          
+          // Center map on user location if available
+          if (userLocation && map.current) {
+            map.current.flyTo({
+              center: userLocation,
+              zoom: 12,
+              duration: 2000
+            });
+          }
         });
 
         map.current.on('error', (e) => {
@@ -133,7 +144,7 @@ export default function PropertyMap({
         map.current = null;
       }
     };
-  }, [mapboxToken, isLoading, onMapBoundsChange]);
+  }, [mapboxToken, isLoading, onMapBoundsChange, userLocation]);
 
   // Update markers when properties change
   useEffect(() => {
@@ -338,19 +349,12 @@ export default function PropertyMap({
 
       marker.setPopup(popup);
 
-      // Click event
+      // Click event - direct navigation
       el.addEventListener('click', (e) => {
         e.stopPropagation();
-        onPropertySelect(property);
         
-        // Open the popup immediately
-        popup.addTo(map.current!);
-        
-        map.current?.flyTo({
-          center: property.location.coordinates,
-          zoom: 14,
-          duration: 1000
-        });
+        // Navigate directly to property detail page
+        window.location.href = `/property/${property.id}`;
       });
 
       markers.current.push(marker);
@@ -370,26 +374,7 @@ export default function PropertyMap({
     }
   }, [properties, mapLoaded, onPropertySelect]);
 
-  // Highlight selected property
-  useEffect(() => {
-    if (!selectedProperty || !mapLoaded) return;
-
-    // Find and highlight the selected marker
-    markers.current.forEach((marker, index) => {
-      const property = properties[index];
-      const el = marker.getElement();
-      
-      if (property.id === selectedProperty.id) {
-        el.style.background = 'linear-gradient(135deg, hsl(0, 84%, 60%), hsl(38, 92%, 50%))';
-        el.style.transform = 'scale(1.2)';
-        el.style.zIndex = '1001';
-      } else {
-        el.style.background = 'linear-gradient(135deg, hsl(217, 91%, 25%), hsl(212, 100%, 47%))';
-        el.style.transform = 'scale(1)';
-        el.style.zIndex = '1';
-      }
-    });
-  }, [selectedProperty, properties, mapLoaded]);
+  // Remove the highlight effect to avoid color changes
 
   const handleApiKeySubmit = (e: React.FormEvent) => {
     e.preventDefault();

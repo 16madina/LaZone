@@ -14,7 +14,7 @@ import { SlidersHorizontal, ArrowUpDown, List } from 'lucide-react';
 
 const Map: React.FC = () => {
   const navigate = useNavigate();
-  const { selectedCountry } = useLocation();
+  const { selectedCountry, coordinates } = useLocation();
   const [searchMode] = useState<'rent' | 'buy'>('rent');
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -208,6 +208,7 @@ const Map: React.FC = () => {
             onPropertySelect={handlePropertySelect}
             className="h-full w-full"
             apiKey={mapboxToken || undefined}
+            userLocation={coordinates}
           />
         )}
 
