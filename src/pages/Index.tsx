@@ -15,6 +15,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { MapPin, List, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import { extendedMockProperties } from "@/data/extendedMockProperties";
 
+// Mapping des anciens IDs de démonstration vers les nouveaux UUIDs
+const demoIdMapping: { [key: string]: string } = {
+  '1': '00000000-0000-0000-0000-000000000001',
+  '10': '00000000-0000-0000-0000-000000000010',
+  '17': '00000000-0000-0000-0000-000000000017',
+  '18': '00000000-0000-0000-0000-000000000018',
+};
+
 const Index = () => {
   const navigate = useNavigate();
   const { selectedCountry } = useLocation();
@@ -102,7 +110,12 @@ const Index = () => {
       if (convertedProperties.length < 5) {
         const demoProperties = extendedMockProperties
           .filter(prop => prop.purpose === (searchMode === 'buy' ? 'sale' : 'rent'))
-          .slice(0, 10 - convertedProperties.length);
+          .slice(0, 10 - convertedProperties.length)
+          .map(prop => ({
+            ...prop,
+            // Map ancien ID vers nouveau UUID si disponible
+            id: demoIdMapping[prop.id] || prop.id
+          }));
         finalProperties = [...convertedProperties, ...demoProperties];
       }
 
@@ -112,7 +125,12 @@ const Index = () => {
       // Fallback to demo data if there's an error
       const demoProperties = extendedMockProperties
         .filter(prop => prop.purpose === (searchMode === 'buy' ? 'sale' : 'rent'))
-        .slice(0, 10);
+        .slice(0, 10)
+        .map(prop => ({
+          ...prop,
+          // Map ancien ID vers nouveau UUID si disponible
+          id: demoIdMapping[prop.id] || prop.id
+        }));
       setProperties(demoProperties);
     } finally {
       setLoading(false);
