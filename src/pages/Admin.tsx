@@ -4,6 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { 
   ArrowLeft,
   Users,
@@ -12,53 +17,16 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-  UserX,
-  Shield,
-  MessageSquare,
+  Ban,
   Trash2,
-  ShieldAlert,
+  MessageCircle,
   UserCheck,
-  Phone,
-  Mail,
-  MapPin,
-  MoreHorizontal,
-  Edit
+  Shield,
+  History,
+  Phone
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { formatPrice } from '@/utils/currency';
 
 interface UserRole {
@@ -83,7 +51,6 @@ interface Profile {
   ban_reason?: string;
   phone?: string;
   agency_phone?: string;
-  responsible_mobile?: string;
 }
 
 interface Listing {
@@ -97,6 +64,16 @@ interface Listing {
   user_id: string;
 }
 
+interface AdminAction {
+  id: string;
+  admin_user_id: string;
+  target_user_id: string;
+  action_type: string;
+  reason?: string;
+  details?: any;
+  created_at: string;
+}
+
 const Admin: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -106,19 +83,17 @@ const Admin: React.FC = () => {
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
+  const [adminActions, setAdminActions] = useState<AdminAction[]>([]);
+  const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
   
   // Dialog states
-  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
-  const [showBanDialog, setShowBanDialog] = useState(false);
-  const [showSmsDialog, setShowSmsDialog] = useState(false);
-  const [showRoleDialog, setShowRoleDialog] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showProfileDialog, setShowProfileDialog] = useState(false);
-  
-  // Form states
+  const [banDialogOpen, setBanDialogOpen] = useState(false);
+  const [smsDialogOpen, setSmsDialogOpen] = useState(false);
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [banReason, setBanReason] = useState('');
   const [smsMessage, setSmsMessage] = useState('');
-  const [selectedRole, setSelectedRole] = useState<'admin' | 'moderator' | 'user'>('user');
+  const [selectedRole, setSelectedRole] = useState('');
 
   useEffect(() => {
     checkAdminAccess();
@@ -154,7 +129,8 @@ const Admin: React.FC = () => {
       await Promise.all([
         fetchUserRoles(),
         fetchProfiles(),
-        fetchListings()
+        fetchListings(),
+        fetchAdminActions()
       ]);
     } catch (error) {
       console.error('Error checking admin access:', error);
@@ -207,242 +183,253 @@ const Admin: React.FC = () => {
     }
   };
 
-  // Admin actions
-  const handleBanUser = async () => {
-    if (!selectedProfile || !banReason.trim()) return;
+  const fetchAdminActions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('admin_actions')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
 
+      if (error) throw error;
+      setAdminActions(data || []);
+    } catch (error) {
+      console.error('Error fetching admin actions:', error);
+    }
+  };
+
+  const logAdminAction = async (targetUserId: string, actionType: string, reason?: string, details?: any) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      await supabase
+      await supabase.from('admin_actions').insert({
+        admin_user_id: user.id,
+        target_user_id: targetUserId,
+        action_type: actionType,
+        reason,
+        details
+      });
+
+      fetchAdminActions();
+    } catch (error) {
+      console.error('Error logging admin action:', error);
+    }
+  };
+
+  const handleBanUser = async () => {
+    if (!selectedUser || !banReason.trim()) return;
+    
+    setActionLoading(true);
+    try {
+      const { error } = await supabase
         .from('profiles')
         .update({
           account_status: 'banned',
           banned_at: new Date().toISOString(),
-          ban_reason: banReason,
-          banned_by: user.id
+          ban_reason: banReason.trim()
         })
-        .eq('user_id', selectedProfile.user_id);
+        .eq('user_id', selectedUser.user_id);
 
-      await supabase
-        .from('admin_actions')
-        .insert({
-          admin_user_id: user.id,
-          target_user_id: selectedProfile.user_id,
-          action_type: 'ban',
-          reason: banReason
-        });
+      if (error) throw error;
 
+      await logAdminAction(selectedUser.user_id, 'ban', banReason.trim());
+      
       toast({
         title: 'Utilisateur banni',
-        description: 'L\'utilisateur a été banni avec succès.',
+        description: `L'utilisateur a été banni avec succès.`,
       });
 
-      setShowBanDialog(false);
+      setBanDialogOpen(false);
       setBanReason('');
-      setSelectedProfile(null);
+      setSelectedUser(null);
       fetchProfiles();
-    } catch (error) {
-      console.error('Error banning user:', error);
+    } catch (error: any) {
       toast({
         title: 'Erreur',
         description: 'Impossible de bannir l\'utilisateur.',
-        variant: 'destructive'
+        variant: 'destructive',
       });
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleUnbanUser = async (profile: Profile) => {
+  const handleUnbanUser = async (user: Profile) => {
+    setActionLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      await supabase
+      const { error } = await supabase
         .from('profiles')
         .update({
           account_status: 'active',
           banned_at: null,
-          ban_reason: null,
-          banned_by: null
+          ban_reason: null
         })
-        .eq('user_id', profile.user_id);
-
-      await supabase
-        .from('admin_actions')
-        .insert({
-          admin_user_id: user.id,
-          target_user_id: profile.user_id,
-          action_type: 'unban'
-        });
-
-      toast({
-        title: 'Utilisateur débanni',
-        description: 'L\'utilisateur a été débanni avec succès.',
-      });
-
-      fetchProfiles();
-    } catch (error) {
-      console.error('Error unbanning user:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de débannir l\'utilisateur.',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleSendSMS = async () => {
-    if (!selectedProfile || !smsMessage.trim()) return;
-
-    try {
-      const phoneNumber = selectedProfile.phone || selectedProfile.agency_phone || selectedProfile.responsible_mobile;
-      
-      if (!phoneNumber) {
-        toast({
-          title: 'Erreur',
-          description: 'Aucun numéro de téléphone trouvé pour cet utilisateur.',
-          variant: 'destructive'
-        });
-        return;
-      }
-
-      const { error } = await supabase.functions.invoke('send-sms', {
-        body: {
-          to: phoneNumber,
-          message: smsMessage
-        }
-      });
+        .eq('user_id', user.user_id);
 
       if (error) throw error;
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('admin_actions')
-          .insert({
-            admin_user_id: user.id,
-            target_user_id: selectedProfile.user_id,
-            action_type: 'message',
-            details: { message: smsMessage, phone: phoneNumber }
-          });
-      }
-
+      await logAdminAction(user.user_id, 'unban');
+      
       toast({
-        title: 'SMS envoyé',
-        description: 'Le message a été envoyé avec succès.',
+        title: 'Utilisateur débanni',
+        description: 'L\'utilisateur peut à nouveau accéder à l\'application.',
       });
 
-      setShowSmsDialog(false);
-      setSmsMessage('');
-      setSelectedProfile(null);
-    } catch (error) {
-      console.error('Error sending SMS:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible d\'envoyer le SMS.',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleChangeRole = async () => {
-    if (!selectedProfile || !selectedRole) return;
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Remove existing roles
-      await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', selectedProfile.user_id);
-
-      // Add new role if not 'user'
-      if (selectedRole !== 'user') {
-        await supabase
-          .from('user_roles')
-          .insert({
-            user_id: selectedProfile.user_id,
-            role: selectedRole as 'admin' | 'moderator'
-          });
-      }
-
-      await supabase
-        .from('admin_actions')
-        .insert({
-          admin_user_id: user.id,
-          target_user_id: selectedProfile.user_id,
-          action_type: selectedRole === 'user' ? 'demote' : 'promote',
-          details: { new_role: selectedRole }
-        });
-
-      toast({
-        title: 'Rôle modifié',
-        description: `L'utilisateur est maintenant ${selectedRole}.`,
-      });
-
-      setShowRoleDialog(false);
-      setSelectedRole('user');
-      setSelectedProfile(null);
-      fetchUserRoles();
       fetchProfiles();
-    } catch (error) {
-      console.error('Error changing role:', error);
+    } catch (error: any) {
       toast({
         title: 'Erreur',
-        description: 'Impossible de modifier le rôle.',
-        variant: 'destructive'
+        description: 'Impossible de débannir l\'utilisateur.',
+        variant: 'destructive',
       });
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleDeleteAccount = async () => {
-    if (!selectedProfile) return;
+  const handleDeleteAccount = async (user: Profile) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce compte ? Cette action est irréversible.')) {
+      return;
+    }
 
+    setActionLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      // Delete user account via Supabase auth admin
+      const { error } = await supabase.auth.admin.deleteUser(user.user_id);
+      
+      if (error) throw error;
 
-      // Log the action before deleting
-      await supabase
-        .from('admin_actions')
-        .insert({
-          admin_user_id: user.id,
-          target_user_id: selectedProfile.user_id,
-          action_type: 'delete'
-        });
-
-      // Delete user data (cascade will handle related data)
-      await supabase.auth.admin.deleteUser(selectedProfile.user_id);
-
+      await logAdminAction(user.user_id, 'delete', 'Account deleted by admin');
+      
       toast({
         title: 'Compte supprimé',
         description: 'Le compte utilisateur a été supprimé définitivement.',
       });
 
-      setShowDeleteDialog(false);
-      setSelectedProfile(null);
       fetchProfiles();
-      fetchUserRoles();
-    } catch (error) {
-      console.error('Error deleting account:', error);
+    } catch (error: any) {
       toast({
         title: 'Erreur',
         description: 'Impossible de supprimer le compte.',
-        variant: 'destructive'
+        variant: 'destructive',
       });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSendSMS = async () => {
+    if (!selectedUser || !smsMessage.trim()) return;
+    
+    const phoneNumber = selectedUser.phone || selectedUser.agency_phone;
+    if (!phoneNumber) {
+      toast({
+        title: 'Erreur',
+        description: 'Aucun numéro de téléphone disponible pour cet utilisateur.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-sms', {
+        body: {
+          to: phoneNumber,
+          message: smsMessage.trim()
+        }
+      });
+
+      if (error) throw error;
+
+      await logAdminAction(selectedUser.user_id, 'message', 'SMS sent', { 
+        phone: phoneNumber, 
+        message: smsMessage.trim() 
+      });
+      
+      toast({
+        title: 'SMS envoyé',
+        description: 'Le message a été envoyé avec succès.',
+      });
+
+      setSmsDialogOpen(false);
+      setSmsMessage('');
+      setSelectedUser(null);
+    } catch (error: any) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'envoyer le SMS.',
+        variant: 'destructive',
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleChangeUserRole = async () => {
+    if (!selectedUser || !selectedRole) return;
+
+    setActionLoading(true);
+    try {
+      if (selectedRole === 'remove') {
+        // Remove all roles
+        const { error } = await supabase
+          .from('user_roles')
+          .delete()
+          .eq('user_id', selectedUser.user_id);
+
+        if (error) throw error;
+
+        await logAdminAction(selectedUser.user_id, 'demote', 'All roles removed');
+        
+        toast({
+          title: 'Rôles supprimés',
+          description: 'Tous les rôles ont été supprimés de cet utilisateur.',
+        });
+      } else {
+        // Add new role
+        const { error } = await supabase.from('user_roles').insert({
+          user_id: selectedUser.user_id,
+          role: selectedRole as 'admin' | 'moderator'
+        });
+
+        if (error) throw error;
+
+        await logAdminAction(selectedUser.user_id, 'promote', `Role assigned: ${selectedRole}`);
+        
+        toast({
+          title: 'Rôle assigné',
+          description: `L'utilisateur a reçu le rôle ${selectedRole}.`,
+        });
+      }
+
+      setRoleDialogOpen(false);
+      setSelectedRole('');
+      setSelectedUser(null);
+      fetchUserRoles();
+    } catch (error: any) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de modifier le rôle.',
+        variant: 'destructive',
+      });
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const getUserRole = (userId: string) => {
-    const role = userRoles.find(r => r.user_id === userId);
-    return role?.role || 'user';
+    return userRoles.find(role => role.user_id === userId)?.role;
   };
 
-  const getPhoneNumber = (profile: Profile) => {
-    return profile.phone || profile.agency_phone || profile.responsible_mobile || 'Non renseigné';
+  const getStatusBadgeVariant = (status?: string) => {
+    switch (status) {
+      case 'banned': return 'destructive';
+      case 'suspended': return 'secondary';
+      case 'active': 
+      default: return 'default';
+    }
   };
 
   if (loading) {
@@ -483,7 +470,7 @@ const Admin: React.FC = () => {
 
       <div className="p-4">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card>
             <CardContent className="p-4 text-center">
               <Users className="w-8 h-8 text-primary mx-auto mb-2" />
@@ -507,16 +494,26 @@ const Admin: React.FC = () => {
               <p className="text-sm text-muted-foreground">Administrateurs</p>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardContent className="p-4 text-center">
+              <Ban className="w-8 h-8 text-destructive mx-auto mb-2" />
+              <div className="text-2xl font-bold">{profiles.filter(p => p.account_status === 'banned').length}</div>
+              <p className="text-sm text-muted-foreground">Comptes bannis</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="users">Utilisateurs</TabsTrigger>
             <TabsTrigger value="listings">Annonces</TabsTrigger>
             <TabsTrigger value="roles">Rôles</TabsTrigger>
+            <TabsTrigger value="actions">Historique</TabsTrigger>
           </TabsList>
 
+          {/* Users Management Tab */}
           <TabsContent value="users" className="mt-6">
             <Card>
               <CardHeader>
@@ -525,127 +522,122 @@ const Admin: React.FC = () => {
                   Gestion des utilisateurs
                 </CardTitle>
                 <CardDescription>
-                  Liste de tous les utilisateurs inscrits
+                  Gérer les comptes, bannir, supprimer ou envoyer des messages
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="space-y-2 p-4">
-                  {profiles.map((profile) => (
-                    <div key={profile.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 font-medium">
-                          {profile.user_type === 'agence' 
-                            ? profile.agency_name 
-                            : `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Utilisateur'
-                          }
-                          {profile.account_status === 'banned' && (
-                            <Badge variant="destructive" className="text-xs">
-                              <UserX className="w-3 h-3 mr-1" />
-                              Banni
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="text-sm text-muted-foreground flex items-center gap-4">
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {profile.city && profile.country 
-                              ? `${profile.city}, ${profile.country}`
-                              : 'Localisation non spécifiée'
-                            }
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Phone className="w-3 h-3" />
-                            {getPhoneNumber(profile)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Utilisateur</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Localisation</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Annonces</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {profiles.map((profile) => (
+                      <TableRow key={profile.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {profile.user_type === 'agence' 
+                                ? profile.agency_name 
+                                : `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Utilisateur'
+                              }
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {profile.phone || profile.agency_phone || 'Pas de téléphone'}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
                           <Badge variant={profile.user_type === 'agence' ? 'default' : 'secondary'}>
                             {profile.user_type}
                           </Badge>
-                          <Badge variant="outline">
-                            {getUserRole(profile.user_id)}
+                        </TableCell>
+                        <TableCell>
+                          {profile.city && profile.country 
+                            ? `${profile.city}, ${profile.country}`
+                            : 'Non spécifiée'
+                          }
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getStatusBadgeVariant(profile.account_status)}>
+                            {profile.account_status || 'active'}
                           </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {profile.listing_count || 0} annonces
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedProfile(profile);
-                                setShowProfileDialog(true);
-                              }}
-                            >
-                              <Edit className="w-4 h-4 mr-2" />
-                              Voir le profil
-                            </DropdownMenuItem>
+                        </TableCell>
+                        <TableCell>{profile.listing_count || 0}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
                             {profile.account_status === 'banned' ? (
-                              <DropdownMenuItem
+                              <Button 
+                                size="sm" 
+                                variant="outline"
                                 onClick={() => handleUnbanUser(profile)}
-                                className="text-green-600"
+                                disabled={actionLoading}
                               >
-                                <UserCheck className="w-4 h-4 mr-2" />
-                                Débannir
-                              </DropdownMenuItem>
+                                <UserCheck className="w-4 h-4" />
+                              </Button>
                             ) : (
-                              <DropdownMenuItem
+                              <Button 
+                                size="sm" 
+                                variant="outline"
                                 onClick={() => {
-                                  setSelectedProfile(profile);
-                                  setShowBanDialog(true);
+                                  setSelectedUser(profile);
+                                  setBanDialogOpen(true);
                                 }}
-                                className="text-yellow-600"
+                                disabled={actionLoading}
                               >
-                                <ShieldAlert className="w-4 h-4 mr-2" />
-                                Bannir
-                              </DropdownMenuItem>
+                                <Ban className="w-4 h-4" />
+                              </Button>
                             )}
-                            <DropdownMenuItem
+                            
+                            <Button 
+                              size="sm" 
+                              variant="outline"
                               onClick={() => {
-                                setSelectedProfile(profile);
-                                setSelectedRole(getUserRole(profile.user_id) as 'admin' | 'moderator' | 'user');
-                                setShowRoleDialog(true);
+                                setSelectedUser(profile);
+                                setSmsDialogOpen(true);
                               }}
+                              disabled={actionLoading || (!profile.phone && !profile.agency_phone)}
                             >
-                              <Shield className="w-4 h-4 mr-2" />
-                              Changer le rôle
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
+                              <MessageCircle className="w-4 h-4" />
+                            </Button>
+                            
+                            <Button 
+                              size="sm" 
+                              variant="outline"
                               onClick={() => {
-                                setSelectedProfile(profile);
-                                setShowSmsDialog(true);
+                                setSelectedUser(profile);
+                                setRoleDialogOpen(true);
                               }}
+                              disabled={actionLoading}
                             >
-                              <MessageSquare className="w-4 h-4 mr-2" />
-                              Envoyer SMS
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedProfile(profile);
-                                setShowDeleteDialog(true);
-                              }}
-                              className="text-red-600"
+                              <Shield className="w-4 h-4" />
+                            </Button>
+                            
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleDeleteAccount(profile)}
+                              disabled={actionLoading}
                             >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Supprimer
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* Listings Tab */}
           <TabsContent value="listings" className="mt-6">
             <Card>
               <CardHeader>
@@ -658,31 +650,38 @@ const Admin: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="space-y-2 p-4">
-                  {listings.map((listing) => (
-                    <div key={listing.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex-1">
-                        <div className="font-medium">{listing.title}</div>
-                        <div className="text-sm text-muted-foreground">{listing.city}</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="text-right">
-                          <div className="font-medium">{formatPrice(listing.price, listing.currency)}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {new Date(listing.created_at).toLocaleDateString()}
-                          </div>
-                        </div>
-                        <Badge variant={listing.status === 'active' ? 'default' : 'secondary'}>
-                          {listing.status === 'active' ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Titre</TableHead>
+                      <TableHead>Ville</TableHead>
+                      <TableHead>Prix</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {listings.map((listing) => (
+                      <TableRow key={listing.id}>
+                        <TableCell className="font-medium">{listing.title}</TableCell>
+                        <TableCell>{listing.city}</TableCell>
+                        <TableCell>{formatPrice(listing.price, listing.currency)}</TableCell>
+                        <TableCell>
+                          <Badge variant={listing.status === 'active' ? 'default' : 'secondary'}>
+                            {listing.status === 'active' ? <CheckCircle className="w-3 h-3 mr-1" /> : <XCircle className="w-3 h-3 mr-1" />}
+                            {listing.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{new Date(listing.created_at).toLocaleDateString()}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* Roles Tab */}
           <TabsContent value="roles" className="mt-6">
             <Card>
               <CardHeader>
@@ -695,236 +694,204 @@ const Admin: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="space-y-2 p-4">
-                  {userRoles.map((userRole) => {
-                    const profile = profiles.find(p => p.user_id === userRole.user_id);
-                    return (
-                      <div key={userRole.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="font-medium">
-                            {profile?.user_type === 'agence' 
-                              ? profile.agency_name 
-                              : `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Utilisateur'
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Utilisateur</TableHead>
+                      <TableHead>Rôle</TableHead>
+                      <TableHead>Assigné le</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {userRoles.map((userRole) => {
+                      const profile = profiles.find(p => p.user_id === userRole.user_id);
+                      return (
+                        <TableRow key={userRole.id}>
+                          <TableCell>
+                            <div className="font-medium">
+                              {profile?.user_type === 'agence' 
+                                ? profile.agency_name 
+                                : `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Utilisateur'
+                              }
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={userRole.role === 'admin' ? 'destructive' : 'default'}>
+                              {userRole.role === 'admin' && <Crown className="w-3 h-3 mr-1" />}
+                              {userRole.role === 'moderator' && <Shield className="w-3 h-3 mr-1" />}
+                              {userRole.role}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{new Date(userRole.created_at).toLocaleDateString()}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Admin Actions History Tab */}
+          <TabsContent value="actions" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <History className="w-5 h-5" />
+                  Historique des actions
+                </CardTitle>
+                <CardDescription>
+                  Toutes les actions administratives effectuées
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Action</TableHead>
+                      <TableHead>Utilisateur ciblé</TableHead>
+                      <TableHead>Raison</TableHead>
+                      <TableHead>Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {adminActions.map((action) => {
+                      const targetProfile = profiles.find(p => p.user_id === action.target_user_id);
+                      return (
+                        <TableRow key={action.id}>
+                          <TableCell>
+                            <Badge variant={
+                              action.action_type === 'ban' ? 'destructive' : 
+                              action.action_type === 'delete' ? 'destructive' : 
+                              'default'
+                            }>
+                              {action.action_type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {targetProfile?.user_type === 'agence' 
+                              ? targetProfile.agency_name 
+                              : `${targetProfile?.first_name || ''} ${targetProfile?.last_name || ''}`.trim() || 'Utilisateur supprimé'
                             }
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            Depuis le {new Date(userRole.created_at).toLocaleDateString()}
-                          </div>
-                        </div>
-                        <Badge variant={userRole.role === 'admin' ? 'destructive' : 'default'}>
-                          {userRole.role === 'admin' && <Crown className="w-3 h-3 mr-1" />}
-                          {userRole.role}
-                        </Badge>
-                      </div>
-                    );
-                  })}
-                </div>
+                          </TableCell>
+                          <TableCell>{action.reason || '-'}</TableCell>
+                          <TableCell>{new Date(action.created_at).toLocaleDateString()}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
 
-      {/* Dialogs */}
       {/* Ban User Dialog */}
-      <Dialog open={showBanDialog} onOpenChange={setShowBanDialog}>
+      <Dialog open={banDialogOpen} onOpenChange={setBanDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Bannir l'utilisateur</DialogTitle>
             <DialogDescription>
-              Cette action bannira définitivement l'utilisateur. Il ne pourra plus se connecter à son compte.
+              Cette action bannira l'utilisateur et l'empêchera d'accéder à l'application.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="ban-reason">Raison du bannissement</Label>
-              <Textarea
-                id="ban-reason"
-                placeholder="Expliquez la raison du bannissement..."
-                value={banReason}
-                onChange={(e) => setBanReason(e.target.value)}
-              />
-            </div>
+          <div className="grid gap-4 py-4">
+            <Textarea
+              placeholder="Raison du bannissement..."
+              value={banReason}
+              onChange={(e) => setBanReason(e.target.value)}
+            />
           </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowBanDialog(false)}>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBanDialogOpen(false)}>
               Annuler
             </Button>
-            <Button variant="destructive" onClick={handleBanUser} disabled={!banReason.trim()}>
+            <Button 
+              variant="destructive" 
+              onClick={handleBanUser}
+              disabled={actionLoading || !banReason.trim()}
+            >
               Bannir
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* SMS Dialog */}
-      <Dialog open={showSmsDialog} onOpenChange={setShowSmsDialog}>
+      {/* Send SMS Dialog */}
+      <Dialog open={smsDialogOpen} onOpenChange={setSmsDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Envoyer un SMS</DialogTitle>
             <DialogDescription>
-              Envoyez un message SMS à {selectedProfile?.first_name || selectedProfile?.agency_name || 'cet utilisateur'}.
+              Envoi d'un message vers {selectedUser?.phone || selectedUser?.agency_phone}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="sms-message">Message</Label>
-              <Textarea
-                id="sms-message"
-                placeholder="Tapez votre message..."
-                value={smsMessage}
-                onChange={(e) => setSmsMessage(e.target.value)}
-                maxLength={160}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                {smsMessage.length}/160 caractères
-              </p>
+          <div className="grid gap-4 py-4">
+            <Textarea
+              placeholder="Votre message..."
+              value={smsMessage}
+              onChange={(e) => setSmsMessage(e.target.value)}
+              maxLength={160}
+            />
+            <div className="text-sm text-muted-foreground text-right">
+              {smsMessage.length}/160 caractères
             </div>
           </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowSmsDialog(false)}>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSmsDialogOpen(false)}>
               Annuler
             </Button>
-            <Button onClick={handleSendSMS} disabled={!smsMessage.trim()}>
-              Envoyer SMS
+            <Button 
+              onClick={handleSendSMS}
+              disabled={actionLoading || !smsMessage.trim()}
+            >
+              <Phone className="w-4 h-4 mr-2" />
+              Envoyer
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Role Dialog */}
-      <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
+      {/* Change Role Dialog */}
+      <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Modifier le rôle</DialogTitle>
+            <DialogTitle>Gérer les rôles</DialogTitle>
             <DialogDescription>
-              Changez le rôle de {selectedProfile?.first_name || selectedProfile?.agency_name || 'cet utilisateur'}.
+              Modifier le rôle de l'utilisateur sélectionné
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="role-select">Nouveau rôle</Label>
-              <Select 
-                value={selectedRole} 
-                onValueChange={(value: 'admin' | 'moderator' | 'user') => setSelectedRole(value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionnez un rôle" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">Utilisateur</SelectItem>
-                  <SelectItem value="moderator">Modérateur</SelectItem>
-                  <SelectItem value="admin">Administrateur</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="grid gap-4 py-4">
+            <Select value={selectedRole} onValueChange={setSelectedRole}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choisir un rôle" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin">Administrateur</SelectItem>
+                <SelectItem value="moderator">Modérateur</SelectItem>
+                <SelectItem value="remove">Supprimer tous les rôles</SelectItem>
+              </SelectContent>
+            </Select>
+            {selectedUser && (
+              <div className="text-sm text-muted-foreground">
+                Rôle actuel: {getUserRole(selectedUser.user_id) || 'Aucun rôle spécial'}
+              </div>
+            )}
           </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowRoleDialog(false)}>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRoleDialogOpen(false)}>
               Annuler
             </Button>
-            <Button onClick={handleChangeRole} disabled={!selectedRole}>
+            <Button 
+              onClick={handleChangeUserRole}
+              disabled={actionLoading || !selectedRole}
+            >
               Modifier le rôle
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Profile Details Dialog */}
-      <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Profil de l'utilisateur</DialogTitle>
-            <DialogDescription>
-              Informations détaillées de l'utilisateur
-            </DialogDescription>
-          </DialogHeader>
-          {selectedProfile && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Nom complet</Label>
-                <p className="text-sm font-medium">
-                  {selectedProfile.user_type === 'agence' 
-                    ? selectedProfile.agency_name 
-                    : `${selectedProfile.first_name || ''} ${selectedProfile.last_name || ''}`.trim() || 'Non renseigné'
-                  }
-                </p>
-              </div>
-              <div>
-                <Label>Type de compte</Label>
-                <p className="text-sm font-medium">{selectedProfile.user_type}</p>
-              </div>
-              <div>
-                <Label>Statut du compte</Label>
-                <Badge variant={selectedProfile.account_status === 'banned' ? 'destructive' : 'default'}>
-                  {selectedProfile.account_status || 'active'}
-                </Badge>
-              </div>
-              <div>
-                <Label>Rôle</Label>
-                <p className="text-sm font-medium">{getUserRole(selectedProfile.user_id)}</p>
-              </div>
-              <div>
-                <Label>Pays</Label>
-                <p className="text-sm font-medium">{selectedProfile.country || 'Non renseigné'}</p>
-              </div>
-              <div>
-                <Label>Ville</Label>
-                <p className="text-sm font-medium">{selectedProfile.city || 'Non renseigné'}</p>
-              </div>
-              <div>
-                <Label>Téléphone</Label>
-                <p className="text-sm font-medium">{getPhoneNumber(selectedProfile)}</p>
-              </div>
-              <div>
-                <Label>Nombre d'annonces</Label>
-                <p className="text-sm font-medium">{selectedProfile.listing_count || 0}</p>
-              </div>
-              {selectedProfile.account_status === 'banned' && (
-                <>
-                  <div>
-                    <Label>Banni le</Label>
-                    <p className="text-sm font-medium">
-                      {selectedProfile.banned_at ? new Date(selectedProfile.banned_at).toLocaleDateString() : 'N/A'}
-                    </p>
-                  </div>
-                  <div className="col-span-2">
-                    <Label>Raison du bannissement</Label>
-                    <p className="text-sm font-medium">{selectedProfile.ban_reason || 'Aucune raison spécifiée'}</p>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-          <div className="flex justify-end">
-            <Button onClick={() => setShowProfileDialog(false)}>
-              Fermer
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Cette action ne peut pas être annulée. Cela supprimera définitivement le compte de l'utilisateur
-              et toutes ses données associées (annonces, favoris, etc.).
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteAccount}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Supprimer définitivement
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

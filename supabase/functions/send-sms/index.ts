@@ -1,12 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
-const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
 
 interface SMSRequest {
   to: string;
@@ -14,83 +11,74 @@ interface SMSRequest {
   from?: string;
 }
 
-const handler = async (req: Request): Promise<Response> => {
+serve(async (req) => {
   // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
-      throw new Error("Twilio credentials not configured");
-    }
-
     const { to, message, from }: SMSRequest = await req.json();
 
     if (!to || !message) {
-      throw new Error("Phone number and message are required");
+      throw new Error('Phone number and message are required');
     }
 
-    // Format phone number to E.164 format if needed
-    const formattedTo = to.startsWith('+') ? to : `+${to}`;
+    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
 
-    // Create Twilio request
-    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
+    if (!accountSid || !authToken) {
+      throw new Error('Twilio credentials not configured');
+    }
+
+    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
     
-    const params = new URLSearchParams({
-      To: formattedTo,
-      Body: message,
-      From: from || "+12345678900", // Default Twilio number - user should replace this
-    });
+    // Create the authorization header
+    const credentials = btoa(`${accountSid}:${authToken}`);
+    
+    // Prepare form data
+    const formData = new URLSearchParams();
+    formData.append('To', to);
+    formData.append('Body', message);
+    formData.append('From', from || '+12345678900'); // Default Twilio number
+
+    console.log('Sending SMS to:', to);
+    console.log('Message:', message);
 
     const response = await fetch(twilioUrl, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Authorization": `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
-        "Content-Type": "application/x-www-form-urlencoded",
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: params.toString(),
+      body: formData.toString(),
     });
 
-    const result = await response.json();
-
     if (!response.ok) {
-      console.error("Twilio error:", result);
-      throw new Error(result.message || "Failed to send SMS");
+      const error = await response.text();
+      console.error('Twilio API error:', error);
+      throw new Error(`Failed to send SMS: ${response.status}`);
     }
 
-    console.log("SMS sent successfully:", result.sid);
+    const result = await response.json();
+    console.log('SMS sent successfully:', result.sid);
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        sid: result.sid,
-        message: "SMS sent successfully"
-      }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          ...corsHeaders,
-        },
-      }
-    );
+    return new Response(JSON.stringify({ 
+      success: true, 
+      messageSid: result.sid,
+      status: result.status 
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
   } catch (error: any) {
-    console.error("Error in send-sms function:", error);
-    return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        success: false 
-      }),
-      {
-        status: 500,
-        headers: { 
-          "Content-Type": "application/json", 
-          ...corsHeaders 
-        },
-      }
-    );
+    console.error('Error in send-sms function:', error);
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      success: false 
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
-};
-
-serve(handler);
+});
