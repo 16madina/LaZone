@@ -23,6 +23,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Autocomplete } from "@/components/ui/autocomplete";
+import { searchCities, searchNeighborhoods } from "@/data/africanCities";
 
 interface ListingData {
   purpose: 'rent' | 'sale';
@@ -579,20 +581,35 @@ export default function CreateListing() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Ville</Label>
-                  <Input
+                  <Autocomplete
                     value={formData.city}
-                    onChange={(e) => updateFormData({ city: e.target.value })}
+                    onValueChange={(value) => {
+                      updateFormData({ 
+                        city: value,
+                        neighborhood: '' // Reset neighborhood when city changes
+                      });
+                    }}
+                    options={selectedCountry ? searchCities(selectedCountry, '') : []}
                     placeholder="Ex: Abidjan"
+                    searchPlaceholder="Rechercher une ville..."
+                    emptyText="Aucune ville trouvée"
                   />
                   {errors.city && <p className="text-sm text-destructive">{errors.city}</p>}
                 </div>
                 
                 <div className="space-y-2">
                   <Label>Quartier</Label>
-                  <Input
+                  <Autocomplete
                     value={formData.neighborhood}
-                    onChange={(e) => updateFormData({ neighborhood: e.target.value })}
+                    onValueChange={(value) => updateFormData({ neighborhood: value })}
+                    options={selectedCountry && formData.city 
+                      ? searchNeighborhoods(selectedCountry, formData.city, '') 
+                      : []
+                    }
                     placeholder="Ex: Cocody"
+                    searchPlaceholder="Rechercher un quartier..."
+                    emptyText="Sélectionnez d'abord une ville"
+                    disabled={!formData.city}
                   />
                   {errors.neighborhood && <p className="text-sm text-destructive">{errors.neighborhood}</p>}
                 </div>
