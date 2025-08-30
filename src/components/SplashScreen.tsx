@@ -71,7 +71,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
           
           {/* Logo image */}
           <img
-            src="/lovable-uploads/4e0f3827-e483-401c-bf40-d181e52ca0e6.png"
+            src="/lovable-uploads/afc0b444-106c-4155-8e47-6bbadcb70189.png"
             alt="LaZone Logo"
             className={`relative w-32 h-32 md:w-40 md:h-40 object-contain drop-shadow-2xl transition-all duration-500 ${
               animationPhase === 'pulse' ? 'animate-pulse' : ''
