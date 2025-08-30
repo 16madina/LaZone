@@ -10,6 +10,7 @@ import Map from "./pages/Map";
 import CreateListing from "./pages/CreateListing";
 import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import Stats from "./pages/Stats";
 import PropertyDetail from "./pages/PropertyDetail";
@@ -100,6 +101,14 @@ const App = () => {
                     <Route path="/payment-success" element={<PaymentSuccess />} />
                     <Route path="/subscription-success" element={<SubscriptionSuccess />} />
                     <Route path="/property/:id" element={<PropertyDetail />} />
+                    <Route 
+                      path="/settings" 
+                      element={
+                        <ProtectedRoute>
+                          <Settings />
+                        </ProtectedRoute>
+                      } 
+                    />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
