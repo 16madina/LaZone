@@ -654,6 +654,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_verified_agent: {
+        Args: { user_id_param: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
