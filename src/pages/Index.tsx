@@ -114,27 +114,31 @@ const Index = () => {
         })
       );
 
-      // Add demo properties if we have less than 5 real properties
+      // Add demo properties to diversify the listings (always mix some demo properties)
       let finalProperties = convertedProperties;
-      if (convertedProperties.length < 5) {
-        let demoProperties;
-        if (searchMode === 'commercial') {
-          demoProperties = extendedMockProperties
-            .filter(prop => prop.type === 'commercial');
-        } else {
-          const targetPurpose = searchMode === 'buy' ? 'sale' : 'rent';
-          demoProperties = extendedMockProperties
-            .filter(prop => prop.purpose === targetPurpose);
-        }
-        demoProperties = demoProperties
-          .slice(0, 10 - convertedProperties.length)
-          .map((prop, index) => ({
-            ...prop,
-            // Generate unique ID to avoid duplicates
-            id: generateUniqueId(prop.id, index)
-          }));
-        finalProperties = [...convertedProperties, ...demoProperties];
+      
+      // Always add some demo properties to show variety in agents
+      let demoProperties;
+      if (searchMode === 'commercial') {
+        demoProperties = extendedMockProperties
+          .filter(prop => prop.type === 'commercial');
+      } else {
+        const targetPurpose = searchMode === 'buy' ? 'sale' : 'rent';
+        demoProperties = extendedMockProperties
+          .filter(prop => prop.purpose === targetPurpose);
       }
+      
+      // Take up to 3 demo properties to mix with real ones
+      demoProperties = demoProperties
+        .slice(0, 3)
+        .map((prop, index) => ({
+          ...prop,
+          // Generate unique ID to avoid duplicates
+          id: generateUniqueId(prop.id, index)
+        }));
+      
+      // Mix demo properties with real ones (demo first to ensure variety)
+      finalProperties = [...demoProperties, ...convertedProperties];
 
       setProperties(finalProperties);
     } catch (error) {
