@@ -448,15 +448,32 @@ export default function PropertyDetail() {
                 </div>
 
                 <div className="space-y-3">
-                  <Button className="w-full" size="lg">
+                  <Button 
+                    className="w-full" 
+                    size="lg"
+                    onClick={() => window.open('tel:+2250787123456', '_self')}
+                  >
                     <Phone className="w-4 h-4 mr-2" />
                     Appeler
                   </Button>
-                  <Button variant="outline" className="w-full" size="lg">
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    size="lg"
+                    onClick={() => navigate('/messages')}
+                  >
                     <MessageCircle className="w-4 h-4 mr-2" />
                     Message
                   </Button>
-                  <Button variant="outline" className="w-full" size="lg">
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    size="lg"
+                    onClick={() => {
+                      const message = `Bonjour, je suis intéressé(e) par la propriété "${property.title}" à ${property.location.neighborhood}. Pourrions-nous planifier une visite ? Merci.`;
+                      window.open(`https://wa.me/2250787123456?text=${encodeURIComponent(message)}`, '_blank');
+                    }}
+                  >
                     <Calendar className="w-4 h-4 mr-2" />
                     Planifier une visite
                   </Button>
