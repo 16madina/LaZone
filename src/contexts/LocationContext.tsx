@@ -66,74 +66,163 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
     };
   });
 
-  // Reverse geocoding amélioré avec zones plus larges
+  // Géocodage inversé réel utilisant l'API Nominatim (OpenStreetMap)
   const reverseGeocode = async (lat: number, lng: number): Promise<{ country?: string; city?: string }> => {
-    // Zones précises
-    if (lat >= 4.5 && lat <= 6.5 && lng >= -6.0 && lng <= -2.5) {
-      return { country: 'Côte d\'Ivoire', city: 'Abidjan' };
-    }
-    if (lat >= 13.5 && lat <= 15.5 && lng >= -18.0 && lng <= -15.5) {
-      return { country: 'Sénégal', city: 'Dakar' };
-    }
-    if (lat >= 5.5 && lat <= 7.5 && lng >= 2.5 && lng <= 4.5) {
-      return { country: 'Nigeria', city: 'Lagos' };
-    }
-    if (lat >= 5.0 && lat <= 6.5 && lng >= -1.5 && lng <= 0.5) {
-      return { country: 'Ghana', city: 'Accra' };
-    }
-    if (lat >= 3.0 && lat <= 5.0 && lng >= 8.5 && lng <= 10.5) {
-      return { country: 'Cameroun', city: 'Douala' };
-    }
-    if (lat >= -2.0 && lat <= -0.5 && lng >= 36.0 && lng <= 37.5) {
-      return { country: 'Kenya', city: 'Nairobi' };
-    }
-    if (lat >= 32.5 && lat <= 34.5 && lng >= -8.5 && lng <= -6.5) {
-      return { country: 'Maroc', city: 'Casablanca' };
-    }
-    if (lat >= 35.5 && lat <= 37.5 && lng >= 9.5 && lng <= 11.5) {
-      return { country: 'Tunisie', city: 'Tunis' };
-    }
-    if (lat >= 29.5 && lat <= 31.5 && lng >= 30.5 && lng <= 32.5) {
-      return { country: 'Égypte', city: 'Le Caire' };
-    }
-    if (lat >= -27.0 && lat <= -25.5 && lng >= 27.0 && lng <= 29.0) {
-      return { country: 'Afrique du Sud', city: 'Johannesburg' };
-    }
-    if (lat >= 8.5 && lat <= 9.5 && lng >= 38.5 && lng <= 39.5) {
-      return { country: 'Éthiopie', city: 'Addis-Abeba' };
-    }
-    if (lat >= 6.0 && lat <= 7.0 && lng >= 0.5 && lng <= 1.5) {
-      return { country: 'Togo', city: 'Lomé' };
-    }
-    if (lat >= 6.0 && lat <= 7.0 && lng >= 2.0 && lng <= 3.0) {
-      return { country: 'Bénin', city: 'Cotonou' };
-    }
-
-    // Zones régionales plus larges pour l'Afrique
-    if (lat >= -35 && lat <= 37 && lng >= -20 && lng <= 52) {
-      // Détermination approximative par région
-      if (lat >= 30 && lng >= -20 && lng <= 35) {
-        return { country: 'Maroc', city: 'Région Nord' };
-      }
-      if (lat >= 15 && lat <= 30 && lng >= -20 && lng <= 25) {
-        return { country: 'Sénégal', city: 'Région Ouest' };
-      }
-      if (lat >= 0 && lat <= 15 && lng >= -20 && lng <= 25) {
-        return { country: 'Côte d\'Ivoire', city: 'Région Centrale' };
-      }
-      if (lat >= -35 && lat <= 0 && lng >= 15 && lng <= 35) {
-        return { country: 'Afrique du Sud', city: 'Région Sud' };
-      }
-      if (lat >= 0 && lat <= 20 && lng >= 25 && lng <= 52) {
-        return { country: 'Kenya', city: 'Région Est' };
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=fr`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Erreur API géocodage');
       }
       
-      // Fallback général pour l'Afrique
+      const data = await response.json();
+      
+      if (data && data.address) {
+        let country = data.address.country;
+        let city = data.address.city || data.address.town || data.address.village || data.address.state;
+        
+        // Traduction des noms de pays en français
+        const countryTranslations: { [key: string]: string } = {
+          'Ivory Coast': 'Côte d\'Ivoire',
+          'Cote d\'Ivoire': 'Côte d\'Ivoire',
+          'Senegal': 'Sénégal',
+          'Nigeria': 'Nigeria',
+          'Ghana': 'Ghana',
+          'Cameroon': 'Cameroun',
+          'Kenya': 'Kenya',
+          'Morocco': 'Maroc',
+          'Tunisia': 'Tunisie',
+          'Egypt': 'Égypte',
+          'South Africa': 'Afrique du Sud',
+          'Ethiopia': 'Éthiopie',
+          'Togo': 'Togo',
+          'Benin': 'Bénin',
+          'Mali': 'Mali',
+          'Burkina Faso': 'Burkina Faso',
+          'Niger': 'Niger',
+          'Chad': 'Tchad',
+          'Central African Republic': 'République Centrafricaine',
+          'Democratic Republic of the Congo': 'République Démocratique du Congo',
+          'Republic of the Congo': 'République du Congo',
+          'Gabon': 'Gabon',
+          'Equatorial Guinea': 'Guinée Équatoriale',
+          'Guinea': 'Guinée',
+          'Guinea-Bissau': 'Guinée-Bissau',
+          'Sierra Leone': 'Sierra Leone',
+          'Liberia': 'Liberia',
+          'Algeria': 'Algérie',
+          'Libya': 'Libye',
+          'Sudan': 'Soudan',
+          'South Sudan': 'Soudan du Sud',
+          'Uganda': 'Ouganda',
+          'Tanzania': 'Tanzanie',
+          'Rwanda': 'Rwanda',
+          'Burundi': 'Burundi',
+          'Madagascar': 'Madagascar',
+          'Mauritius': 'Maurice',
+          'Seychelles': 'Seychelles',
+          'Comoros': 'Comores',
+          'Djibouti': 'Djibouti',
+          'Somalia': 'Somalie',
+          'Eritrea': 'Érythrée',
+          'Mozambique': 'Mozambique',
+          'Zimbabwe': 'Zimbabwe',
+          'Zambia': 'Zambie',
+          'Malawi': 'Malawi',
+          'Botswana': 'Botswana',
+          'Namibia': 'Namibie',
+          'Angola': 'Angola',
+          'Lesotho': 'Lesotho',
+          'Swaziland': 'Eswatini',
+          'France': 'France',
+          'United States': 'États-Unis',
+          'Canada': 'Canada',
+          'United Kingdom': 'Royaume-Uni'
+        };
+        
+        // Utiliser la traduction si disponible
+        if (country && countryTranslations[country]) {
+          country = countryTranslations[country];
+        }
+        
+        return { country, city };
+      }
+      
+      throw new Error('Données géocodage incomplètes');
+      
+    } catch (error) {
+      console.error('Erreur géocodage inversé:', error);
+      
+      // Fallback avec zones géographiques étendues pour tous les continents
+      return getFallbackLocation(lat, lng);
+    }
+  };
+
+  // Système de fallback amélioré avec zones mondiales
+  const getFallbackLocation = (lat: number, lng: number): { country?: string; city?: string } => {
+    // Afrique de l'Ouest
+    if (lat >= 4 && lat <= 16 && lng >= -18 && lng <= 3) {
+      if (lng >= -6 && lng <= -2.5) return { country: 'Côte d\'Ivoire', city: 'Abidjan' };
+      if (lng >= -18 && lng <= -15.5) return { country: 'Sénégal', city: 'Dakar' };
+      if (lng >= 2.5 && lng <= 4.5) return { country: 'Nigeria', city: 'Lagos' };
+      if (lng >= -1.5 && lng <= 0.5) return { country: 'Ghana', city: 'Accra' };
+      return { country: 'Côte d\'Ivoire', city: 'Région Ouest' };
+    }
+    
+    // Afrique Centrale
+    if (lat >= -5 && lat <= 10 && lng >= 8 && lng <= 30) {
+      if (lng >= 8.5 && lng <= 10.5) return { country: 'Cameroun', city: 'Douala' };
+      return { country: 'Cameroun', city: 'Région Centrale' };
+    }
+    
+    // Afrique de l'Est
+    if (lat >= -12 && lat <= 15 && lng >= 30 && lng <= 52) {
+      if (lat >= -2 && lat <= 5 && lng >= 36 && lng <= 41) return { country: 'Kenya', city: 'Nairobi' };
+      if (lat >= 8 && lat <= 15 && lng >= 38 && lng <= 48) return { country: 'Éthiopie', city: 'Addis-Abeba' };
+      return { country: 'Kenya', city: 'Région Est' };
+    }
+    
+    // Afrique du Nord
+    if (lat >= 30 && lat <= 37 && lng >= -12 && lng <= 35) {
+      if (lng >= -8.5 && lng <= -6.5) return { country: 'Maroc', city: 'Casablanca' };
+      if (lng >= 9.5 && lng <= 11.5) return { country: 'Tunisie', city: 'Tunis' };
+      if (lng >= 30.5 && lng <= 32.5) return { country: 'Égypte', city: 'Le Caire' };
+      return { country: 'Maroc', city: 'Région Nord' };
+    }
+    
+    // Afrique du Sud
+    if (lat >= -35 && lat <= -22 && lng >= 15 && lng <= 33) {
+      return { country: 'Afrique du Sud', city: 'Johannesburg' };
+    }
+    
+    // Europe
+    if (lat >= 35 && lat <= 71 && lng >= -10 && lng <= 40) {
+      return { country: 'France', city: 'Paris' };
+    }
+    
+    // Amérique du Nord
+    if (lat >= 25 && lat <= 70 && lng >= -170 && lng <= -50) {
+      return { country: 'États-Unis', city: 'New York' };
+    }
+    
+    // Amérique du Sud
+    if (lat >= -55 && lat <= 15 && lng >= -85 && lng <= -35) {
+      return { country: 'Brésil', city: 'São Paulo' };
+    }
+    
+    // Asie
+    if (lat >= -10 && lat <= 55 && lng >= 60 && lng <= 180) {
+      return { country: 'Inde', city: 'New Delhi' };
+    }
+    
+    // Fallback mondial - utiliser le pays le plus proche géographiquement
+    if (lng >= -20 && lng <= 52 && lat >= -35 && lat <= 37) {
       return { country: 'Côte d\'Ivoire', city: 'Abidjan' };
     }
     
-    // Fallback mondial - utiliser Côte d'Ivoire par défaut
-    return { country: 'Côte d\'Ivoire', city: 'Abidjan' };
+    return { country: 'Côte d\'Ivoire', city: 'Position inconnue' };
   };
 
   const setSelectedCountry = (country: string | null) => {
