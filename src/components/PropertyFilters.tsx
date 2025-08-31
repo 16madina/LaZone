@@ -76,9 +76,28 @@ export default function PropertyFilters({
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b">
             <h2 className="text-xl font-semibold">Filtres</h2>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="w-5 h-5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => {
+                  updateFilters({
+                    propertyType: [],
+                    priceRange: [0, maxPrice],
+                    bedrooms: 'any',
+                    bathrooms: 'any',
+                    areaRange: [20, 1000],
+                    amenities: []
+                  });
+                }}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Annuler tous les filtres
+              </Button>
+              <Button variant="ghost" size="sm" onClick={onClose}>
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
 
           {/* Content */}
@@ -195,26 +214,7 @@ export default function PropertyFilters({
 
             {/* Amenities */}
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium">Commodités</h3>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    updateFilters({
-                      propertyType: [],
-                      priceRange: [0, maxPrice],
-                      bedrooms: 'any',
-                      bathrooms: 'any',
-                      areaRange: [20, 1000],
-                      amenities: []
-                    });
-                  }}
-                  className="text-xs"
-                >
-                  Annuler tous les filtres
-                </Button>
-              </div>
+              <h3 className="text-sm font-medium mb-3">Commodités</h3>
               <div className="flex flex-wrap gap-2">
                 {AMENITIES.map((amenity) => {
                   const isSelected = filters.amenities.includes(amenity);
