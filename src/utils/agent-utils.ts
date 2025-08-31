@@ -62,18 +62,13 @@ export const getAgentInfoWithPhone = async (userId: string): Promise<AgentInfoWi
   if (!userId) return defaultAgent;
 
   try {
-    console.log('Fetching agent info for userId:', userId);
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('first_name, last_name, user_type, agency_name, agent_verified, phone')
       .eq('user_id', userId)
       .maybeSingle();
     
-    console.log('Profile data:', profile);
-    console.log('Profile error:', error);
-    
     if (!profile) {
-      console.log('No profile found, returning default agent');
       return defaultAgent;
     }
 
@@ -88,9 +83,6 @@ export const getAgentInfoWithPhone = async (userId: string): Promise<AgentInfoWi
     } else if (profile.last_name) {
       agentName = profile.last_name;
     }
-
-    console.log('Final agent name:', agentName);
-    console.log('Final phone:', profile.phone);
 
     return {
       name: agentName,
