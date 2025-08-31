@@ -331,6 +331,7 @@ export type Database = {
           agency_phone: string | null
           agent_rating: number | null
           agent_verified: boolean | null
+          avatar_url: string | null
           ban_reason: string | null
           banned_at: string | null
           banned_by: string | null
@@ -362,6 +363,7 @@ export type Database = {
           agency_phone?: string | null
           agent_rating?: number | null
           agent_verified?: boolean | null
+          avatar_url?: string | null
           ban_reason?: string | null
           banned_at?: string | null
           banned_by?: string | null
@@ -393,6 +395,7 @@ export type Database = {
           agency_phone?: string | null
           agent_rating?: number | null
           agent_verified?: boolean | null
+          avatar_url?: string | null
           ban_reason?: string | null
           banned_at?: string | null
           banned_by?: string | null

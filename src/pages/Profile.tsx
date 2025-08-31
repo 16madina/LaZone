@@ -288,13 +288,15 @@ const Profile: React.FC = () => {
       // Update profile with avatar URL
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: publicUrl } as any)
         .eq('user_id', user.id);
 
       if (updateError) throw updateError;
 
       // Update local state
-      setProfile(prev => prev ? { ...prev, avatar_url: publicUrl } : null);
+      if (profile) {
+        setProfile({ ...profile, avatar_url: publicUrl });
+      }
       setAvatarFile(null);
       
       toast({
