@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { filterProperties } from '@/data/mockProperties';
 import { comprehensiveMockProperties, propertiesByCountry } from '@/data/comprehensiveSeedData';
 import { AFRICAN_CITIES_DATA, searchCities, searchNeighborhoods } from '@/data/africanCities';
-import { SlidersHorizontal, ArrowUpDown, List, Search, ArrowLeft } from 'lucide-react';
+import { SlidersHorizontal, ArrowUpDown, List, Search, ArrowLeft, Menu } from 'lucide-react';
+import { MapSidebar } from '@/components/MapSidebar';
 
 const Map: React.FC = () => {
   const navigate = useNavigate();
@@ -29,6 +30,7 @@ const Map: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState<Array<{type: 'city' | 'neighborhood', name: string, country: string, city?: string}>>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showMapSidebar, setShowMapSidebar] = useState(false);
 
   // Extract and persist Mapbox token
   useEffect(() => {
@@ -248,38 +250,14 @@ const Map: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-1">
-            {/* Sort */}
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-24 h-8 text-xs">
-                <ArrowUpDown className="w-3 h-3 mr-1" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="date">Récent</SelectItem>
-                <SelectItem value="price_asc">Prix ↑</SelectItem>
-                <SelectItem value="price_desc">Prix ↓</SelectItem>
-                <SelectItem value="distance">Distance</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Filters */}
+            {/* Menu Button for Sidebar */}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowFilters(!showFilters)}
+              onClick={() => setShowMapSidebar(!showMapSidebar)}
               className="h-8 w-8 p-0"
             >
-              <SlidersHorizontal className="w-3 h-3" />
-            </Button>
-
-            {/* List Toggle */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowList(!showList)}
-              className="h-8 w-8 p-0"
-            >
-              <List className="w-3 h-3" />
+              <Menu className="w-3 h-3" />
             </Button>
           </div>
         </div>
@@ -296,6 +274,16 @@ const Map: React.FC = () => {
 
       {/* Map Container */}
       <div className="flex-1 relative">
+        {/* Map Sidebar */}
+        <MapSidebar
+          isOpen={showMapSidebar}
+          onClose={() => setShowMapSidebar(false)}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          onShowFilters={() => setShowFilters(!showFilters)}
+          onShowList={() => setShowList(!showList)}
+        />
+
         {tokenLoaded && (
           <PropertyMap
             ref={propertyMapRef}
