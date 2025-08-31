@@ -31,9 +31,13 @@ export const getAgentInfo = async (userId: string): Promise<AgentInfo> => {
     let agentName = 'Propriétaire';
     if (profile.user_type === 'agence' && profile.agency_name) {
       agentName = profile.agency_name;
-    } else if (profile.first_name || profile.last_name) {
-      const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
-      agentName = fullName || 'Propriétaire';
+    } else if (profile.first_name && profile.last_name) {
+      // Pour les particuliers, toujours afficher le nom complet
+      agentName = `${profile.first_name} ${profile.last_name}`;
+    } else if (profile.first_name) {
+      agentName = profile.first_name;
+    } else if (profile.last_name) {
+      agentName = profile.last_name;
     }
 
     return {
@@ -76,9 +80,13 @@ export const getAgentInfoWithPhone = async (userId: string): Promise<AgentInfoWi
     let agentName = 'Propriétaire';
     if (profile.user_type === 'agence' && profile.agency_name) {
       agentName = profile.agency_name;
-    } else if (profile.first_name || profile.last_name) {
-      const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
-      agentName = fullName || 'Propriétaire';
+    } else if (profile.first_name && profile.last_name) {
+      // Pour les particuliers, toujours afficher le nom complet
+      agentName = `${profile.first_name} ${profile.last_name}`;
+    } else if (profile.first_name) {
+      agentName = profile.first_name;
+    } else if (profile.last_name) {
+      agentName = profile.last_name;
     }
 
     console.log('Final agent name:', agentName);

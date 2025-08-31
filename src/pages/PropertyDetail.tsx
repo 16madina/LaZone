@@ -438,24 +438,22 @@ export default function PropertyDetail() {
             {/* Agent Card */}
             <Card className="p-6 bg-gradient-card">
               <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <img
-                    src={property.agent.avatar}
-                    alt={property.agent.name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold">{property.agent.name}</h3>
-                      {property.agent.isVerified && (
-                        <div className="w-2 h-2 bg-success rounded-full"></div>
-                      )}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Agent immobilier
-                    </div>
-                  </div>
-                </div>
+                 <div className="flex items-center gap-3">
+                   <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
+                     {property.agent.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                   </div>
+                   <div className="flex-1">
+                     <div className="flex items-center gap-2">
+                       <h3 className="font-semibold">{property.agent.name}</h3>
+                       {property.agent.isVerified && (
+                         <div className="w-2 h-2 bg-success rounded-full"></div>
+                       )}
+                     </div>
+                     <div className="text-sm text-muted-foreground">
+                       Agent immobilier
+                     </div>
+                   </div>
+                 </div>
 
                 <div className="space-y-3">
                   <Button 
