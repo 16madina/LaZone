@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useGeolocation, GeolocationData } from '@/hooks/useGeolocation';
+import { useCapacitor } from '@/hooks/useCapacitor';
+import { toast } from '@/hooks/use-toast';
 
 interface LocationState {
   detectedCountry: string | null;
@@ -44,7 +45,7 @@ interface LocationProviderProps {
 }
 
 export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) => {
-  const { data, loading, error, getCurrentPosition, countries } = useGeolocation();
+  const { getCurrentPosition, isNative } = useCapacitor();
   
   const [state, setState] = useState<LocationState>(() => {
     // Initialize state with data from localStorage if available
@@ -65,26 +66,47 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
     };
   });
 
-  // Update state when geolocation data changes
-  useEffect(() => {
-    if (data && data.country) {
-      const currency = CURRENCY_MAP[data.country] || 'CFA';
-      setState(prev => ({
-        ...prev,
-        detectedCountry: data.country || null,
-        detectedCity: data.city || null,
-        selectedCountry: prev.selectedCountry || data.country || null,
-        selectedCity: prev.selectedCity || data.city || null,
-        currency,
-        coordinates: [data.longitude, data.latitude],
-        isLocationDetected: true,
-        showLocationPrompt: false
-      }));
-      
-      // Mark that user has seen the location prompt when location is detected
-      localStorage.setItem('lazone_location_prompt_shown', 'true');
+  // Reverse geocoding simulé basé sur les coordonnées
+  const reverseGeocode = async (lat: number, lng: number): Promise<{ country?: string; city?: string }> => {
+    // Simulation basée sur des zones géographiques approximatives
+    if (lat >= 5.0 && lat <= 6.0 && lng >= -5.5 && lng <= -3.0) {
+      return { country: 'Côte d\'Ivoire', city: 'Abidjan' };
     }
-  }, [data]);
+    if (lat >= 14.0 && lat <= 15.0 && lng >= -17.5 && lng <= -16.0) {
+      return { country: 'Sénégal', city: 'Dakar' };
+    }
+    if (lat >= 6.0 && lat <= 7.0 && lng >= 3.0 && lng <= 4.0) {
+      return { country: 'Nigeria', city: 'Lagos' };
+    }
+    if (lat >= 5.5 && lat <= 6.0 && lng >= -1.0 && lng <= 0.0) {
+      return { country: 'Ghana', city: 'Accra' };
+    }
+    if (lat >= 3.5 && lat <= 4.5 && lng >= 9.0 && lng <= 10.0) {
+      return { country: 'Cameroun', city: 'Douala' };
+    }
+    if (lat >= -1.5 && lat <= -1.0 && lng >= 36.5 && lng <= 37.0) {
+      return { country: 'Kenya', city: 'Nairobi' };
+    }
+    if (lat >= 33.0 && lat <= 34.0 && lng >= -8.0 && lng <= -7.0) {
+      return { country: 'Maroc', city: 'Casablanca' };
+    }
+    if (lat >= 36.0 && lat <= 37.0 && lng >= 10.0 && lng <= 11.0) {
+      return { country: 'Tunisie', city: 'Tunis' };
+    }
+    if (lat >= 30.0 && lat <= 31.0 && lng >= 31.0 && lng <= 32.0) {
+      return { country: 'Égypte', city: 'Le Caire' };
+    }
+    if (lat >= -26.5 && lat <= -26.0 && lng >= 27.5 && lng <= 28.5) {
+      return { country: 'Afrique du Sud', city: 'Johannesburg' };
+    }
+    
+    // Fallback pour autres zones africaines
+    if (lat >= -35 && lat <= 37 && lng >= -20 && lng <= 52) {
+      return { country: 'Afrique', city: undefined };
+    }
+    
+    return {};
+  };
 
   const setSelectedCountry = (country: string | null) => {
     const currency = country ? CURRENCY_MAP[country] || 'CFA' : 'CFA';
@@ -119,8 +141,58 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
     }
   };
 
-  const requestLocation = () => {
-    getCurrentPosition();
+  const requestLocation = async () => {
+    try {
+      toast({
+        title: "Détection en cours...",
+        description: "Recherche de votre position"
+      });
+
+      const position = await getCurrentPosition();
+      
+      if (position) {
+        const { latitude, longitude } = position.coords;
+        
+        // Reverse geocoding
+        const locationInfo = await reverseGeocode(latitude, longitude);
+        
+        if (locationInfo.country) {
+          const currency = CURRENCY_MAP[locationInfo.country] || 'CFA';
+          setState(prev => ({
+            ...prev,
+            detectedCountry: locationInfo.country || null,
+            detectedCity: locationInfo.city || null,
+            selectedCountry: prev.selectedCountry || locationInfo.country || null,
+            selectedCity: prev.selectedCity || locationInfo.city || null,
+            currency,
+            coordinates: [longitude, latitude],
+            isLocationDetected: true,
+            showLocationPrompt: false
+          }));
+          
+          // Mark that user has seen the location prompt when location is detected
+          localStorage.setItem('lazone_location_prompt_shown', 'true');
+          
+          toast({
+            title: "Position détectée !",
+            description: `${locationInfo.city}, ${locationInfo.country}`
+          });
+        } else {
+          toast({
+            title: "Position détectée",
+            description: "Localisation hors zone de couverture",
+            variant: "destructive"
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Erreur géolocalisation:', error);
+      toast({
+        title: "Erreur de géolocalisation",
+        description: "Impossible de détecter votre position",
+        variant: "destructive"
+      });
+    }
   };
 
   const dismissLocationPrompt = () => {
