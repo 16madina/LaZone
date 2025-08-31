@@ -18,6 +18,7 @@ import ImageGallery from "@/components/ImageGallery";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/utils/currency";
 import { getAgentInfoWithPhone, AgentInfoWithPhone } from "@/utils/agent-utils";
+import { MessageDialog } from "@/components/chat/MessageDialog";
 
 export default function PropertyDetail() {
   const { id } = useParams();
@@ -27,6 +28,8 @@ export default function PropertyDetail() {
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [agentPhone, setAgentPhone] = useState<string | undefined>(undefined);
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+  const [sellerId, setSellerId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     fetchProperty();
@@ -46,6 +49,9 @@ export default function PropertyDetail() {
           .maybeSingle();
 
         if (!error && data) {
+          // Store the user_id as sellerId for message functionality
+          setSellerId(data.user_id);
+          
           // Fetch user profile for agent info including phone
           const agentInfoWithPhone = await getAgentInfoWithPhone(data.user_id);
           setAgentPhone(agentInfoWithPhone.phone);
@@ -95,6 +101,8 @@ export default function PropertyDetail() {
       
       if (mockProperty) {
         // Use mock data directly with its own agent info - no need to fetch from database
+        // For mock properties, we don't have a real sellerId, so messaging won't work
+        setSellerId(undefined);
         setProperty(mockProperty);
         return;
       }
@@ -475,7 +483,8 @@ export default function PropertyDetail() {
                     variant="outline" 
                     className="w-full" 
                     size="lg"
-                    onClick={() => navigate('/messages')}
+                    onClick={() => setMessageDialogOpen(true)}
+                    disabled={!sellerId}
                   >
                     <MessageCircle className="w-4 h-4 mr-2" />
                     Message
@@ -568,6 +577,16 @@ export default function PropertyDetail() {
           />
         </div>
       </div>
+
+      {/* Message Dialog */}
+      {property && sellerId && (
+        <MessageDialog
+          isOpen={messageDialogOpen}
+          onClose={() => setMessageDialogOpen(false)}
+          property={property}
+          sellerId={sellerId}
+        />
+      )}
     </div>
   );
 }
