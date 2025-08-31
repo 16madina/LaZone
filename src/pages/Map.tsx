@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { filterProperties } from '@/data/mockProperties';
 import { comprehensiveMockProperties, propertiesByCountry } from '@/data/comprehensiveSeedData';
 import { AFRICAN_CITIES_DATA, searchCities, searchNeighborhoods } from '@/data/africanCities';
-import { SlidersHorizontal, ArrowUpDown, List, Search } from 'lucide-react';
+import { SlidersHorizontal, ArrowUpDown, List, Search, ArrowLeft } from 'lucide-react';
 
 const Map: React.FC = () => {
   const navigate = useNavigate();
@@ -227,6 +227,17 @@ const Map: React.FC = () => {
         {/* Controls */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
+            {/* Back Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Retour
+            </Button>
+            
             <CountrySelector variant="compact" />
             <div className="flex items-center gap-2">
               <span className="font-semibold text-lg">Carte</span>
