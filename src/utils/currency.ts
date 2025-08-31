@@ -1,5 +1,6 @@
 // Currency formatting utility
 const CURRENCY_SYMBOLS: { [key: string]: string } = {
+  // African currencies
   'CFA': 'F CFA',
   'NGN': '₦',
   'GHS': '₵',
@@ -8,7 +9,27 @@ const CURRENCY_SYMBOLS: { [key: string]: string } = {
   'TND': 'د.ت',
   'EGP': 'ج.م',
   'ZAR': 'R',
-  'ETB': 'Br'
+  'ETB': 'Br',
+  'CDF': 'FC',
+  
+  // International currencies  
+  'EUR': '€',
+  'USD': '$',
+  'GBP': '£',
+  'JPY': '¥',
+  'CNY': '¥',
+  'CAD': 'C$',
+  'AUD': 'A$',
+  'CHF': 'CHF',
+  'KRW': '₩',
+  'INR': '₹',
+  'BRL': 'R$',
+  'MXN': '$',
+  'AED': 'د.إ',
+  'SAR': 'ر.س',
+  'QAR': 'ر.ق',
+  'NZD': 'NZ$',
+  'ARS': '$'
 };
 
 export const formatPrice = (price: number, currency: string): string => {

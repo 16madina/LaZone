@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useCapacitor } from '@/hooks/useCapacitor';
 import { toast } from '@/hooks/use-toast';
+import { getCountryByName, WORLDWIDE_COUNTRIES } from '@/data/worldwideCountries';
 
 interface LocationState {
   detectedCountry: string | null;
@@ -23,23 +24,6 @@ interface LocationContextType extends LocationState {
 
 const LocationContext = createContext<LocationContextType | undefined>(undefined);
 
-// Currency mapping for African countries
-const CURRENCY_MAP: { [key: string]: string } = {
-  'Côte d\'Ivoire': 'CFA',
-  'Sénégal': 'CFA',
-  'Cameroun': 'CFA',
-  'Togo': 'CFA',
-  'Bénin': 'CFA',
-  'Nigeria': 'NGN',
-  'Ghana': 'GHS',
-  'Kenya': 'KES',
-  'Maroc': 'MAD',
-  'Tunisie': 'TND',
-  'Égypte': 'EGP',
-  'Afrique du Sud': 'ZAR',
-  'Éthiopie': 'ETB'
-};
-
 interface LocationProviderProps {
   children: ReactNode;
 }
@@ -52,7 +36,8 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
     const savedCountry = localStorage.getItem('lazone_selected_country');
     const savedCity = localStorage.getItem('lazone_selected_city');
     const hasSeenLocationPrompt = localStorage.getItem('lazone_location_prompt_shown') === 'true';
-    const currency = savedCountry ? CURRENCY_MAP[savedCountry] || 'CFA' : 'CFA';
+    const countryData = getCountryByName(savedCountry || '');
+    const currency = countryData?.currency || 'CFA';
     
     return {
       detectedCountry: null,
@@ -226,7 +211,8 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
   };
 
   const setSelectedCountry = (country: string | null) => {
-    const currency = country ? CURRENCY_MAP[country] || 'CFA' : 'CFA';
+    const countryData = getCountryByName(country || '');
+    const currency = countryData?.currency || 'CFA';
     setState(prev => ({
       ...prev,
       selectedCountry: country,
@@ -273,7 +259,8 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
         // Reverse geocoding
         const locationInfo = await reverseGeocode(latitude, longitude);
         
-        const currency = CURRENCY_MAP[locationInfo.country] || 'CFA';
+        const countryData = getCountryByName(locationInfo.country || '');
+        const currency = countryData?.currency || 'CFA';
         setState(prev => ({
           ...prev,
           detectedCountry: locationInfo.country || null,

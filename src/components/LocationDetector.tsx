@@ -5,22 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useLocation } from '@/contexts/LocationContext';
 import { MapPin, Navigation, Globe, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const AFRICAN_COUNTRIES = [
-  { code: 'CI', name: 'Côte d\'Ivoire', cities: ['Abidjan', 'Bouaké', 'Daloa'] },
-  { code: 'SN', name: 'Sénégal', cities: ['Dakar', 'Thiès', 'Kaolack'] },
-  { code: 'NG', name: 'Nigeria', cities: ['Lagos', 'Kano', 'Ibadan', 'Port Harcourt'] },
-  { code: 'GH', name: 'Ghana', cities: ['Accra', 'Kumasi', 'Tamale', 'Takoradi'] },
-  { code: 'CM', name: 'Cameroun', cities: ['Douala', 'Yaoundé', 'Garoua', 'Bamenda'] },
-  { code: 'KE', name: 'Kenya', cities: ['Nairobi', 'Mombasa', 'Kisumu', 'Nakuru'] },
-  { code: 'MA', name: 'Maroc', cities: ['Casablanca', 'Rabat', 'Marrakech', 'Fès'] },
-  { code: 'TN', name: 'Tunisie', cities: ['Tunis', 'Sfax', 'Sousse', 'Kairouan'] },
-  { code: 'EG', name: 'Égypte', cities: ['Le Caire', 'Alexandrie', 'Giza', 'Louxor'] },
-  { code: 'ZA', name: 'Afrique du Sud', cities: ['Johannesburg', 'Le Cap', 'Durban', 'Pretoria'] },
-  { code: 'ET', name: 'Éthiopie', cities: ['Addis-Abeba', 'Dire Dawa', 'Mekelle', 'Gondar'] },
-  { code: 'TG', name: 'Togo', cities: ['Lomé', 'Sokodé', 'Kara', 'Atakpamé'] },
-  { code: 'BJ', name: 'Bénin', cities: ['Cotonou', 'Porto-Novo', 'Parakou', 'Abomey'] }
-];
+import { getAllCountries, getAfricanCountries, isAfricanCountry } from '@/data/worldwideCountries';
 
 export default function LocationDetector() {
   const {
@@ -39,7 +24,9 @@ export default function LocationDetector() {
 
   if (!showLocationPrompt) return null;
 
-  const selectedCountryData = AFRICAN_COUNTRIES.find(c => c.name === selectedCountry);
+  const allCountries = getAllCountries();
+  const africanCountries = getAfricanCountries();
+  const selectedCountryData = allCountries.find(c => c.name === selectedCountry);
   const availableCities = selectedCountryData?.cities || [];
 
   const handleLocationRequest = () => {
@@ -87,9 +74,19 @@ export default function LocationDetector() {
                 <MapPin className="w-4 h-4" />
                 <span className="font-medium">Position détectée</span>
               </div>
-              <p className="text-sm">
-                {detectedCity}, {detectedCountry}
-              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-lg">
+                  {selectedCountryData?.flag || '🌍'}
+                </span>
+                <p className="text-sm">
+                  {detectedCity}, {detectedCountry}
+                </p>
+              </div>
+              {!isAfricanCountry(detectedCountry) && (
+                <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                  ℹ️ Vous pouvez chercher des propriétés depuis n'importe où, mais seuls les utilisateurs en Afrique peuvent créer des annonces.
+                </p>
+              )}
               <div className="flex gap-2 pt-2">
                 <Button size="sm" onClick={dismissLocationPrompt}>
                   Utiliser cette position
@@ -148,9 +145,13 @@ export default function LocationDetector() {
                         <SelectValue placeholder="Sélectionnez votre pays" />
                       </SelectTrigger>
                       <SelectContent>
-                        {AFRICAN_COUNTRIES.map((country) => (
+                        {allCountries.map((country) => (
                           <SelectItem key={country.code} value={country.name}>
-                            {country.name}
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">{country.flag}</span>
+                              <span>{country.name}</span>
+                              {!country.isAfrican && <span className="text-xs text-muted-foreground">(recherche uniquement)</span>}
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>

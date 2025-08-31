@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { WORLDWIDE_COUNTRIES, getAllCountries } from '@/data/worldwideCountries';
 
 export interface GeolocationData {
   latitude: number;
@@ -15,62 +16,76 @@ interface GeolocationState {
   permission: 'granted' | 'denied' | 'prompt' | 'unsupported';
 }
 
-const AFRICAN_COUNTRIES = [
-  { code: 'CI', name: 'Côte d\'Ivoire', currency: 'CFA', flag: '🇨🇮', phoneCode: '+225', cities: ['Abidjan', 'Bouaké', 'Daloa'] },
-  { code: 'SN', name: 'Sénégal', currency: 'CFA', flag: '🇸🇳', phoneCode: '+221', cities: ['Dakar', 'Thiès', 'Kaolack'] },
-  { code: 'NG', name: 'Nigeria', currency: 'NGN', flag: '🇳🇬', phoneCode: '+234', cities: ['Lagos', 'Kano', 'Ibadan'] },
-  { code: 'GH', name: 'Ghana', currency: 'GHS', flag: '🇬🇭', phoneCode: '+233', cities: ['Accra', 'Kumasi', 'Tamale'] },
-  { code: 'CM', name: 'Cameroun', currency: 'CFA', flag: '🇨🇲', phoneCode: '+237', cities: ['Douala', 'Yaoundé', 'Garoua'] },
-  { code: 'KE', name: 'Kenya', currency: 'KES', flag: '🇰🇪', phoneCode: '+254', cities: ['Nairobi', 'Mombasa', 'Kisumu'] },
-  { code: 'MA', name: 'Maroc', currency: 'MAD', flag: '🇲🇦', phoneCode: '+212', cities: ['Casablanca', 'Rabat', 'Marrakech'] },
-  { code: 'TN', name: 'Tunisie', currency: 'TND', flag: '🇹🇳', phoneCode: '+216', cities: ['Tunis', 'Sfax', 'Sousse'] },
-  { code: 'EG', name: 'Égypte', currency: 'EGP', flag: '🇪🇬', phoneCode: '+20', cities: ['Le Caire', 'Alexandrie', 'Giza'] },
-  { code: 'ZA', name: 'Afrique du Sud', currency: 'ZAR', flag: '🇿🇦', phoneCode: '+27', cities: ['Johannesburg', 'Le Cap', 'Durban'] },
-  { code: 'ET', name: 'Éthiopie', currency: 'ETB', flag: '🇪🇹', phoneCode: '+251', cities: ['Addis-Abeba', 'Dire Dawa', 'Mekelle'] },
-  { code: 'TG', name: 'Togo', currency: 'CFA', flag: '🇹🇬', phoneCode: '+228', cities: ['Lomé', 'Sokodé', 'Kara'] },
-  { code: 'BJ', name: 'Bénin', currency: 'CFA', flag: '🇧🇯', phoneCode: '+229', cities: ['Cotonou', 'Porto-Novo', 'Parakou'] }
-];
-
-// Reverse geocoding simulé basé sur les coordonnées
+// Reverse geocoding réel avec l'API Nominatim
 const reverseGeocode = async (lat: number, lng: number): Promise<{ country?: string; city?: string }> => {
-  // Simulation basée sur des zones géographiques approximatives
-  if (lat >= 5.0 && lat <= 6.0 && lng >= -5.5 && lng <= -3.0) {
-    return { country: 'Côte d\'Ivoire', city: 'Abidjan' };
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=fr`
+    );
+    
+    if (!response.ok) {
+      throw new Error('Erreur lors de la géolocalisation inverse');
+    }
+    
+    const data = await response.json();
+    
+    if (!data || !data.address) {
+      return {};
+    }
+    
+    const address = data.address;
+    let country = address.country;
+    let city = address.city || address.town || address.village || address.municipality;
+    
+    // Traductions françaises pour certains pays
+    const countryTranslations: { [key: string]: string } = {
+      'United States': 'États-Unis',
+      'United Kingdom': 'Royaume-Uni',
+      'Germany': 'Allemagne',
+      'Spain': 'Espagne',
+      'Italy': 'Italie',
+      'Netherlands': 'Pays-Bas',
+      'Switzerland': 'Suisse',
+      'Belgium': 'Belgique',
+      'Portugal': 'Portugal',
+      'South Africa': 'Afrique du Sud',
+      'Morocco': 'Maroc',
+      'Tunisia': 'Tunisie',
+      'Egypt': 'Égypte',
+      'Kenya': 'Kenya',
+      'Nigeria': 'Nigeria',
+      'Ghana': 'Ghana',
+      'Cameroon': 'Cameroun',
+      'Senegal': 'Sénégal',
+      'Ethiopia': 'Éthiopie',
+      'Togo': 'Togo',
+      'Benin': 'Bénin',
+      'China': 'Chine',
+      'Japan': 'Japon',
+      'South Korea': 'Corée du Sud',
+      'India': 'Inde',
+      'Australia': 'Australie',
+      'New Zealand': 'Nouvelle-Zélande',
+      'Brazil': 'Brésil',
+      'Argentina': 'Argentine',
+      'Canada': 'Canada',
+      'Mexico': 'Mexique',
+    };
+    
+    // Utiliser la traduction si disponible
+    if (country && countryTranslations[country]) {
+      country = countryTranslations[country];
+    }
+    
+    return {
+      country: country || undefined,
+      city: city || undefined
+    };
+    
+  } catch (error) {
+    console.error('Erreur lors du reverse geocoding:', error);
+    return {};
   }
-  if (lat >= 14.0 && lat <= 15.0 && lng >= -17.5 && lng <= -16.0) {
-    return { country: 'Sénégal', city: 'Dakar' };
-  }
-  if (lat >= 6.0 && lat <= 7.0 && lng >= 3.0 && lng <= 4.0) {
-    return { country: 'Nigeria', city: 'Lagos' };
-  }
-  if (lat >= 5.5 && lat <= 6.0 && lng >= -1.0 && lng <= 0.0) {
-    return { country: 'Ghana', city: 'Accra' };
-  }
-  if (lat >= 3.5 && lat <= 4.5 && lng >= 9.0 && lng <= 10.0) {
-    return { country: 'Cameroun', city: 'Douala' };
-  }
-  if (lat >= -1.5 && lat <= -1.0 && lng >= 36.5 && lng <= 37.0) {
-    return { country: 'Kenya', city: 'Nairobi' };
-  }
-  if (lat >= 33.0 && lat <= 34.0 && lng >= -8.0 && lng <= -7.0) {
-    return { country: 'Maroc', city: 'Casablanca' };
-  }
-  if (lat >= 36.0 && lat <= 37.0 && lng >= 10.0 && lng <= 11.0) {
-    return { country: 'Tunisie', city: 'Tunis' };
-  }
-  if (lat >= 30.0 && lat <= 31.0 && lng >= 31.0 && lng <= 32.0) {
-    return { country: 'Égypte', city: 'Le Caire' };
-  }
-  if (lat >= -26.5 && lat <= -26.0 && lng >= 27.5 && lng <= 28.5) {
-    return { country: 'Afrique du Sud', city: 'Johannesburg' };
-  }
-  
-  // Fallback pour autres zones africaines
-  if (lat >= -35 && lat <= 37 && lng >= -20 && lng <= 52) {
-    return { country: 'Afrique', city: undefined };
-  }
-  
-  return {};
 };
 
 export const useGeolocation = () => {
@@ -159,6 +174,6 @@ export const useGeolocation = () => {
     ...state,
     getCurrentPosition,
     reset,
-    countries: AFRICAN_COUNTRIES
+    countries: getAllCountries()
   };
 };
