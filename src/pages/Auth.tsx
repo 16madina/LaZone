@@ -352,10 +352,9 @@ const Auth: React.FC = () => {
                               <Input
                                 id="responsibleFirstName"
                                 type="text"
-                                placeholder="Nom du responsable"
+                                placeholder="Nom du responsable (optionnel)"
                                 value={responsibleFirstName}
                                 onChange={(e) => setResponsibleFirstName(e.target.value)}
-                                required
                               />
                             </div>
                             <div className="space-y-2">
@@ -363,10 +362,9 @@ const Auth: React.FC = () => {
                               <Input
                                 id="responsibleLastName"
                                 type="text"
-                                placeholder="Prénom du responsable"
+                                placeholder="Prénom du responsable (optionnel)"
                                 value={responsibleLastName}
                                 onChange={(e) => setResponsibleLastName(e.target.value)}
-                                required
                               />
                             </div>
                           </div>
@@ -403,10 +401,9 @@ const Auth: React.FC = () => {
                             <Input
                               id="agencyNeighborhood"
                               type="text"
-                              placeholder="Quartier de l'agence"
+                              placeholder="Quartier de l'agence (optionnel)"
                               value={neighborhood}
                               onChange={(e) => setNeighborhood(e.target.value)}
-                              required
                             />
                           </div>
 
@@ -419,17 +416,16 @@ const Auth: React.FC = () => {
                               <Input
                                 id="agencyPhone"
                                 type="tel"
-                                placeholder={`${phoneCode} XX XX XX XX`}
+                                placeholder={`${phoneCode} XX XX XX XX (optionnel)`}
                                 value={agencyPhone}
                                 onChange={(e) => setAgencyPhone(e.target.value)}
                                 className={phoneCode ? 'pl-16' : 'pl-3'}
-                                required
                               />
                             </div>
                           </div>
 
                           <div className="space-y-2">
-                            <Label htmlFor="responsibleMobile">Téléphone cellulaire du responsable</Label>
+                            <Label htmlFor="responsibleMobile">Téléphone cellulaire du responsable *</Label>
                             <div className="relative">
                               <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm z-10">
                                 {phoneCode}
