@@ -7,6 +7,8 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "@/contexts/LocationContext";
 import { formatPrice } from "@/utils/currency";
+import { ImageOptimizer } from "@/components/mobile/ImageOptimizer";
+import { useMobileOptimizations } from "@/hooks/useMobileOptimizations";
 
 export interface Property {
   id: string;
@@ -57,6 +59,7 @@ export default function PropertyCard({
   className 
 }: PropertyCardProps) {
   const { currency } = useLocation();
+  const { maxImageQuality, shouldOptimizeImages } = useMobileOptimizations();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   // Ensure we always show property details - activate all properties
@@ -92,14 +95,13 @@ export default function PropertyCard({
             <CarouselContent className="w-full h-full">
               {displayImages.slice(0, maxVisibleImages).map((image, index) => (
                 <CarouselItem key={index} className="w-full h-full">
-                  <img
+                  <ImageOptimizer
                     src={image}
                     alt={`${property.title} - Image ${index + 1}`}
                     className="w-full h-full object-cover"
-                    loading="lazy"
-                    onError={(e) => {
-                      e.currentTarget.src = '/placeholder.svg';
-                    }}
+                    quality={shouldOptimizeImages ? maxImageQuality : 85}
+                    lazy={index > 0}
+                    fallbackSrc="/placeholder.svg"
                   />
                 </CarouselItem>
               ))}
@@ -114,14 +116,13 @@ export default function PropertyCard({
             />
           </Carousel>
         ) : (
-          <img
+          <ImageOptimizer
             src={displayImages[0]}
             alt={property.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-slow"
-            loading="lazy"
-            onError={(e) => {
-              e.currentTarget.src = '/placeholder.svg';
-            }}
+            quality={shouldOptimizeImages ? maxImageQuality : 85}
+            lazy={false}
+            fallbackSrc="/placeholder.svg"
           />
         )}
         
@@ -270,10 +271,15 @@ export default function PropertyCard({
         {/* Agent and Actions */}
         <div className="flex items-center justify-between pt-2 border-t border-border/50">
           <div className="flex items-center gap-2">
-            <img
+            <ImageOptimizer
               src={property.agent.avatar}
               alt={property.agent.name}
               className="w-6 h-6 rounded-full object-cover"
+              width={24}
+              height={24}
+              quality={shouldOptimizeImages ? 60 : 85}
+              lazy={true}
+              fallbackSrc="/placeholder.svg"
             />
             <span className="text-xs text-muted-foreground truncate">
               {property.agent.name}

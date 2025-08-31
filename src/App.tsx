@@ -20,6 +20,7 @@ import Subscription from "./pages/Subscription";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import SubscriptionSuccess from "./pages/SubscriptionSuccess";
 import Integrations from "./pages/Integrations";
+import MobileTest from "./pages/MobileTest";
 import { LocationProvider } from "./contexts/LocationContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -30,6 +31,7 @@ import LocationDetector from "./components/LocationDetector";
 import Layout from "./components/Layout";
 import Messages from "./pages/Messages";
 import { usePerformanceMonitor } from "./hooks/usePerformanceMonitor";
+import { CriticalResourceLoader } from "./components/mobile/CriticalResourceLoader";
 
 // Performance monitoring wrapper component
 const PerformanceWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -89,8 +91,9 @@ const App = () => {
                    <TooltipProvider>
                      <Toaster />
                      <Sonner />
-                     <BrowserRouter>
-                       <LocationDetector />
+                      <BrowserRouter>
+                        <CriticalResourceLoader />
+                        <LocationDetector />
                        <Layout>
                          <PerformanceWrapper>
                            <Routes>
@@ -122,8 +125,9 @@ const App = () => {
                                </ProtectedRoute>
                              } 
                            />
-                           <Route path="/auth" element={<Auth />} />
-                           <Route path="/stats" element={<Stats />} />
+                            <Route path="/auth" element={<Auth />} />
+                            <Route path="/stats" element={<Stats />} />
+                            <Route path="/mobile-test" element={<MobileTest />} />
                            <Route 
                              path="/subscription" 
                              element={
