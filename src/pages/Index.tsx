@@ -408,7 +408,7 @@ const Index = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 pb-32">
                   {sortedProperties.map((property) => (
                     <PropertyCard
                       key={property.id}
