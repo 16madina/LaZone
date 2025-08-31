@@ -37,6 +37,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { formatPrice } from '@/utils/currency';
+import { useFavoritesContext } from '@/contexts/FavoritesContext';
 
 interface Profile {
   id: string;
@@ -81,6 +82,7 @@ interface Listing {
 const Profile: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { favorites } = useFavoritesContext();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
@@ -490,7 +492,7 @@ const Profile: React.FC = () => {
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Star className="w-4 h-4 text-primary" />
-                <span className="text-2xl font-bold">0</span>
+                <span className="text-2xl font-bold">{favorites.length}</span>
               </div>
               <p className="text-sm text-muted-foreground">Favoris</p>
             </CardContent>
