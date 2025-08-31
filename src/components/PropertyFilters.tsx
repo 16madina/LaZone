@@ -198,7 +198,7 @@ export default function PropertyFilters({
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-medium">Commodités</h3>
                 <Button 
-                  variant="ghost" 
+                  variant="outline" 
                   size="sm"
                   onClick={() => {
                     updateFilters({
@@ -210,7 +210,7 @@ export default function PropertyFilters({
                       amenities: []
                     });
                   }}
-                  className="text-xs text-muted-foreground hover:text-foreground"
+                  className="text-xs"
                 >
                   Annuler tous les filtres
                 </Button>
