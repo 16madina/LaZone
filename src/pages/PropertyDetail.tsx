@@ -88,6 +88,7 @@ export default function PropertyDetail() {
       const mockProperty = extendedMockProperties.find(p => p.id === extractedId || p.id === id);
       
       if (mockProperty) {
+        // Use mock data directly with its own agent info - no need to fetch from database
         setProperty(mockProperty);
         return;
       }
