@@ -56,6 +56,7 @@ const Auth: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent, isSignUp: boolean) => {
     e.preventDefault();
+    console.log('Form submission started', { isSignUp, userType });
     setIsLoading(true);
     
     try {
