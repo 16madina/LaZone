@@ -162,10 +162,17 @@ const Map: React.FC = () => {
 
   // Handle location navigation from search
   const handleLocationSelect = async (suggestion: {type: 'city' | 'neighborhood', name: string, country: string, city?: string}) => {
+    console.log('🎯 Selecting location:', suggestion);
     const result = await navigateToLocation(suggestion);
+    console.log('📍 Navigation result:', result);
+    
     if (result && propertyMapRef.current) {
+      console.log('🗺️ Calling map navigation');
       propertyMapRef.current.navigateToLocation(result.coordinates, result.zoom);
+    } else {
+      console.log('❌ Navigation failed:', { hasResult: !!result, hasMapRef: !!propertyMapRef.current });
     }
+    
     setSearchQuery(suggestion.name);
     setShowSuggestions(false);
   };

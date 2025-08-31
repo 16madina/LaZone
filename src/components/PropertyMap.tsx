@@ -402,12 +402,16 @@ const PropertyMap = React.forwardRef<
 
   // Add method to navigate to location
   const navigateToLocationOnMap = (coordinates: [number, number], zoom: number) => {
+    console.log('🚀 Navigating to:', coordinates, 'zoom:', zoom);
     if (map.current) {
       map.current.flyTo({
         center: coordinates,
         zoom: zoom,
         duration: 2000
       });
+      console.log('✅ Navigation command sent to map');
+    } else {
+      console.log('❌ Map not ready for navigation');
     }
   };
 
@@ -415,6 +419,8 @@ const PropertyMap = React.forwardRef<
   useImperativeHandle(ref, () => ({
     navigateToLocation: navigateToLocationOnMap
   }), []);
+
+  console.log('🗺️ PropertyMap render, ref available:', !!ref);
 
   const handleApiKeySubmit = (e: React.FormEvent) => {
     e.preventDefault();
