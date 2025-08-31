@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Input } from "@/components/ui/input";
 import AIRecommendations from "@/components/ai/AIRecommendations";
+import { getAgentInfo } from "@/utils/agent-utils";
 
 // Generate unique IDs for demo properties to avoid duplicates
 const generateUniqueId = (originalId: string, index: number) => {
@@ -82,34 +83,36 @@ const Index = () => {
       if (error) throw error;
 
       // Convert Supabase data to Property format
-      const convertedProperties: Property[] = (data || []).map(listing => ({
-        id: listing.id,
-        title: listing.title,
-        price: listing.price,
-        currency: listing.currency,
-        location: {
-          city: listing.city,
-          neighborhood: listing.neighborhood,
-          coordinates: [listing.longitude || 0, listing.latitude || 0] as [number, number]
-        },
-        images: listing.images || ['/placeholder.svg'],
-        type: listing.property_type as 'apartment' | 'house' | 'land' | 'commercial',
-        purpose: listing.purpose as 'rent' | 'sale' | 'commercial',
-        bedrooms: listing.bedrooms,
-        bathrooms: listing.bathrooms,
-        area: listing.area,
-        landArea: listing.land_area,
-        amenities: listing.amenities || [],
-        isVerified: false,
-        isNew: isNewListing(listing.created_at),
-        isFeatured: false,
-        agent: {
-          name: 'Agent LaZone',
-          avatar: '/placeholder.svg',
-          isVerified: false
-        },
-        createdAt: listing.created_at
-      }));
+      const convertedProperties: Property[] = await Promise.all(
+        (data || []).map(async listing => {
+          const agentInfo = await getAgentInfo(listing.user_id);
+          
+          return {
+            id: listing.id,
+            title: listing.title,
+            price: listing.price,
+            currency: listing.currency,
+            location: {
+              city: listing.city,
+              neighborhood: listing.neighborhood,
+              coordinates: [listing.longitude || 0, listing.latitude || 0] as [number, number]
+            },
+            images: listing.images || ['/placeholder.svg'],
+            type: listing.property_type as 'apartment' | 'house' | 'land' | 'commercial',
+            purpose: listing.purpose as 'rent' | 'sale' | 'commercial',
+            bedrooms: listing.bedrooms,
+            bathrooms: listing.bathrooms,
+            area: listing.area,
+            landArea: listing.land_area,
+            amenities: listing.amenities || [],
+            isVerified: false,
+            isNew: isNewListing(listing.created_at),
+            isFeatured: false,
+            agent: agentInfo,
+            createdAt: listing.created_at
+          };
+        })
+      );
 
       // Add demo properties if we have less than 5 real properties
       let finalProperties = convertedProperties;

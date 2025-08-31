@@ -6,6 +6,7 @@ import { Brain, TrendingUp, MapPin, Star, RefreshCw } from 'lucide-react';
 import { Property } from '@/components/PropertyCard';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { getAgentInfo } from "@/utils/agent-utils";
 
 interface AIRecommendation {
   property: Property;
@@ -57,39 +58,41 @@ const AIRecommendations: React.FC<AIRecommendationsProps> = ({
       if (error) throw error;
 
       // Simulate AI scoring algorithm
-      const scoredRecommendations: AIRecommendation[] = properties?.map((prop, index) => ({
-        property: {
-          id: prop.id,
-          title: prop.title,
-          price: prop.price,
-          currency: prop.currency,
-          location: {
-            city: prop.city,
-            neighborhood: prop.neighborhood,
-            coordinates: [prop.longitude || 0, prop.latitude || 0]
-          },
-          images: prop.images || [],
-          type: prop.property_type as 'apartment' | 'house' | 'land',
-          purpose: prop.purpose as 'rent' | 'sale',
-          bedrooms: prop.bedrooms,
-          bathrooms: prop.bathrooms,
-          area: prop.area,
-          landArea: prop.land_area,
-          amenities: prop.amenities || [],
-          isVerified: true,
-          isNew: new Date(prop.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-          isFeatured: index < 2,
-          agent: {
-            name: 'Agent LaZone',
-            avatar: '/placeholder.svg',
-            isVerified: true
-          },
-          createdAt: prop.created_at
-        },
-        score: Math.random() * 30 + 70, // Score between 70-100
-        reasons: generateMatchReasons(index),
-        matchType: ['price', 'location', 'features', 'trending'][index % 4] as any
-      })) || [];
+      const scoredRecommendations: AIRecommendation[] = await Promise.all(
+        (properties || []).map(async (prop, index) => {
+          const agentInfo = await getAgentInfo(prop.user_id);
+          
+          return {
+            property: {
+              id: prop.id,
+              title: prop.title,
+              price: prop.price,
+              currency: prop.currency,
+              location: {
+                city: prop.city,
+                neighborhood: prop.neighborhood,
+                coordinates: [prop.longitude || 0, prop.latitude || 0]
+              },
+              images: prop.images || [],
+              type: prop.property_type as 'apartment' | 'house' | 'land',
+              purpose: prop.purpose as 'rent' | 'sale',
+              bedrooms: prop.bedrooms,
+              bathrooms: prop.bathrooms,
+              area: prop.area,
+              landArea: prop.land_area,
+              amenities: prop.amenities || [],
+              isVerified: true,
+              isNew: new Date(prop.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+              isFeatured: index < 2,
+              agent: agentInfo,
+              createdAt: prop.created_at
+            },
+            score: Math.random() * 30 + 70, // Score between 70-100
+            reasons: generateMatchReasons(index),
+            matchType: ['price', 'location', 'features', 'trending'][index % 4] as any
+          };
+        })
+      );
 
       // Sort by score
       scoredRecommendations.sort((a, b) => b.score - a.score);

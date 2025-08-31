@@ -8,6 +8,7 @@ import { Heart, Search, ArrowLeft } from 'lucide-react';
 import { useFavoritesContext } from '@/contexts/FavoritesContext';
 import { supabase } from '@/integrations/supabase/client';
 import { extendedMockProperties } from '@/data/extendedMockProperties';
+import { getAgentInfo } from "@/utils/agent-utils";
 
 const Favorites: React.FC = () => {
   const navigate = useNavigate();
@@ -39,34 +40,36 @@ const Favorites: React.FC = () => {
         if (error) throw error;
 
         // Convert Supabase data to Property format
-        const convertedProperties: Property[] = (data || []).map(listing => ({
-          id: listing.id,
-          title: listing.title,
-          price: listing.price,
-          currency: listing.currency,
-          location: {
-            city: listing.city,
-            neighborhood: listing.neighborhood,
-            coordinates: [listing.longitude || 0, listing.latitude || 0] as [number, number]
-          },
-          images: listing.images || ['/placeholder.svg'],
-          type: listing.property_type as 'apartment' | 'house' | 'land',
-          purpose: listing.purpose as 'rent' | 'sale',
-          bedrooms: listing.bedrooms,
-          bathrooms: listing.bathrooms,
-          area: listing.area,
-          landArea: listing.land_area,
-          amenities: listing.amenities || [],
-          isVerified: false,
-          isNew: isNewListing(listing.created_at),
-          isFeatured: false,
-          agent: {
-            name: 'Agent LaZone',
-            avatar: '/placeholder.svg',
-            isVerified: false
-          },
-          createdAt: listing.created_at
-        }));
+        const convertedProperties: Property[] = await Promise.all(
+          (data || []).map(async listing => {
+            const agentInfo = await getAgentInfo(listing.user_id);
+            
+            return {
+              id: listing.id,
+              title: listing.title,
+              price: listing.price,
+              currency: listing.currency,
+              location: {
+                city: listing.city,
+                neighborhood: listing.neighborhood,
+                coordinates: [listing.longitude || 0, listing.latitude || 0] as [number, number]
+              },
+              images: listing.images || ['/placeholder.svg'],
+              type: listing.property_type as 'apartment' | 'house' | 'land',
+              purpose: listing.purpose as 'rent' | 'sale',
+              bedrooms: listing.bedrooms,
+              bathrooms: listing.bathrooms,
+              area: listing.area,
+              landArea: listing.land_area,
+              amenities: listing.amenities || [],
+              isVerified: false,
+              isNew: isNewListing(listing.created_at),
+              isFeatured: false,
+              agent: agentInfo,
+              createdAt: listing.created_at
+            };
+          })
+        );
 
         // Add demo properties if some favorites are from demo data
         const demoFavorites = favorites
