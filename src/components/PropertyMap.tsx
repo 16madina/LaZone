@@ -294,40 +294,44 @@ const PropertyMap = React.forwardRef<
         background: #22c55e;
         color: white;
         border: 1px solid white;
-        border-radius: 16px;
-        padding: 2px 6px;
-        font-size: 9px;
+        border-radius: 12px;
+        padding: 2px 4px;
+        font-size: 8px;
         font-weight: 600;
         cursor: pointer;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
         transition: all 0.2s ease;
         white-space: nowrap;
         position: relative;
-        min-width: 28px;
-        max-width: 45px;
+        min-width: 20px;
+        max-width: 35px;
         text-align: center;
-        height: 18px;
+        height: 14px;
         display: flex;
         align-items: center;
         justify-content: center;
+        transform-origin: center;
       `;
       
       el.textContent = priceText;
       
       // Hover effect
       el.addEventListener('mouseenter', () => {
-        el.style.transform = 'scale(1.2)';
+        el.style.transform = 'scale(1.15)';
         el.style.zIndex = '1000';
-        el.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.4)';
+        el.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.4)';
       });
       
       el.addEventListener('mouseleave', () => {
         el.style.transform = 'scale(1)';
         el.style.zIndex = '1';
-        el.style.boxShadow = '0 1px 4px rgba(0, 0, 0, 0.3)';
+        el.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.3)';
       });
 
-      const marker = new mapboxgl.Marker(el)
+      // Create marker with offset to prevent overflow
+      const marker = new mapboxgl.Marker(el, {
+        offset: [0, -7] // Offset to prevent markers from going outside map bounds
+      })
         .setLngLat(property.location.coordinates)
         .addTo(map.current!);
 
@@ -482,16 +486,17 @@ const PropertyMap = React.forwardRef<
       markers.current.push(marker);
     });
 
-    // Fit map to markers if we have properties
+    // Fit map to markers if we have properties with padding to keep markers visible
     if (properties.length > 0) {
       const bounds = new mapboxgl.LngLatBounds();
       properties.forEach(property => {
         bounds.extend(property.location.coordinates);
       });
       
+      // Add extra padding to ensure markers don't go outside visible area
       map.current.fitBounds(bounds, {
-        padding: 50,
-        maxZoom: 15
+        padding: { top: 80, bottom: 80, left: 60, right: 60 }, // Increased padding
+        maxZoom: 12 // Reduced max zoom to show more area
       });
     }
   }, [properties, mapLoaded, onPropertySelect]);
@@ -597,20 +602,20 @@ const PropertyMap = React.forwardRef<
       <div ref={mapContainer} className="w-full h-full rounded-xl overflow-hidden" />
       
       {/* Search Bar - positioned at the top center */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-20">
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 w-full max-w-sm px-4 z-20">
         <div className="relative">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Rechercher une ville ou un quartier en Afrique..."
+              placeholder="Rechercher une ville ou un quartier..."
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               onFocus={() => {
                 console.log('🎯 Search focused, suggestions:', searchSuggestions.length);
                 if (searchSuggestions.length > 0) setShowSuggestions(true);
               }}
-              className="pl-10 bg-background/95 backdrop-blur-sm border-border/50 focus:border-primary"
+              className="pl-8 pr-3 py-2 h-8 text-xs bg-background/95 backdrop-blur-sm border-border/50 focus:border-primary"
             />
           </div>
           
@@ -649,30 +654,33 @@ const PropertyMap = React.forwardRef<
       </div>
       
       {/* Map Controls */}
-      <div className="absolute top-4 left-4 flex flex-col gap-2">
+      <div className="absolute top-3 left-3 flex flex-col gap-1">
         <Button
           size="sm"
           variant="secondary"
-          className="bg-background/90 backdrop-blur-sm"
+          className="bg-background/90 backdrop-blur-sm h-8 w-20 text-xs"
           onClick={() => {
             if (map.current && properties.length > 0) {
               const bounds = new mapboxgl.LngLatBounds();
               properties.forEach(property => {
                 bounds.extend(property.location.coordinates);
               });
-              map.current.fitBounds(bounds, { padding: 50, maxZoom: 15 });
+              map.current.fitBounds(bounds, { 
+                padding: { top: 80, bottom: 80, left: 60, right: 60 }, 
+                maxZoom: 12 
+              });
             }
           }}
         >
-          <Maximize2 className="w-4 h-4 mr-1" />
+          <Maximize2 className="w-3 h-3 mr-1" />
           Tout voir
         </Button>
       </div>
 
       {/* Search in area button */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
         <Button 
-          className="bg-primary text-primary-foreground shadow-primary"
+          className="bg-primary text-primary-foreground shadow-primary h-8 text-xs px-3"
           onClick={() => {
             if (map.current && onMapBoundsChange) {
               onMapBoundsChange(map.current.getBounds());

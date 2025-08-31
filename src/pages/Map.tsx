@@ -223,35 +223,35 @@ const Map: React.FC = () => {
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <div className="flex flex-col gap-4 p-4 bg-background border-b border-border z-10">
+      <div className="flex flex-col gap-2 p-3 bg-background border-b border-border z-10">
         {/* Controls */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             {/* Back Button */}
             <Button
               variant="ghost"
               size="sm"
               onClick={() => navigate(-1)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1 px-2 py-1 h-8"
             >
-              <ArrowLeft className="w-4 h-4" />
-              Retour
+              <ArrowLeft className="w-3 h-3" />
+              <span className="text-xs">Retour</span>
             </Button>
             
             <CountrySelector variant="compact" />
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-lg">Carte</span>
-              <Badge variant="secondary">
+            <div className="flex items-center gap-1">
+              <span className="font-semibold text-sm">Carte</span>
+              <Badge variant="secondary" className="text-xs px-2 py-0.5">
                 {sortedProperties.length} biens
               </Badge>
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {/* Sort */}
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-32">
-                <ArrowUpDown className="w-4 h-4 mr-2" />
+              <SelectTrigger className="w-24 h-8 text-xs">
+                <ArrowUpDown className="w-3 h-3 mr-1" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -267,8 +267,9 @@ const Map: React.FC = () => {
               variant="outline"
               size="sm"
               onClick={() => setShowFilters(!showFilters)}
+              className="h-8 w-8 p-0"
             >
-              <SlidersHorizontal className="w-4 h-4" />
+              <SlidersHorizontal className="w-3 h-3" />
             </Button>
 
             {/* List Toggle */}
@@ -276,8 +277,9 @@ const Map: React.FC = () => {
               variant="outline"
               size="sm"
               onClick={() => setShowList(!showList)}
+              className="h-8 w-8 p-0"
             >
-              <List className="w-4 h-4" />
+              <List className="w-3 h-3" />
             </Button>
           </div>
         </div>
