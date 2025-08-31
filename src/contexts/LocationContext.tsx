@@ -278,13 +278,21 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
           ...prev,
           detectedCountry: locationInfo.country || null,
           detectedCity: locationInfo.city || null,
-          selectedCountry: prev.selectedCountry || locationInfo.country || null,
-          selectedCity: prev.selectedCity || locationInfo.city || null,
+          selectedCountry: locationInfo.country || null, // Toujours utiliser le pays détecté
+          selectedCity: locationInfo.city || null, // Toujours utiliser la ville détectée
           currency,
           coordinates: [longitude, latitude],
           isLocationDetected: true,
           showLocationPrompt: false
         }));
+        
+        // Persister la détection automatique
+        if (locationInfo.country) {
+          localStorage.setItem('lazone_selected_country', locationInfo.country);
+        }
+        if (locationInfo.city) {
+          localStorage.setItem('lazone_selected_city', locationInfo.city);
+        }
         
         // Mark that user has seen the location prompt when location is detected
         localStorage.setItem('lazone_location_prompt_shown', 'true');
