@@ -87,6 +87,24 @@ export const AFRICAN_CITIES_DATA: Country[] = [
     ]
   },
   {
+    code: 'ML',
+    name: 'Mali',
+    cities: [
+      {
+        name: 'Bamako',
+        neighborhoods: ['Commune I', 'Commune II', 'Commune III', 'Commune IV', 'Commune V', 'Commune VI', 'Hippodrome', 'Médina Coura', 'Badalabougou', 'Hamdallaye', 'ACI 2000', 'Titibougou', 'Sabalibougou', 'Magnambougou', 'Sogoniko', 'Banankabougou']
+      },
+      {
+        name: 'Sikasso',
+        neighborhoods: ['Centre-ville', 'Résidentiel', 'Commerce', 'Quartier Nord']
+      },
+      {
+        name: 'Mopti',
+        neighborhoods: ['Centre-ville', 'Port', 'Résidentiel', 'Quartier Commercial']
+      }
+    ]
+  },
+  {
     code: 'GH',
     name: 'Ghana',
     cities: [

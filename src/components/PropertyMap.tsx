@@ -73,6 +73,7 @@ export default function PropertyMap({
 
   // Handle search input and generate suggestions
   const handleSearchChange = (value: string) => {
+    console.log('🔍 Search input:', value);
     setSearchQuery(value);
     
     if (value.length < 1) {
@@ -85,8 +86,11 @@ export default function PropertyMap({
 
     // Search in all African countries
     AFRICAN_CITIES_DATA.forEach(country => {
+      console.log('🌍 Searching in country:', country.name);
+      
       // Search cities
       const cities = searchCities(country.name, value);
+      console.log('🏙️ Found cities:', cities);
       cities.forEach(cityName => {
         suggestions.push({
           type: 'city',
@@ -98,6 +102,7 @@ export default function PropertyMap({
       // Search neighborhoods
       country.cities.forEach(city => {
         const neighborhoods = searchNeighborhoods(country.name, city.name, value);
+        console.log(`🏘️ Found neighborhoods in ${city.name}:`, neighborhoods);
         neighborhoods.forEach(neighborhoodName => {
           suggestions.push({
             type: 'neighborhood',
@@ -109,6 +114,7 @@ export default function PropertyMap({
       });
     });
 
+    console.log('📝 Total suggestions:', suggestions);
     // Limit suggestions to 8 for better UX
     setSearchSuggestions(suggestions.slice(0, 8));
     setShowSuggestions(suggestions.length > 0);
