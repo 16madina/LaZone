@@ -82,7 +82,10 @@ export default function PropertyDetail() {
 
       // Fallback to mock data (for demo purposes)
       const { extendedMockProperties } = await import('@/data/extendedMockProperties');
-      const mockProperty = extendedMockProperties.find(p => p.id === id);
+      
+      // Extract numeric ID from UUID-like format (e.g., "17" from "00000000-0000-0000-0000-000000000017")
+      const extractedId = id?.match(/(\d+)$/)?.[1] || id;
+      const mockProperty = extendedMockProperties.find(p => p.id === extractedId || p.id === id);
       
       if (mockProperty) {
         setProperty(mockProperty);
