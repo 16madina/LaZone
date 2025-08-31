@@ -17,7 +17,7 @@ import AIRecommendations from "@/components/ai/AIRecommendations";
 import ImageGallery from "@/components/ImageGallery";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/utils/currency";
-import { getAgentInfo } from "@/utils/agent-utils";
+import { getAgentInfoWithPhone, AgentInfoWithPhone } from "@/utils/agent-utils";
 
 export default function PropertyDetail() {
   const { id } = useParams();
@@ -26,6 +26,7 @@ export default function PropertyDetail() {
   const [isFavorited, setIsFavorited] = useState(false);
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
+  const [agentPhone, setAgentPhone] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     fetchProperty();
@@ -45,8 +46,9 @@ export default function PropertyDetail() {
           .maybeSingle();
 
         if (!error && data) {
-          // Fetch user profile for agent info
-          const agentInfo = await getAgentInfo(data.user_id);
+          // Fetch user profile for agent info including phone
+          const agentInfoWithPhone = await getAgentInfoWithPhone(data.user_id);
+          setAgentPhone(agentInfoWithPhone.phone);
 
           // Convert Supabase data to Property format
           const convertedProperty: Property = {
@@ -71,7 +73,11 @@ export default function PropertyDetail() {
             isVerified: false,
             isNew: isNewListing(data.created_at),
             isFeatured: false,
-            agent: agentInfo,
+            agent: {
+              name: agentInfoWithPhone.name,
+              avatar: agentInfoWithPhone.avatar,
+              isVerified: agentInfoWithPhone.isVerified
+            },
             createdAt: data.created_at
           };
 
@@ -455,7 +461,14 @@ export default function PropertyDetail() {
                   <Button 
                     className="w-full" 
                     size="lg"
-                    onClick={() => window.open('tel:+2250787123456', '_self')}
+                    onClick={() => {
+                      if (agentPhone) {
+                        window.open(`tel:${agentPhone}`, '_self');
+                      } else {
+                        alert('Numéro de téléphone non disponible');
+                      }
+                    }}
+                    disabled={!agentPhone}
                   >
                     <Phone className="w-4 h-4 mr-2" />
                     Appeler
@@ -474,9 +487,15 @@ export default function PropertyDetail() {
                     className="w-full" 
                     size="lg"
                     onClick={() => {
-                      const message = `Bonjour, je suis intéressé(e) par la propriété "${property.title}" à ${property.location.neighborhood}. Pourrions-nous planifier une visite ? Merci.`;
-                      window.open(`https://wa.me/2250787123456?text=${encodeURIComponent(message)}`, '_blank');
+                      if (agentPhone) {
+                        const message = `Bonjour, je suis intéressé(e) par la propriété "${property.title}" à ${property.location.neighborhood}. Pourrions-nous planifier une visite ? Merci.`;
+                        const phoneForWhatsApp = agentPhone.startsWith('+') ? agentPhone.slice(1) : agentPhone;
+                        window.open(`https://wa.me/${phoneForWhatsApp}?text=${encodeURIComponent(message)}`, '_blank');
+                      } else {
+                        alert('Numéro de téléphone non disponible');
+                      }
                     }}
+                    disabled={!agentPhone}
                   >
                     <Calendar className="w-4 h-4 mr-2" />
                     Planifier une visite
