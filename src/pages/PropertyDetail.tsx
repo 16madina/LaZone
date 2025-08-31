@@ -44,6 +44,27 @@ export default function PropertyDetail() {
           .maybeSingle();
 
         if (!error && data) {
+          // Fetch user profile for agent info
+          let agentName = 'Agent LaZone'; // fallback
+          let agentVerified = false;
+          
+          if (data.user_id) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('first_name, last_name, user_type, agency_name, agent_verified')
+              .eq('user_id', data.user_id)
+              .maybeSingle();
+            
+            if (profile) {
+              if (profile.user_type === 'agence' && profile.agency_name) {
+                agentName = profile.agency_name;
+              } else if (profile.first_name || profile.last_name) {
+                agentName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+              }
+              agentVerified = profile.agent_verified || false;
+            }
+          }
+
           // Convert Supabase data to Property format
           const convertedProperty: Property = {
             id: data.id,
@@ -68,9 +89,9 @@ export default function PropertyDetail() {
             isNew: isNewListing(data.created_at),
             isFeatured: false,
             agent: {
-              name: 'Agent LaZone',
+              name: agentName,
               avatar: '/placeholder.svg',
-              isVerified: false
+              isVerified: agentVerified
             },
             createdAt: data.created_at
           };
