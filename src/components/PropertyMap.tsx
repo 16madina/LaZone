@@ -3,8 +3,11 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Property } from './PropertyCard';
 import { Button } from '@/components/ui/button';
-import { Layers, Maximize2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
+import { Layers, Maximize2, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { AFRICAN_CITIES_DATA, searchCities, searchNeighborhoods } from '@/data/africanCities';
 
 interface PropertyMapProps {
   properties: Property[];
@@ -37,6 +40,9 @@ const PropertyMap = React.forwardRef<
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchSuggestions, setSearchSuggestions] = useState<Array<{type: 'city' | 'neighborhood', name: string, country: string, city?: string}>>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Fetch Mapbox token from Supabase Edge Function
   useEffect(() => {
@@ -69,6 +75,96 @@ const PropertyMap = React.forwardRef<
 
     fetchMapboxToken();
   }, [apiKey]);
+
+  // Handle search input and generate suggestions
+  const handleSearchChange = (value: string) => {
+    console.log('🔍 Search input:', value);
+    setSearchQuery(value);
+    
+    if (value.length < 1) {
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const suggestions: Array<{type: 'city' | 'neighborhood', name: string, country: string, city?: string}> = [];
+
+    // Search in all African countries
+    AFRICAN_CITIES_DATA.forEach(country => {
+      // Search cities
+      const cities = searchCities(country.name, value);
+      cities.forEach(cityName => {
+        suggestions.push({
+          type: 'city',
+          name: cityName,
+          country: country.name
+        });
+      });
+
+      // Search neighborhoods
+      country.cities.forEach(city => {
+        const neighborhoods = searchNeighborhoods(country.name, city.name, value);
+        neighborhoods.forEach(neighborhoodName => {
+          suggestions.push({
+            type: 'neighborhood',
+            name: neighborhoodName,
+            country: country.name,
+            city: city.name
+          });
+        });
+      });
+    });
+
+    console.log('📝 Total suggestions found:', suggestions.length);
+    // Limit suggestions to 8 for better UX
+    setSearchSuggestions(suggestions.slice(0, 8));
+    setShowSuggestions(suggestions.length > 0);
+  };
+
+  // Navigate to selected location
+  const handleLocationSelect = async (suggestion: {type: 'city' | 'neighborhood', name: string, country: string, city?: string}) => {
+    if (!map.current || !mapboxToken) {
+      console.log('❌ Map or token not ready');
+      return;
+    }
+
+    console.log('🎯 Navigating to:', suggestion);
+    setSearchQuery(suggestion.name);
+    setShowSuggestions(false);
+
+    try {
+      // Use Mapbox Geocoding API to get coordinates
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+          suggestion.type === 'city' 
+            ? `${suggestion.name}, ${suggestion.country}` 
+            : `${suggestion.name}, ${suggestion.city}, ${suggestion.country}`
+        )}.json?access_token=${mapboxToken}&country=CI,SN,GH,NG,KE,TZ,UG,ET,EG,MA,DZ,TN,LY,SD,ML,BF,NE,TD,CF,CM,GQ,GA,CG,CD,AO,ZM,ZW,BW,NA,ZA,SZ,LS,MW,MZ,MG,MU,SC,KM,DJ,SO,ER,SS,RW,BI,GM,GW,SL,LR,GN,CV`
+      );
+      
+      const data = await response.json();
+      console.log('🌍 Geocoding response:', data);
+      
+      if (data.features && data.features.length > 0) {
+        const [lng, lat] = data.features[0].center;
+        const zoom = suggestion.type === 'city' ? 11 : 14;
+        
+        console.log('🚀 Flying to coordinates:', [lng, lat], 'zoom:', zoom);
+        
+        map.current.flyTo({
+          center: [lng, lat],
+          zoom: zoom,
+          duration: 2000
+        });
+        
+        console.log('✅ Navigation completed');
+      } else {
+        console.log('❌ No geocoding results found');
+      }
+    } catch (error) {
+      console.error('❌ Error geocoding location:', error);
+    }
+  };
 
   // Initialize map
   useEffect(() => {
@@ -499,6 +595,58 @@ const PropertyMap = React.forwardRef<
   return (
     <div className={`relative ${className}`}>
       <div ref={mapContainer} className="w-full h-full rounded-xl overflow-hidden" />
+      
+      {/* Search Bar - positioned at the top center */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-20">
+        <div className="relative">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Rechercher une ville ou un quartier en Afrique..."
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              onFocus={() => {
+                console.log('🎯 Search focused, suggestions:', searchSuggestions.length);
+                if (searchSuggestions.length > 0) setShowSuggestions(true);
+              }}
+              className="pl-10 bg-background/95 backdrop-blur-sm border-border/50 focus:border-primary"
+            />
+          </div>
+          
+          {/* Search Suggestions */}
+          {showSuggestions && searchSuggestions.length > 0 && (
+            <Card className="absolute top-full mt-1 w-full bg-background/95 backdrop-blur-sm border-border/50 shadow-lg z-50">
+              <div className="max-h-64 overflow-y-auto">
+                {searchSuggestions.map((suggestion, index) => (
+                  <div
+                    key={index}
+                    className="p-3 hover:bg-muted/50 cursor-pointer border-b border-border/30 last:border-b-0 transition-colors"
+                    onClick={() => {
+                      console.log('🖱️ Suggestion clicked:', suggestion);
+                      handleLocationSelect(suggestion);
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${suggestion.type === 'city' ? 'bg-primary' : 'bg-secondary'}`} />
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{suggestion.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {suggestion.type === 'city' ? (
+                            `Ville • ${suggestion.country}`
+                          ) : (
+                            `Quartier • ${suggestion.city}, ${suggestion.country}`
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+        </div>
+      </div>
       
       {/* Map Controls */}
       <div className="absolute top-4 left-4 flex flex-col gap-2">

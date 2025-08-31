@@ -224,62 +224,16 @@ const Map: React.FC = () => {
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
       <div className="flex flex-col gap-4 p-4 bg-background border-b border-border z-10">
-        {/* Search Bar */}
-        <div className="flex items-center gap-4">
-          <div className="flex-1 relative">
-            <div className="absolute inset-y-0 left-3 flex items-center">
-              <Search className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <Input
-              type="text"
-              placeholder="Rechercher une ville, quartier en Afrique..."
-              value={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              onFocus={() => searchSuggestions.length > 0 && setShowSuggestions(true)}
-              className="w-full pl-10 pr-4 py-3 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-            />
-            
-            {/* Search Suggestions */}
-            {showSuggestions && searchSuggestions.length > 0 && (
-              <Card className="absolute top-full mt-1 w-full bg-background border-border shadow-lg z-50">
-                <div className="max-h-64 overflow-y-auto">
-                  {searchSuggestions.map((suggestion, index) => (
-                    <div
-                      key={index}
-                      className="p-3 hover:bg-muted/50 cursor-pointer border-b border-border/30 last:border-b-0 transition-colors"
-                      onClick={() => handleLocationSelect(suggestion)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${suggestion.type === 'city' ? 'bg-primary' : 'bg-secondary'}`} />
-                        <div className="flex-1">
-                          <div className="font-medium text-sm">{suggestion.name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {suggestion.type === 'city' ? (
-                              `Ville • ${suggestion.country}`
-                            ) : (
-                              `Quartier • ${suggestion.city}, ${suggestion.country}`
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            )}
-          </div>
-        </div>
-
         {/* Controls */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
+            <CountrySelector variant="compact" />
             <div className="flex items-center gap-2">
               <span className="font-semibold text-lg">Carte</span>
               <Badge variant="secondary">
                 {sortedProperties.length} biens
               </Badge>
             </div>
-            <CountrySelector variant="compact" />
           </div>
           
           <div className="flex items-center gap-2">
