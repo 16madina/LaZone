@@ -57,6 +57,20 @@ const Auth: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent, isSignUp: boolean) => {
     e.preventDefault();
     console.log('Form submission started', { isSignUp, userType });
+    
+    // Validation spéciale pour les agences - elles doivent être basées en Afrique
+    if (isSignUp && userType === 'agence') {
+      const countryData = countries.find(c => c.name === selectedCountry);
+      if (!countryData?.isAfrican) {
+        toast({
+          title: 'Localisation invalide',
+          description: 'Votre agence doit être basée en Afrique pour créer un compte.',
+          variant: 'destructive',
+        });
+        return; // Empêcher la soumission du formulaire
+      }
+    }
+    
     setIsLoading(true);
     
     try {
