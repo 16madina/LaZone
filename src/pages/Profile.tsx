@@ -53,6 +53,7 @@ interface Profile {
   agency_phone?: string;
   responsible_mobile?: string;
   is_canvasser?: boolean;
+  avatar_url?: string;
 }
 
 interface Listing {
@@ -142,6 +143,10 @@ const Profile: React.FC = () => {
       }
 
       setProfile(data as Profile);
+      // Set avatar preview from existing avatar_url
+      if (data?.avatar_url) {
+        setAvatarPreview(data.avatar_url);
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
@@ -261,12 +266,43 @@ const Profile: React.FC = () => {
     if (!avatarFile || !user) return;
     
     try {
-      // Here you would upload to Supabase Storage
+      // Create avatar bucket if it doesn't exist
+      const bucketName = 'avatars';
+      const fileName = `${user.id}/avatar.${avatarFile.name.split('.').pop()}`;
+      
+      // Upload file to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from(bucketName)
+        .upload(fileName, avatarFile, {
+          upsert: true,
+          contentType: avatarFile.type
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucketName)
+        .getPublicUrl(fileName);
+
+      // Update profile with avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('user_id', user.id);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setProfile(prev => prev ? { ...prev, avatar_url: publicUrl } : null);
+      setAvatarFile(null);
+      
       toast({
         title: 'Succès',
         description: 'Photo de profil mise à jour',
       });
     } catch (error) {
+      console.error('Error uploading avatar:', error);
       toast({
         title: 'Erreur',
         description: 'Erreur lors de la mise à jour',
@@ -375,7 +411,7 @@ const Profile: React.FC = () => {
             <div className="flex items-start gap-4">
               <div className="relative">
                 <Avatar className="w-16 h-16">
-                  <AvatarImage src={avatarPreview || undefined} />
+                  <AvatarImage src={avatarPreview || profile?.avatar_url || undefined} />
                   <AvatarFallback>
                     <User className="w-8 h-8" />
                   </AvatarFallback>
