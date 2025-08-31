@@ -92,9 +92,16 @@ export default function PropertyMap({
         map.current = new mapboxgl.Map({
           container: mapContainer.current,
           style: 'mapbox://styles/mapbox/light-v11',
-          center: [-4.0333, 5.3167], // Default: Abidjan, Côte d'Ivoire
-          zoom: 6, // Start with wider view
+          center: [17.7, 7.2], // Centre de l'Afrique (République centrafricaine/Tchad)
+          zoom: 3, // Vue d'ensemble de l'Afrique
           pitch: 0,
+          // Limiter la navigation aux coordonnées africaines
+          maxBounds: [
+            [-25, -40], // Sud-ouest de l'Afrique (Atlantic + Sud)
+            [55, 38]    // Nord-est de l'Afrique (Mer Rouge + Méditerranée)
+          ],
+          minZoom: 2, // Zoom minimum pour garder l'Afrique visible
+          maxZoom: 18 // Zoom maximum pour les détails urbains
         });
 
         map.current.addControl(
@@ -108,13 +115,20 @@ export default function PropertyMap({
           console.log('🗺️ Map loaded successfully!');
           setMapLoaded(true);
           
-          // Center map on user location if available
+          // Center map on user location if available (only if in Africa)
           if (userLocation && map.current) {
-            map.current.flyTo({
-              center: userLocation,
-              zoom: 12,
-              duration: 2000
-            });
+            const [lng, lat] = userLocation;
+            // Vérifier si la localisation est en Afrique
+            if (lng >= -25 && lng <= 55 && lat >= -40 && lat <= 38) {
+              map.current.flyTo({
+                center: userLocation,
+                zoom: 12,
+                duration: 2000
+              });
+            } else {
+              // Si hors d'Afrique, garder le centre par défaut
+              console.log('🌍 Localisation hors d\'Afrique, centre maintenu sur l\'Afrique');
+            }
           }
         });
 
