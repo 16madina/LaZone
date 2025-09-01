@@ -5,6 +5,7 @@ export interface AgentInfo {
   avatar: string;
   isVerified: boolean;
   type?: 'particulier' | 'agence' | 'démarcheur';
+  agencyName?: string;
 }
 
 export interface AgentInfoWithPhone extends AgentInfo {
@@ -31,10 +32,8 @@ export const getAgentInfo = async (userId: string): Promise<AgentInfo> => {
     if (!profile) return defaultAgent;
 
     let agentName = 'Propriétaire';
-    if (profile.user_type === 'agence' && profile.agency_name) {
-      agentName = profile.agency_name;
-    } else if (profile.first_name && profile.last_name) {
-      // Pour les particuliers, toujours afficher le nom complet
+    if (profile.first_name && profile.last_name) {
+      // Toujours afficher le nom complet de la personne
       agentName = `${profile.first_name} ${profile.last_name}`;
     } else if (profile.first_name) {
       agentName = profile.first_name;
@@ -46,7 +45,8 @@ export const getAgentInfo = async (userId: string): Promise<AgentInfo> => {
       name: agentName,
       avatar: '/placeholder.svg',
       isVerified: profile.agent_verified || false,
-      type: (profile.user_type as 'particulier' | 'agence' | 'démarcheur') || 'particulier'
+      type: (profile.user_type as 'particulier' | 'agence' | 'démarcheur') || 'particulier',
+      agencyName: profile.agency_name
     };
   } catch (error) {
     console.error('Error fetching agent info:', error);
@@ -77,10 +77,8 @@ export const getAgentInfoWithPhone = async (userId: string): Promise<AgentInfoWi
     }
 
     let agentName = 'Propriétaire';
-    if (profile.user_type === 'agence' && profile.agency_name) {
-      agentName = profile.agency_name;
-    } else if (profile.first_name && profile.last_name) {
-      // Pour les particuliers, toujours afficher le nom complet
+    if (profile.first_name && profile.last_name) {
+      // Toujours afficher le nom complet de la personne
       agentName = `${profile.first_name} ${profile.last_name}`;
     } else if (profile.first_name) {
       agentName = profile.first_name;
@@ -93,7 +91,8 @@ export const getAgentInfoWithPhone = async (userId: string): Promise<AgentInfoWi
       avatar: '/placeholder.svg',
       isVerified: profile.agent_verified || false,
       phone: profile.phone,
-      type: (profile.user_type as 'particulier' | 'agence' | 'démarcheur') || 'particulier'
+      type: (profile.user_type as 'particulier' | 'agence' | 'démarcheur') || 'particulier',
+      agencyName: profile.agency_name
     };
   } catch (error) {
     console.error('Error fetching agent info:', error);

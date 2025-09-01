@@ -2,6 +2,103 @@ import { Property } from "@/components/PropertyCard";
 
 // Extended mock data covering major African cities
 export const extendedMockProperties: Property[] = [
+  // Nouvelles propriétés de démonstration
+  {
+    id: "demo-demarcheur",
+    title: "Villa 4 chambres avec piscine - Riviera Golf",
+    price: 1200000,
+    currency: "CFA",
+    location: {
+      city: "Abidjan",
+      neighborhood: "Riviera Golf",
+      coordinates: [-3.9581, 5.3364]
+    },
+    images: [
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&h=500&fit=crop&crop=center",
+      "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&h=500&fit=crop&crop=center"
+    ],
+    type: "house",
+    purpose: "rent",
+    bedrooms: 4,
+    bathrooms: 3,
+    area: 180,
+    landArea: 450,
+    amenities: ["Piscine", "Jardin", "Parking", "Sécurité 24/7", "Climatisation", "Terrasse"],
+    isVerified: true,
+    isNew: true,
+    isFeatured: true,
+    agent: {
+      name: "Fadel Abdoul",
+      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=center",
+      isVerified: true,
+      type: "démarcheur"
+    },
+    createdAt: "2024-01-25"
+  },
+  
+  {
+    id: "demo-agence-jmr",
+    title: "Appartement neuf 3 chambres - Plateau",
+    price: 950000,
+    currency: "CFA",
+    location: {
+      city: "Abidjan",
+      neighborhood: "Plateau",
+      coordinates: [-4.0167, 5.3197]
+    },
+    images: [
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=500&fit=crop&crop=center",
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=500&fit=crop&crop=center"
+    ],
+    type: "apartment",
+    purpose: "rent",
+    bedrooms: 3,
+    bathrooms: 2,
+    area: 120,
+    amenities: ["Climatisation", "Parking", "Ascenseur", "Balcon", "Fibre", "Sécurité"],
+    isVerified: true,
+    isNew: true,
+    isFeatured: false,
+    agent: {
+      name: "Marie Kouassi",
+      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=center",
+      isVerified: true,
+      type: "agence"
+    },
+    createdAt: "2024-01-24"
+  },
+
+  {
+    id: "demo-agence-immo",
+    title: "Bureau moderne 200m² - Marcory Zone 4",
+    price: 1800000,
+    currency: "CFA",
+    location: {
+      city: "Abidjan",
+      neighborhood: "Marcory Zone 4",
+      coordinates: [-4.0167, 5.2892]
+    },
+    images: [
+      "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&h=500&fit=crop&crop=center",
+      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&h=500&fit=crop&crop=center"
+    ],
+    type: "commercial",
+    purpose: "rent",
+    bathrooms: 2,
+    area: 200,
+    amenities: ["Climatisation", "Parking", "Ascenseur", "Fibre", "Sécurité 24/7", "Réception"],
+    isVerified: true,
+    isNew: false,
+    isFeatured: true,
+    agent: {
+      name: "Alain Toro",
+      avatar: "https://images.unsplash.com/photo-1566492031773-4f4e44671d66?w=100&h=100&fit=crop&crop=center",
+      isVerified: true,
+      type: "agence"
+    },
+    createdAt: "2024-01-23"
+  },
+
   // Existing properties (Abidjan, Dakar)
   {
     id: "1",

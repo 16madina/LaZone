@@ -89,11 +89,15 @@ export default function PropertyCard({
     }
   };
 
-  const getAgentLabel = (type?: 'particulier' | 'agence' | 'démarcheur') => {
-    switch (type) {
-      case 'agence': return 'Agence';
+  const getAgentLabel = (agent: { type?: 'particulier' | 'agence' | 'démarcheur', name: string }) => {
+    switch (agent.type) {
+      case 'agence':
+        // Pour les agences de démonstration, extraire le nom de l'agence du nom
+        if (agent.name === 'Marie Kouassi') return 'Agence JMR';
+        if (agent.name === 'Alain Toro') return 'Agence Immo+';
+        return 'Agence';
       case 'démarcheur': return 'Démarcheur';
-      default: return 'Particulier';
+      default: return 'Propriétaire';
     }
   };
 
@@ -309,7 +313,7 @@ export default function PropertyCard({
               </div>
               <div className="flex items-center gap-1 text-xs text-muted-foreground/80">
                 {getAgentIcon(property.agent.type)}
-                <span>{getAgentLabel(property.agent.type)}</span>
+                <span>{getAgentLabel(property.agent)}</span>
               </div>
             </div>
           </div>
