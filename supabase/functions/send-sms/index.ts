@@ -26,8 +26,9 @@ serve(async (req) => {
 
     const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
     const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
+    const twilioNumber = Deno.env.get('TWILIO_PHONE_NUMBER');
 
-    if (!accountSid || !authToken) {
+    if (!accountSid || !authToken || !twilioNumber) {
       throw new Error('Twilio credentials not configured');
     }
 
@@ -40,7 +41,7 @@ serve(async (req) => {
     const formData = new URLSearchParams();
     formData.append('To', to);
     formData.append('Body', message);
-    formData.append('From', from || '+15017122661'); // Numéro Twilio valide par défaut
+    formData.append('From', from || twilioNumber);
 
     console.log('Sending SMS to:', to);
     console.log('Message:', message);

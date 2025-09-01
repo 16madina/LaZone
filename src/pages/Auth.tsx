@@ -175,8 +175,7 @@ const Auth: React.FC = () => {
       const { error } = await supabase.functions.invoke('send-sms', {
         body: {
           to: `${phoneCode}${smsPhone}`,
-          message: `Votre code de connexion LaZone: ${code}. Ce code expire dans 5 minutes.`,
-          from: '+15017122661' // Numéro Twilio valide pour les tests
+          message: `Votre code de connexion LaZone: ${code}. Ce code expire dans 5 minutes.`
         }
       });
 
