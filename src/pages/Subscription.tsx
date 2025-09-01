@@ -71,6 +71,28 @@ const Subscription: React.FC = () => {
 
   useEffect(() => {
     fetchSettings();
+
+    // Écouter les changements en temps réel sur app_settings
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Écouter tous les événements (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'app_settings'
+        },
+        (payload) => {
+          console.log('App settings changed:', payload);
+          // Refetch les settings quand ils changent
+          fetchSettings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleSubscribe = async () => {
