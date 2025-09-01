@@ -96,9 +96,14 @@ export default function PropertyDetail() {
       // Fallback to mock data (for demo purposes)
       const { extendedMockProperties } = await import('@/data/extendedMockProperties');
       
-      // Extract numeric ID from UUID-like format (e.g., "17" from "00000000-0000-0000-0000-000000000017")
-      const extractedId = id?.match(/(\d+)$/)?.[1] || id;
-      const mockProperty = extendedMockProperties.find(p => p.id === extractedId || p.id === id);
+      // Handle demo properties with fixed IDs (format: "demo-originalId")
+      let mockProperty = extendedMockProperties.find(p => `demo-${p.id}` === id);
+      
+      // Also check for original ID patterns
+      if (!mockProperty) {
+        const extractedId = id?.match(/(\d+)$/)?.[1] || id?.replace('demo-', '');
+        mockProperty = extendedMockProperties.find(p => p.id === extractedId || p.id === id);
+      }
       
       if (mockProperty) {
         // Use mock data directly with its own agent info - no need to fetch from database

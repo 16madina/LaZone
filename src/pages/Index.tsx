@@ -20,9 +20,9 @@ import { Input } from "@/components/ui/input";
 import AIRecommendations from "@/components/ai/AIRecommendations";
 import { getAgentInfo } from "@/utils/agent-utils";
 
-// Generate unique IDs for demo properties to avoid duplicates
-const generateUniqueId = (originalId: string, index: number) => {
-  return `demo-${originalId}-${index}-${Date.now()}`;
+// Use fixed IDs for demo properties so they can be found in PropertyDetail
+const generateFixedDemoId = (originalId: string) => {
+  return `demo-${originalId}`;
 };
 
 const Index = () => {
@@ -131,10 +131,10 @@ const Index = () => {
       // Take up to 3 demo properties to mix with real ones
       demoProperties = demoProperties
         .slice(0, 3)
-        .map((prop, index) => ({
+        .map((prop) => ({
           ...prop,
-          // Generate unique ID to avoid duplicates
-          id: generateUniqueId(prop.id, index)
+          // Use fixed demo ID so it can be found in PropertyDetail
+          id: generateFixedDemoId(prop.id)
         }));
       
       // Mix demo properties with real ones (demo first to ensure variety)
@@ -155,10 +155,10 @@ const Index = () => {
       }
       demoProperties = demoProperties
         .slice(0, 10)
-        .map((prop, index) => ({
+        .map((prop) => ({
           ...prop,
-          // Generate unique ID to avoid duplicates
-          id: generateUniqueId(prop.id, index)
+          // Use fixed demo ID so it can be found in PropertyDetail
+          id: generateFixedDemoId(prop.id)
         }));
       setProperties(demoProperties);
     } finally {
