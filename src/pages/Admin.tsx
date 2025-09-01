@@ -24,7 +24,9 @@ import {
   Shield,
   History,
   Phone,
-  TrendingUp
+  TrendingUp,
+  Settings,
+  DollarSign
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -76,6 +78,15 @@ interface AdminAction {
   created_at: string;
 }
 
+interface AppSetting {
+  id: string;
+  setting_key: string;
+  setting_value: any;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 const Admin: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -86,6 +97,7 @@ const Admin: React.FC = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
   const [adminActions, setAdminActions] = useState<AdminAction[]>([]);
+  const [appSettings, setAppSettings] = useState<AppSetting[]>([]);
   const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   
@@ -96,6 +108,14 @@ const Admin: React.FC = () => {
   const [banReason, setBanReason] = useState('');
   const [smsMessage, setSmsMessage] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
+
+  // Settings states
+  const [monthlyPrice, setMonthlyPrice] = useState(5000);
+  const [perListingPrice, setPerListingPrice] = useState(1000);
+  const [freeListingsIndividual, setFreeListingsIndividual] = useState(3);
+  const [freeListingsCanvasser, setFreeListingsCanvasser] = useState(3);
+  const [freeListingsAgency, setFreeListingsAgency] = useState(0);
+  const [settingsLoading, setSettingsLoading] = useState(false);
 
   useEffect(() => {
     checkAdminAccess();
@@ -132,7 +152,8 @@ const Admin: React.FC = () => {
         fetchUserRoles(),
         fetchProfiles(),
         fetchListings(),
-        fetchAdminActions()
+        fetchAdminActions(),
+        fetchAppSettings()
       ]);
     } catch (error) {
       console.error('Error checking admin access:', error);
@@ -197,6 +218,92 @@ const Admin: React.FC = () => {
       setAdminActions(data || []);
     } catch (error) {
       console.error('Error fetching admin actions:', error);
+    }
+  };
+
+  const fetchAppSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('*')
+        .order('setting_key');
+
+      if (error) throw error;
+      setAppSettings(data || []);
+
+      // Load settings into state
+      data?.forEach(setting => {
+        const value = setting.setting_value as any;
+        switch (setting.setting_key) {
+          case 'subscription_monthly_price':
+            setMonthlyPrice(value?.amount || 5000);
+            break;
+          case 'subscription_per_listing_price':
+            setPerListingPrice(value?.amount || 1000);
+            break;
+          case 'free_listings_limit_individual':
+            setFreeListingsIndividual(value?.limit || 3);
+            break;
+          case 'free_listings_limit_canvasser':
+            setFreeListingsCanvasser(value?.limit || 3);
+            break;
+          case 'free_listings_limit_agency':
+            setFreeListingsAgency(value?.limit || 0);
+            break;
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching app settings:', error);
+    }
+  };
+
+  const updateAppSetting = async (settingKey: string, settingValue: any) => {
+    try {
+      const { error } = await supabase
+        .from('app_settings')
+        .update({ setting_value: settingValue })
+        .eq('setting_key', settingKey);
+
+      if (error) throw error;
+      
+      toast({
+        title: 'Paramètre mis à jour',
+        description: 'Le paramètre a été modifié avec succès.',
+      });
+
+      fetchAppSettings();
+    } catch (error: any) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de mettre à jour le paramètre.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleUpdatePricing = async () => {
+    setSettingsLoading(true);
+    try {
+      await Promise.all([
+        updateAppSetting('subscription_monthly_price', { amount: monthlyPrice, currency: 'CFA' }),
+        updateAppSetting('subscription_per_listing_price', { amount: perListingPrice, currency: 'CFA' }),
+        updateAppSetting('free_listings_limit_individual', { limit: freeListingsIndividual }),
+        updateAppSetting('free_listings_limit_canvasser', { limit: freeListingsCanvasser }),
+        updateAppSetting('free_listings_limit_agency', { limit: freeListingsAgency })
+      ]);
+      
+      toast({
+        title: 'Paramètres sauvegardés',
+        description: 'Tous les paramètres ont été mis à jour avec succès.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Erreur lors de la sauvegarde des paramètres.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSettingsLoading(false);
     }
   };
 
@@ -508,10 +615,11 @@ const Admin: React.FC = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="users">Utilisateurs</TabsTrigger>
             <TabsTrigger value="listings">Annonces</TabsTrigger>
             <TabsTrigger value="roles">Rôles</TabsTrigger>
+            <TabsTrigger value="settings">Tarifs & Limites</TabsTrigger>
             <TabsTrigger value="actions">Historique</TabsTrigger>
             <TabsTrigger value="stats">Statistiques</TabsTrigger>
           </TabsList>
@@ -680,6 +788,139 @@ const Admin: React.FC = () => {
                     ))}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="w-5 h-5" />
+                  Tarifs & Limites d'annonces
+                </CardTitle>
+                <CardDescription>
+                  Configurer les prix d'abonnement et les limites d'annonces gratuites
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Pricing Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <DollarSign className="w-5 h-5" />
+                    Tarifs d'abonnement
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Prix abonnement mensuel (CFA)</label>
+                      <Input
+                        type="number"
+                        value={monthlyPrice}
+                        onChange={(e) => setMonthlyPrice(Number(e.target.value) || 0)}
+                        min="0"
+                        step="100"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Prix en centimes CFA (ex: 5000 = 50 F CFA)
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Prix par annonce (CFA)</label>
+                      <Input
+                        type="number"
+                        value={perListingPrice}
+                        onChange={(e) => setPerListingPrice(Number(e.target.value) || 0)}
+                        min="0"
+                        step="100"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Prix en centimes CFA (ex: 1000 = 10 F CFA)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Limits Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Building2 className="w-5 h-5" />
+                    Limites d'annonces gratuites
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Particuliers</label>
+                      <Input
+                        type="number"
+                        value={freeListingsIndividual}
+                        onChange={(e) => setFreeListingsIndividual(Number(e.target.value) || 0)}
+                        min="0"
+                        max="100"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Nombre d'annonces gratuites pour les particuliers
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Démarcheurs</label>
+                      <Input
+                        type="number"
+                        value={freeListingsCanvasser}
+                        onChange={(e) => setFreeListingsCanvasser(Number(e.target.value) || 0)}
+                        min="0"
+                        max="100"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Nombre d'annonces gratuites pour les démarcheurs
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Agences</label>
+                      <Input
+                        type="number"
+                        value={freeListingsAgency}
+                        onChange={(e) => setFreeListingsAgency(Number(e.target.value) || 0)}
+                        min="0"
+                        max="100"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Nombre d'annonces gratuites pour les agences
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Preview Section */}
+                <div className="border rounded-lg p-4 bg-muted/50">
+                  <h4 className="font-medium mb-3">Aperçu des tarifs actuels</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p><strong>Abonnement mensuel:</strong> {(monthlyPrice / 100).toFixed(0)} F CFA</p>
+                      <p><strong>Prix par annonce:</strong> {(perListingPrice / 100).toFixed(0)} F CFA</p>
+                    </div>
+                    <div>
+                      <p><strong>Annonces gratuites particuliers:</strong> {freeListingsIndividual}</p>
+                      <p><strong>Annonces gratuites démarcheurs:</strong> {freeListingsCanvasser}</p>
+                      <p><strong>Annonces gratuites agences:</strong> {freeListingsAgency}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <div className="flex justify-end">
+                  <Button 
+                    onClick={handleUpdatePricing}
+                    disabled={settingsLoading}
+                    className="min-w-32"
+                  >
+                    {settingsLoading ? (
+                      <div className="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin mr-2" />
+                    ) : (
+                      <Settings className="w-4 h-4 mr-2" />
+                    )}
+                    Sauvegarder
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
