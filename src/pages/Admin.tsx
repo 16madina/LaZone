@@ -285,11 +285,11 @@ const Admin: React.FC = () => {
     setSettingsLoading(true);
     try {
       await Promise.all([
-        updateAppSetting('subscription_monthly_price', { amount: monthlyPrice, currency: 'CFA' }),
-        updateAppSetting('subscription_per_listing_price', { amount: perListingPrice, currency: 'CFA' }),
-        updateAppSetting('free_listings_limit_individual', { limit: freeListingsIndividual }),
-        updateAppSetting('free_listings_limit_canvasser', { limit: freeListingsCanvasser }),
-        updateAppSetting('free_listings_limit_agency', { limit: freeListingsAgency })
+        updateAppSetting('monthly_price', monthlyPrice),
+        updateAppSetting('per_listing_price', perListingPrice),
+        updateAppSetting('free_listings_individual', freeListingsIndividual),
+        updateAppSetting('free_listings_canvasser', freeListingsCanvasser),
+        updateAppSetting('free_listings_agency', freeListingsAgency)
       ]);
       
       toast({
