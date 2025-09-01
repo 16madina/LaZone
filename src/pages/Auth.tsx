@@ -30,6 +30,7 @@ const Auth: React.FC = () => {
   // SMS Login states
   const [loginMethod, setLoginMethod] = useState<'email' | 'sms'>('email');
   const [smsPhone, setSmsPhone] = useState('');
+  const [smsCountry, setSmsCountry] = useState<string | null>(selectedCountry);
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [isResending, setIsResending] = useState(false);
@@ -51,7 +52,16 @@ const Auth: React.FC = () => {
   const mode = searchParams.get('mode') || 'login';
   const nextUrl = searchParams.get('next') || '/';
 
-  // Helper pour obtenir les infos du pays
+  // Helper pour obtenir les infos du pays SMS
+  const getSmsCountryInfo = () => {
+    const country = countries.find(c => c.name === smsCountry);
+    return {
+      flag: country?.flag || '',
+      phoneCode: country?.phoneCode || ''
+    };
+  };
+
+  // Helper pour obtenir les infos du pays d'inscription
   const getCountryInfo = () => {
     if (!selectedCountry) return { flag: '', phoneCode: '' };
     const country = countries.find(c => c.name === selectedCountry);
@@ -61,6 +71,7 @@ const Auth: React.FC = () => {
     };
   };
 
+  const { flag: smsFlag, phoneCode: smsPhoneCode } = getSmsCountryInfo();
   const { flag, phoneCode } = getCountryInfo();
 
   const handleSubmit = async (e: React.FormEvent, isSignUp: boolean) => {
@@ -172,9 +183,9 @@ const Auth: React.FC = () => {
       sessionStorage.setItem('sms_phone', smsPhone);
       
       // Send SMS via edge function
-      const { error } = await supabase.functions.invoke('send-sms', {
+      const { data, error } = await supabase.functions.invoke('send-sms', {
         body: {
-          to: `${phoneCode}${smsPhone}`,
+          to: `${smsPhoneCode}${smsPhone.replace(/\s/g, '')}`, // Enlever les espaces
           message: `Votre code de connexion LaZone: ${code}. Ce code expire dans 5 minutes.`
         }
       });
@@ -358,9 +369,9 @@ const Auth: React.FC = () => {
                           <>
                             <CountryPhoneSelector
                               countries={countries}
-                              selectedCountry={selectedCountry}
+                              selectedCountry={smsCountry}
                               phoneNumber={smsPhone}
-                              onCountryChange={() => {}} // Utilise le pays déjà sélectionné
+                              onCountryChange={setSmsCountry}
                               onPhoneChange={setSmsPhone}
                               placeholder="XX XX XX XX"
                               label="Numéro de téléphone"
@@ -380,7 +391,7 @@ const Auth: React.FC = () => {
                             <div className="space-y-2">
                               <Label htmlFor="otp-code">Code de vérification</Label>
                               <p className="text-sm text-muted-foreground">
-                                Saisissez le code à 6 chiffres envoyé au {phoneCode}{smsPhone}
+                                Saisissez le code à 6 chiffres envoyé au {smsPhoneCode}{smsPhone}
                               </p>
                               <div className="flex justify-center">
                                 <InputOTP
