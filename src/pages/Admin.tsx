@@ -261,12 +261,24 @@ const Admin: React.FC = () => {
     try {
       console.log(`🔧 Updating setting: ${settingKey} = ${settingValue}`);
       
-      const { error } = await supabase
+      // Convert the value to proper JSON format for JSONB column
+      const jsonValue = typeof settingValue === 'number' ? settingValue : settingValue;
+      console.log(`📝 Storing as JSON:`, jsonValue);
+      
+      const { data, error } = await supabase
         .from('app_settings')
-        .update({ setting_value: settingValue })
-        .eq('setting_key', settingKey);
+        .update({ setting_value: jsonValue })
+        .eq('setting_key', settingKey)
+        .select();
 
       if (error) throw error;
+
+      console.log(`✅ Successfully updated ${settingKey}:`, data);
+
+      toast({
+        title: 'Paramètre mis à jour',
+        description: `${settingKey} a été mis à jour avec succès.`,
+      });
       
       console.log(`✅ Setting ${settingKey} updated successfully`);
       
