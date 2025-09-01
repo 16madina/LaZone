@@ -82,7 +82,8 @@ export default function PropertyDetail() {
             agent: {
               name: agentInfoWithPhone.name,
               avatar: agentInfoWithPhone.avatar,
-              isVerified: agentInfoWithPhone.isVerified
+              isVerified: agentInfoWithPhone.isVerified,
+              type: agentInfoWithPhone.type
             },
             createdAt: data.created_at
           };

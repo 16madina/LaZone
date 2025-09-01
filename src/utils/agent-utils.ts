@@ -4,6 +4,7 @@ export interface AgentInfo {
   name: string;
   avatar: string;
   isVerified: boolean;
+  type?: 'particulier' | 'agence' | 'démarcheur';
 }
 
 export interface AgentInfoWithPhone extends AgentInfo {
@@ -14,7 +15,8 @@ export const getAgentInfo = async (userId: string): Promise<AgentInfo> => {
   const defaultAgent: AgentInfo = {
     name: 'Propriétaire',
     avatar: '/placeholder.svg',
-    isVerified: false
+    isVerified: false,
+    type: 'particulier'
   };
 
   if (!userId) return defaultAgent;
@@ -43,7 +45,8 @@ export const getAgentInfo = async (userId: string): Promise<AgentInfo> => {
     return {
       name: agentName,
       avatar: '/placeholder.svg',
-      isVerified: profile.agent_verified || false
+      isVerified: profile.agent_verified || false,
+      type: (profile.user_type as 'particulier' | 'agence' | 'démarcheur') || 'particulier'
     };
   } catch (error) {
     console.error('Error fetching agent info:', error);
@@ -56,7 +59,8 @@ export const getAgentInfoWithPhone = async (userId: string): Promise<AgentInfoWi
     name: 'Propriétaire',
     avatar: '/placeholder.svg',
     isVerified: false,
-    phone: undefined
+    phone: undefined,
+    type: 'particulier'
   };
 
   if (!userId) return defaultAgent;
@@ -88,7 +92,8 @@ export const getAgentInfoWithPhone = async (userId: string): Promise<AgentInfoWi
       name: agentName,
       avatar: '/placeholder.svg',
       isVerified: profile.agent_verified || false,
-      phone: profile.phone
+      phone: profile.phone,
+      type: (profile.user_type as 'particulier' | 'agence' | 'démarcheur') || 'particulier'
     };
   } catch (error) {
     console.error('Error fetching agent info:', error);

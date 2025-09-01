@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { Heart, MapPin, Bed, Bath, Maximize, Phone, MessageCircle, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { Heart, MapPin, Bed, Bath, Maximize, Phone, MessageCircle, Eye, ChevronLeft, ChevronRight, Building2, UserCheck, User } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "@/contexts/LocationContext";
@@ -36,6 +36,7 @@ export interface Property {
     name: string;
     avatar: string;
     isVerified: boolean;
+    type?: 'particulier' | 'agence' | 'démarcheur';
   };
   createdAt: string;
   distance?: number;
@@ -77,6 +78,22 @@ export default function PropertyCard({
       case 'land': return 'Terrain';
       case 'commercial': return 'Commercial';
       default: return type;
+    }
+  };
+
+  const getAgentIcon = (type?: 'particulier' | 'agence' | 'démarcheur') => {
+    switch (type) {
+      case 'agence': return <Building2 className="w-3 h-3" />;
+      case 'démarcheur': return <UserCheck className="w-3 h-3" />;
+      default: return <User className="w-3 h-3" />;
+    }
+  };
+
+  const getAgentLabel = (type?: 'particulier' | 'agence' | 'démarcheur') => {
+    switch (type) {
+      case 'agence': return 'Agence';
+      case 'démarcheur': return 'Démarcheur';
+      default: return 'Particulier';
     }
   };
 
@@ -281,12 +298,20 @@ export default function PropertyCard({
               lazy={true}
               fallbackSrc="/placeholder.svg"
             />
-            <span className="text-xs text-muted-foreground truncate">
-              {property.agent.name}
-            </span>
-            {property.agent.isVerified && (
-              <div className="w-1 h-1 bg-success rounded-full flex-shrink-0"></div>
-            )}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground truncate">
+                  {property.agent.name}
+                </span>
+                {property.agent.isVerified && (
+                  <div className="w-1 h-1 bg-success rounded-full flex-shrink-0"></div>
+                )}
+              </div>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground/80">
+                {getAgentIcon(property.agent.type)}
+                <span>{getAgentLabel(property.agent.type)}</span>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center gap-1">
