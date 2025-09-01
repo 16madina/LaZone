@@ -13,6 +13,7 @@ import { useLocation } from '@/contexts/LocationContext';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { supabase } from '@/integrations/supabase/client';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import CountryPhoneSelector from '@/components/CountryPhoneSelector';
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
@@ -174,7 +175,8 @@ const Auth: React.FC = () => {
       const { error } = await supabase.functions.invoke('send-sms', {
         body: {
           to: `${phoneCode}${smsPhone}`,
-          message: `Votre code de connexion LaZone: ${code}. Ce code expire dans 5 minutes.`
+          message: `Votre code de connexion LaZone: ${code}. Ce code expire dans 5 minutes.`,
+          from: '+15017122661' // Numéro Twilio valide pour les tests
         }
       });
 
@@ -355,23 +357,15 @@ const Auth: React.FC = () => {
                       <div className="space-y-4">
                         {!otpSent ? (
                           <>
-                            <div className="space-y-2">
-                              <Label htmlFor="sms-phone">Numéro de téléphone</Label>
-                              <div className="relative">
-                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm z-10">
-                                  {phoneCode}
-                                </span>
-                                <Input
-                                  id="sms-phone"
-                                  type="tel"
-                                  placeholder={`${phoneCode} XX XX XX XX`}
-                                  value={smsPhone}
-                                  onChange={(e) => setSmsPhone(e.target.value)}
-                                  className={phoneCode ? 'pl-16' : 'pl-3'}
-                                  required
-                                />
-                              </div>
-                            </div>
+                            <CountryPhoneSelector
+                              countries={countries}
+                              selectedCountry={selectedCountry}
+                              phoneNumber={smsPhone}
+                              onCountryChange={() => {}} // Utilise le pays déjà sélectionné
+                              onPhoneChange={setSmsPhone}
+                              placeholder="XX XX XX XX"
+                              label="Numéro de téléphone"
+                            />
                             
                             <Button
                               type="button"

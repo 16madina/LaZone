@@ -40,7 +40,7 @@ serve(async (req) => {
     const formData = new URLSearchParams();
     formData.append('To', to);
     formData.append('Body', message);
-    formData.append('From', from || '+12345678900'); // Default Twilio number
+    formData.append('From', from || '+15017122661'); // Numéro Twilio valide par défaut
 
     console.log('Sending SMS to:', to);
     console.log('Message:', message);
