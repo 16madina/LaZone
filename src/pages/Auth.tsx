@@ -42,6 +42,7 @@ const Auth: React.FC = () => {
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
   
   // Champs particulier
   const [firstName, setFirstName] = useState('');
@@ -291,6 +292,39 @@ const Auth: React.FC = () => {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!email.trim()) {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez saisir votre adresse email.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsResettingPassword(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth?mode=reset`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Email envoyé',
+        description: 'Un lien de réinitialisation a été envoyé à votre adresse email.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erreur',
+        description: error.message || 'Impossible d\'envoyer l\'email de réinitialisation.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
@@ -389,8 +423,14 @@ const Auth: React.FC = () => {
                           {isLoading ? 'Connexion...' : 'Se connecter'}
                         </Button>
                         
-                        <Button type="button" variant="link" className="w-full">
-                          Mot de passe oublié ?
+                        <Button 
+                          type="button" 
+                          variant="link" 
+                          className="w-full"
+                          onClick={handleResetPassword}
+                          disabled={isResettingPassword}
+                        >
+                          {isResettingPassword ? 'Envoi en cours...' : 'Mot de passe oublié ?'}
                         </Button>
                       </form>
                     ) : (
