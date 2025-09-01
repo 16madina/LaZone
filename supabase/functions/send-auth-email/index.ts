@@ -1,22 +1,14 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
 import { Resend } from "npm:resend@2.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const hookSecret = Deno.env.get('AUTH_HOOK_SECRET') || 'your-webhook-secret';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-interface AuthEmailRequest {
-  to: string;
-  subject: string;
-  email_action_type: string;
-  token?: string;
-  token_hash?: string;
-  redirect_to?: string;
-  confirmation_url?: string;
-}
 
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
@@ -25,17 +17,32 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const payload: AuthEmailRequest = await req.json();
-    console.log("Received auth email request:", payload);
+    const payload = await req.text();
+    const headers = Object.fromEntries(req.headers);
+    
+    // Verify webhook signature
+    const wh = new Webhook(hookSecret);
+    const {
+      user,
+      email_data: { token, token_hash, redirect_to, email_action_type }
+    } = wh.verify(payload, headers) as {
+      user: { email: string };
+      email_data: {
+        token: string;
+        token_hash: string;
+        redirect_to: string;
+        email_action_type: string;
+        site_url: string;
+      };
+    };
 
-    const { to, email_action_type, token, token_hash, redirect_to, confirmation_url } = payload;
+    console.log("Received auth webhook:", { email: user.email, email_action_type });
 
-    // Construct the confirmation URL if not provided
-    let finalConfirmationUrl = confirmation_url;
-    if (!finalConfirmationUrl && token_hash && redirect_to) {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://nnqwkmkbvklbezennlfy.supabase.co';
-      finalConfirmationUrl = `${supabaseUrl}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(redirect_to)}`;
-    }
+    const to = user.email;
+
+    // Construct the confirmation URL
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://nnqwkmkbvklbezennlfy.supabase.co';
+    const finalConfirmationUrl = `${supabaseUrl}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(redirect_to)}`;
 
     // Create email template based on action type
     let subject = "";
