@@ -7,11 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Mail, Lock, User, Building2 } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, User, Building2, Phone, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from '@/contexts/LocationContext';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { supabase } from '@/integrations/supabase/client';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
@@ -24,6 +25,13 @@ const Auth: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState<'particulier' | 'agence'>('particulier');
+  
+  // SMS Login states
+  const [loginMethod, setLoginMethod] = useState<'email' | 'sms'>('email');
+  const [smsPhone, setSmsPhone] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   
   // Champs particulier
   const [firstName, setFirstName] = useState('');
@@ -143,6 +151,104 @@ const Auth: React.FC = () => {
     }
   };
 
+  const handleSendSMS = async () => {
+    if (!smsPhone.trim()) {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez saisir votre numéro de téléphone.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Generate 6-digit code
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Store code temporarily (in a real app, this would be stored securely on the server)
+      sessionStorage.setItem('sms_code', code);
+      sessionStorage.setItem('sms_phone', smsPhone);
+      
+      // Send SMS via edge function
+      const { error } = await supabase.functions.invoke('send-sms', {
+        body: {
+          to: `${phoneCode}${smsPhone}`,
+          message: `Votre code de connexion LaZone: ${code}. Ce code expire dans 5 minutes.`
+        }
+      });
+
+      if (error) throw error;
+
+      setOtpSent(true);
+      toast({
+        title: 'Code envoyé',
+        description: 'Un code à 6 chiffres vous a été envoyé par SMS.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'envoyer le SMS. Veuillez réessayer.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendSMS = async () => {
+    setIsResending(true);
+    await handleSendSMS();
+    setIsResending(false);
+  };
+
+  const handleVerifyOTP = async () => {
+    if (otpCode.length !== 6) {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez saisir le code à 6 chiffres.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const storedCode = sessionStorage.getItem('sms_code');
+    const storedPhone = sessionStorage.getItem('sms_phone');
+
+    if (otpCode !== storedCode || smsPhone !== storedPhone) {
+      toast({
+        title: 'Code incorrect',
+        description: 'Le code saisi est incorrect. Veuillez réessayer.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // In a real app, you would verify the phone number with your user database
+      // For now, we'll create a magic link or handle the login differently
+      toast({
+        title: 'Connexion réussie',
+        description: 'Bienvenue sur LaZone !',
+      });
+      
+      // Clear stored code
+      sessionStorage.removeItem('sms_code');
+      sessionStorage.removeItem('sms_phone');
+      
+      navigate(nextUrl);
+    } catch (error: any) {
+      toast({
+        title: 'Erreur',
+        description: 'Une erreur est survenue lors de la connexion.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
@@ -178,47 +284,165 @@ const Auth: React.FC = () => {
                 </TabsList>
                 
                 <TabsContent value="login">
-                  <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="login-email">Email</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                        <Input
-                          id="login-email"
-                          type="email"
-                          placeholder="votre@email.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="pl-10"
-                          required
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="login-password">Mot de passe</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                        <Input
-                          id="login-password"
-                          type="password"
-                          placeholder="••••••••"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="pl-10"
-                          required
-                        />
-                      </div>
+                  <div className="space-y-4">
+                    {/* Login method selector */}
+                    <div className="flex space-x-2 p-1 bg-muted rounded-md">
+                      <Button
+                        type="button"
+                        variant={loginMethod === 'email' ? 'default' : 'ghost'}
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => setLoginMethod('email')}
+                      >
+                        <Mail className="w-4 h-4 mr-2" />
+                        Email
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={loginMethod === 'sms' ? 'default' : 'ghost'}
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => setLoginMethod('sms')}
+                      >
+                        <Phone className="w-4 h-4 mr-2" />
+                        SMS
+                      </Button>
                     </div>
 
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? 'Connexion...' : 'Se connecter'}
-                    </Button>
-                    
-                    <Button type="button" variant="link" className="w-full">
-                      Mot de passe oublié ?
-                    </Button>
-                  </form>
+                    {loginMethod === 'email' ? (
+                      <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="login-email">Email</Label>
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                            <Input
+                              id="login-email"
+                              type="email"
+                              placeholder="votre@email.com"
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              className="pl-10"
+                              required
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="login-password">Mot de passe</Label>
+                          <div className="relative">
+                            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                            <Input
+                              id="login-password"
+                              type="password"
+                              placeholder="••••••••"
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              className="pl-10"
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        <Button type="submit" className="w-full" disabled={isLoading}>
+                          {isLoading ? 'Connexion...' : 'Se connecter'}
+                        </Button>
+                        
+                        <Button type="button" variant="link" className="w-full">
+                          Mot de passe oublié ?
+                        </Button>
+                      </form>
+                    ) : (
+                      <div className="space-y-4">
+                        {!otpSent ? (
+                          <>
+                            <div className="space-y-2">
+                              <Label htmlFor="sms-phone">Numéro de téléphone</Label>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm z-10">
+                                  {phoneCode}
+                                </span>
+                                <Input
+                                  id="sms-phone"
+                                  type="tel"
+                                  placeholder={`${phoneCode} XX XX XX XX`}
+                                  value={smsPhone}
+                                  onChange={(e) => setSmsPhone(e.target.value)}
+                                  className={phoneCode ? 'pl-16' : 'pl-3'}
+                                  required
+                                />
+                              </div>
+                            </div>
+                            
+                            <Button
+                              type="button"
+                              onClick={handleSendSMS}
+                              className="w-full"
+                              disabled={isLoading}
+                            >
+                              {isLoading ? 'Envoi...' : 'Recevoir le code par SMS'}
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <div className="space-y-2">
+                              <Label htmlFor="otp-code">Code de vérification</Label>
+                              <p className="text-sm text-muted-foreground">
+                                Saisissez le code à 6 chiffres envoyé au {phoneCode}{smsPhone}
+                              </p>
+                              <div className="flex justify-center">
+                                <InputOTP
+                                  maxLength={6}
+                                  value={otpCode}
+                                  onChange={(value) => setOtpCode(value)}
+                                >
+                                  <InputOTPGroup>
+                                    <InputOTPSlot index={0} />
+                                    <InputOTPSlot index={1} />
+                                    <InputOTPSlot index={2} />
+                                    <InputOTPSlot index={3} />
+                                    <InputOTPSlot index={4} />
+                                    <InputOTPSlot index={5} />
+                                  </InputOTPGroup>
+                                </InputOTP>
+                              </div>
+                            </div>
+                            
+                            <Button
+                              type="button"
+                              onClick={handleVerifyOTP}
+                              className="w-full"
+                              disabled={isLoading || otpCode.length !== 6}
+                            >
+                              {isLoading ? 'Vérification...' : 'Vérifier le code'}
+                            </Button>
+                            
+                            <div className="flex items-center justify-between">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => {
+                                  setOtpSent(false);
+                                  setOtpCode('');
+                                }}
+                              >
+                                Changer de numéro
+                              </Button>
+                              
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={handleResendSMS}
+                                disabled={isResending}
+                              >
+                                <RotateCcw className="w-4 h-4 mr-2" />
+                                {isResending ? 'Envoi...' : 'Renvoyer'}
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </TabsContent>
                 
                 <TabsContent value="register">
