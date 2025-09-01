@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { formatPriceForCountry } from '@/utils/currency-conversion';
 
+interface AppSettings {
+  monthly_price: number;
+  per_listing_price: number;
+  free_listings_individual: number;
+  free_listings_canvasser: number;
+  free_listings_agency: number;
+}
+
 const Subscription: React.FC = () => {
   const { user, profile } = useAuth();
   const { subscription, loading, refreshSubscription } = useSubscription();
@@ -19,9 +27,51 @@ const Subscription: React.FC = () => {
   const { toast } = useToast();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'per_listing'>('monthly');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [settings, setSettings] = useState<AppSettings>({
+    monthly_price: 20000,
+    per_listing_price: 1000,
+    free_listings_individual: 3,
+    free_listings_canvasser: 3,
+    free_listings_agency: 0
+  });
+  const [settingsLoading, setSettingsLoading] = useState(true);
 
   const isAgency = profile?.user_type === 'agence';
   const canCreateListing = subscription?.can_create_listing || false;
+
+  const fetchSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('setting_key, setting_value')
+        .in('setting_key', [
+          'monthly_price',
+          'per_listing_price', 
+          'free_listings_individual',
+          'free_listings_canvasser',
+          'free_listings_agency'
+        ]);
+
+      if (error) throw error;
+
+      const settingsMap = data.reduce((acc, item) => {
+        acc[item.setting_key] = typeof item.setting_value === 'number' 
+          ? item.setting_value 
+          : Number(item.setting_value);
+        return acc;
+      }, {} as any);
+
+      setSettings(prev => ({ ...prev, ...settingsMap }));
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
 
   const handleSubscribe = async () => {
     if (!user) {
@@ -85,7 +135,7 @@ const Subscription: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading || settingsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -160,7 +210,7 @@ const Subscription: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold mb-4">
-                {formatPriceForCountry(20000, selectedCountry)}
+                {formatPriceForCountry(settings.monthly_price, selectedCountry)}
                 <span className="text-sm font-normal text-muted-foreground">/mois</span>
               </div>
               <ul className="space-y-2 mb-6">
@@ -203,7 +253,7 @@ const Subscription: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold mb-4">
-                {formatPriceForCountry(1000, selectedCountry)}
+                {formatPriceForCountry(settings.per_listing_price, selectedCountry)}
                 <span className="text-sm font-normal text-muted-foreground">/annonce</span>
               </div>
               <ul className="space-y-2 mb-6">
@@ -243,7 +293,7 @@ const Subscription: React.FC = () => {
             className="px-8"
           >
             <Zap className="w-4 h-4 mr-2" />
-            {isProcessing ? 'Traitement...' : `S'abonner - ${formatPriceForCountry(selectedPlan === 'monthly' ? 20000 : 1000, selectedCountry)}`}
+            {isProcessing ? 'Traitement...' : `S'abonner - ${formatPriceForCountry(selectedPlan === 'monthly' ? settings.monthly_price : settings.per_listing_price, selectedCountry)}`}
           </Button>
           {!user && (
             <p className="text-sm text-muted-foreground mt-2">
@@ -259,8 +309,9 @@ const Subscription: React.FC = () => {
           </CardHeader>
           <CardContent className="text-orange-700">
             <ul className="list-disc list-inside space-y-1">
-              <li><strong>Particuliers et démarcheurs :</strong> 3 annonces gratuites maximum</li>
-              <li><strong>Agences :</strong> Aucune annonce gratuite (abonnement obligatoire)</li>
+              <li><strong>Particuliers :</strong> {settings.free_listings_individual} annonce{settings.free_listings_individual > 1 ? 's' : ''} gratuite{settings.free_listings_individual > 1 ? 's' : ''} maximum</li>
+              <li><strong>Démarcheurs :</strong> {settings.free_listings_canvasser} annonce{settings.free_listings_canvasser > 1 ? 's' : ''} gratuite{settings.free_listings_canvasser > 1 ? 's' : ''} maximum</li>
+              <li><strong>Agences :</strong> {settings.free_listings_agency === 0 ? 'Aucune annonce gratuite (abonnement obligatoire)' : `${settings.free_listings_agency} annonce${settings.free_listings_agency > 1 ? 's' : ''} gratuite${settings.free_listings_agency > 1 ? 's' : ''} maximum`}</li>
               <li>Après épuisement des annonces gratuites, un abonnement est requis</li>
             </ul>
           </CardContent>
