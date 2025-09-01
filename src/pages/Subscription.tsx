@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Check, Crown, Zap, CreditCard, Calendar, RefreshCw } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Check, Crown, Zap, CreditCard, Calendar, RefreshCw, Settings, Save } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useLocation } from '@/contexts/LocationContext';
@@ -27,6 +28,16 @@ const Subscription: React.FC = () => {
   const { toast } = useToast();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'per_listing'>('monthly');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminLoading, setAdminLoading] = useState(true);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [tempSettings, setTempSettings] = useState<AppSettings>({
+    monthly_price: 20000,
+    per_listing_price: 1000,
+    free_listings_individual: 3,
+    free_listings_canvasser: 3,
+    free_listings_agency: 0
+  });
   const [settings, setSettings] = useState<AppSettings>({
     monthly_price: 20000,
     per_listing_price: 1000,
@@ -38,6 +49,31 @@ const Subscription: React.FC = () => {
 
   const isAgency = profile?.user_type === 'agence';
   const canCreateListing = subscription?.can_create_listing || false;
+
+  const checkAdminRole = async () => {
+    if (!user) {
+      setIsAdmin(false);
+      setAdminLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .rpc('has_role', { _user_id: user.id, _role: 'admin' });
+
+      if (error) {
+        console.error('Error checking admin role:', error);
+        setIsAdmin(false);
+      } else {
+        setIsAdmin(data || false);
+      }
+    } catch (error) {
+      console.error('Error checking admin role:', error);
+      setIsAdmin(false);
+    } finally {
+      setAdminLoading(false);
+    }
+  };
 
   const fetchSettings = async () => {
     console.log('🔍 Fetching settings...');
@@ -70,6 +106,7 @@ const Subscription: React.FC = () => {
       setSettings(prev => {
         const newSettings = { ...prev, ...settingsMap };
         console.log('💾 New settings state:', newSettings);
+        setTempSettings(newSettings); // Synchroniser les paramètres temporaires
         return newSettings;
       });
     } catch (error) {
@@ -81,6 +118,7 @@ const Subscription: React.FC = () => {
 
   useEffect(() => {
     fetchSettings();
+    checkAdminRole();
 
     // Écouter les changements en temps réel sur app_settings
     const channel = supabase
@@ -173,7 +211,57 @@ const Subscription: React.FC = () => {
     }
   };
 
-  if (loading || settingsLoading) {
+  const saveAdminSettings = async () => {
+    if (!isAdmin) return;
+
+    setIsProcessing(true);
+    try {
+      // Mettre à jour chaque paramètre individuellement
+      const updates = [
+        { key: 'monthly_price', value: tempSettings.monthly_price },
+        { key: 'per_listing_price', value: tempSettings.per_listing_price },
+        { key: 'free_listings_individual', value: tempSettings.free_listings_individual },
+        { key: 'free_listings_canvasser', value: tempSettings.free_listings_canvasser },
+        { key: 'free_listings_agency', value: tempSettings.free_listings_agency }
+      ];
+
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('app_settings')
+          .upsert({
+            setting_key: update.key,
+            setting_value: update.value
+          }, {
+            onConflict: 'setting_key'
+          });
+
+        if (error) throw error;
+      }
+
+      setSettings(tempSettings);
+      setIsEditMode(false);
+      
+      toast({
+        title: "Paramètres mis à jour",
+        description: "Les nouveaux paramètres ont été sauvegardés avec succès.",
+        variant: "default"
+      });
+
+      // Refetch pour être sûr
+      fetchSettings();
+    } catch (error) {
+      console.error('Error saving admin settings:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder les paramètres.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  if (loading || settingsLoading || adminLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -195,17 +283,55 @@ const Subscription: React.FC = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Tarifs et Limites Actuels</h2>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                console.log('🔄 Refresh manuel des settings...');
-                fetchSettings();
-              }}
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Actualiser
-            </Button>
+            <div className="flex gap-2">
+              {isAdmin && (
+                <>
+                  {!isEditMode ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditMode(true)}
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Modifier
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setIsEditMode(false);
+                          setTempSettings(settings);
+                        }}
+                      >
+                        Annuler
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={saveAdminSettings}
+                        disabled={isProcessing}
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        Sauvegarder
+                      </Button>
+                    </>
+                  )}
+                </>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  console.log('🔄 Refresh manuel des settings...');
+                  fetchSettings();
+                }}
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Actualiser
+              </Button>
+            </div>
           </div>
           
           {settingsLoading ? (
@@ -216,46 +342,131 @@ const Subscription: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
               <Card>
                 <CardContent className="p-3 text-center">
-                  <div className="text-lg font-bold text-primary">
-                    {formatPriceForCountry(settings.monthly_price, selectedCountry)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">Abonnement mensuel</p>
+                  {isEditMode && isAdmin ? (
+                    <div className="space-y-2">
+                      <Input
+                        type="number"
+                        value={tempSettings.monthly_price}
+                        onChange={(e) => setTempSettings(prev => ({
+                          ...prev,
+                          monthly_price: parseInt(e.target.value) || 0
+                        }))}
+                        className="text-center"
+                      />
+                      <p className="text-xs text-muted-foreground">Abonnement mensuel (CFA)</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-lg font-bold text-primary">
+                        {formatPriceForCountry(settings.monthly_price, selectedCountry)}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Abonnement mensuel</p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
               
               <Card>
                 <CardContent className="p-3 text-center">
-                  <div className="text-lg font-bold text-primary">
-                    {formatPriceForCountry(settings.per_listing_price, selectedCountry)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">Par annonce</p>
+                  {isEditMode && isAdmin ? (
+                    <div className="space-y-2">
+                      <Input
+                        type="number"
+                        value={tempSettings.per_listing_price}
+                        onChange={(e) => setTempSettings(prev => ({
+                          ...prev,
+                          per_listing_price: parseInt(e.target.value) || 0
+                        }))}
+                        className="text-center"
+                      />
+                      <p className="text-xs text-muted-foreground">Par annonce (CFA)</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-lg font-bold text-primary">
+                        {formatPriceForCountry(settings.per_listing_price, selectedCountry)}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Par annonce</p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
               
               <Card>
                 <CardContent className="p-3 text-center">
-                  <div className="text-lg font-bold text-green-600">
-                    {settings.free_listings_individual}
-                  </div>
-                  <p className="text-xs text-muted-foreground">Annonces gratuites (Particuliers)</p>
+                  {isEditMode && isAdmin ? (
+                    <div className="space-y-2">
+                      <Input
+                        type="number"
+                        value={tempSettings.free_listings_individual}
+                        onChange={(e) => setTempSettings(prev => ({
+                          ...prev,
+                          free_listings_individual: parseInt(e.target.value) || 0
+                        }))}
+                        className="text-center"
+                      />
+                      <p className="text-xs text-muted-foreground">Annonces gratuites (Particuliers)</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-lg font-bold text-green-600">
+                        {settings.free_listings_individual}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Annonces gratuites (Particuliers)</p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
               
               <Card>
                 <CardContent className="p-3 text-center">
-                  <div className="text-lg font-bold text-green-600">
-                    {settings.free_listings_canvasser}
-                  </div>
-                  <p className="text-xs text-muted-foreground">Annonces gratuites (Démarcheurs)</p>
+                  {isEditMode && isAdmin ? (
+                    <div className="space-y-2">
+                      <Input
+                        type="number"
+                        value={tempSettings.free_listings_canvasser}
+                        onChange={(e) => setTempSettings(prev => ({
+                          ...prev,
+                          free_listings_canvasser: parseInt(e.target.value) || 0
+                        }))}
+                        className="text-center"
+                      />
+                      <p className="text-xs text-muted-foreground">Annonces gratuites (Démarcheurs)</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-lg font-bold text-green-600">
+                        {settings.free_listings_canvasser}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Annonces gratuites (Démarcheurs)</p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
               
               <Card>
                 <CardContent className="p-3 text-center">
-                  <div className="text-lg font-bold text-red-600">
-                    {settings.free_listings_agency}
-                  </div>
-                  <p className="text-xs text-muted-foreground">Annonces gratuites (Agences)</p>
+                  {isEditMode && isAdmin ? (
+                    <div className="space-y-2">
+                      <Input
+                        type="number"
+                        value={tempSettings.free_listings_agency}
+                        onChange={(e) => setTempSettings(prev => ({
+                          ...prev,
+                          free_listings_agency: parseInt(e.target.value) || 0
+                        }))}
+                        className="text-center"
+                      />
+                      <p className="text-xs text-muted-foreground">Annonces gratuites (Agences)</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-lg font-bold text-red-600">
+                        {settings.free_listings_agency}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Annonces gratuites (Agences)</p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>
