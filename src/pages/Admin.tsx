@@ -259,12 +259,16 @@ const Admin: React.FC = () => {
 
   const updateAppSetting = async (settingKey: string, settingValue: any) => {
     try {
+      console.log(`🔧 Updating setting: ${settingKey} = ${settingValue}`);
+      
       const { error } = await supabase
         .from('app_settings')
         .update({ setting_value: settingValue })
         .eq('setting_key', settingKey);
 
       if (error) throw error;
+      
+      console.log(`✅ Setting ${settingKey} updated successfully`);
       
       toast({
         title: 'Paramètre mis à jour',
@@ -273,6 +277,7 @@ const Admin: React.FC = () => {
 
       fetchAppSettings();
     } catch (error: any) {
+      console.error(`❌ Error updating ${settingKey}:`, error);
       toast({
         title: 'Erreur',
         description: 'Impossible de mettre à jour le paramètre.',

@@ -40,6 +40,7 @@ const Subscription: React.FC = () => {
   const canCreateListing = subscription?.can_create_listing || false;
 
   const fetchSettings = async () => {
+    console.log('🔍 Fetching settings...');
     try {
       const { data, error } = await supabase
         .from('app_settings')
@@ -54,6 +55,8 @@ const Subscription: React.FC = () => {
 
       if (error) throw error;
 
+      console.log('📊 Raw settings data from DB:', data);
+
       const settingsMap = data.reduce((acc, item) => {
         acc[item.setting_key] = typeof item.setting_value === 'number' 
           ? item.setting_value 
@@ -61,9 +64,16 @@ const Subscription: React.FC = () => {
         return acc;
       }, {} as any);
 
-      setSettings(prev => ({ ...prev, ...settingsMap }));
+      console.log('📋 Mapped settings:', settingsMap);
+      console.log('📋 Previous settings:', settings);
+      
+      setSettings(prev => {
+        const newSettings = { ...prev, ...settingsMap };
+        console.log('💾 New settings state:', newSettings);
+        return newSettings;
+      });
     } catch (error) {
-      console.error('Error fetching settings:', error);
+      console.error('❌ Error fetching settings:', error);
     } finally {
       setSettingsLoading(false);
     }
@@ -74,7 +84,7 @@ const Subscription: React.FC = () => {
 
     // Écouter les changements en temps réel sur app_settings
     const channel = supabase
-      .channel('schema-db-changes')
+      .channel('app-settings-changes')
       .on(
         'postgres_changes',
         {
@@ -83,14 +93,20 @@ const Subscription: React.FC = () => {
           table: 'app_settings'
         },
         (payload) => {
-          console.log('App settings changed:', payload);
+          console.log('🔄 App settings changed in real-time:', payload);
+          console.log('Settings avant fetch:', settings);
           // Refetch les settings quand ils changent
-          fetchSettings();
+          fetchSettings().then(() => {
+            console.log('✅ Settings refetchés après changement temps réel');
+          });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Canal real-time status:', status);
+      });
 
     return () => {
+      console.log('🔌 Fermeture du canal real-time');
       supabase.removeChannel(channel);
     };
   }, []);
