@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Check, Crown, Zap, CreditCard, Calendar } from 'lucide-react';
+import { Check, Crown, Zap, CreditCard, Calendar, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useLocation } from '@/contexts/LocationContext';
@@ -189,6 +189,77 @@ const Subscription: React.FC = () => {
           <p className="text-muted-foreground">
             Choisissez la formule qui convient le mieux à vos besoins
           </p>
+        </div>
+
+        {/* Settings and Pricing Display */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Tarifs et Limites Actuels</h2>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                console.log('🔄 Refresh manuel des settings...');
+                fetchSettings();
+              }}
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Actualiser
+            </Button>
+          </div>
+          
+          {settingsLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <div className="text-lg font-bold text-primary">
+                    {formatPriceForCountry(settings.monthly_price, selectedCountry)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Abonnement mensuel</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <div className="text-lg font-bold text-primary">
+                    {formatPriceForCountry(settings.per_listing_price, selectedCountry)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Par annonce</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <div className="text-lg font-bold text-green-600">
+                    {settings.free_listings_individual}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Annonces gratuites (Particuliers)</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <div className="text-lg font-bold text-green-600">
+                    {settings.free_listings_canvasser}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Annonces gratuites (Démarcheurs)</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <div className="text-lg font-bold text-red-600">
+                    {settings.free_listings_agency}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Annonces gratuites (Agences)</p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
 
         {/* Current Status */}
