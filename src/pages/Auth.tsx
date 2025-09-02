@@ -29,6 +29,9 @@ const Auth: React.FC = () => {
   } = useLocation();
   const { countries } = useGeolocation();
   
+  const mode = searchParams.get('mode') || 'login';
+  const nextUrl = searchParams.get('next') || '/';
+  
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,6 +46,9 @@ const Auth: React.FC = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+  
+  // Tab control
+  const [activeTab, setActiveTab] = useState(mode);
   
   // Champs particulier
   const [firstName, setFirstName] = useState('');
@@ -80,9 +86,6 @@ const Auth: React.FC = () => {
     }
   };
   
-  const mode = searchParams.get('mode') || 'login';
-  const nextUrl = searchParams.get('next') || '/';
-
   // Helper pour obtenir les infos du pays SMS
   const getSmsCountryInfo = () => {
     const country = countries.find(c => c.name === smsCountry);
@@ -165,6 +168,11 @@ const Auth: React.FC = () => {
           title: 'Compte créé avec succès',
           description: 'Un email de confirmation vous a été envoyé.',
         });
+        
+        // Rediriger vers la page principale après inscription réussie
+        setTimeout(() => {
+          navigate(nextUrl);
+        }, 2000);
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
@@ -353,7 +361,7 @@ const Auth: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue={mode} className="w-full">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="login">Connexion</TabsTrigger>
                   <TabsTrigger value="register">Inscription</TabsTrigger>
