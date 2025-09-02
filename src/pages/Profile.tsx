@@ -144,10 +144,17 @@ const Profile: React.FC = () => {
         throw error;
       }
 
+      console.log('Profil récupéré:', data);
+      console.log('Avatar URL dans le profil:', data?.avatar_url);
+      
       setProfile(data as Profile);
       // Set avatar preview from existing avatar_url
       if (data?.avatar_url) {
+        console.log('Définition de l\'avatar preview:', data.avatar_url);
         setAvatarPreview(data.avatar_url);
+      } else {
+        console.log('Aucun avatar_url trouvé dans le profil');
+        setAvatarPreview(null);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -287,11 +294,16 @@ const Profile: React.FC = () => {
         .from(bucketName)
         .getPublicUrl(fileName);
 
+      console.log('URL publique générée:', publicUrl);
+      
       // Update profile with avatar URL
-      const { error: updateError } = await supabase
+      const { error: updateError, data: updateData } = await supabase
         .from('profiles')
         .update({ avatar_url: publicUrl } as any)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .select();
+
+      console.log('Résultat de la mise à jour:', { updateError, updateData });
 
       if (updateError) throw updateError;
 
