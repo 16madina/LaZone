@@ -461,10 +461,10 @@ export default function CreateListing() {
         </div>
       </header>
 
-      <div className="container mx-auto px-6 py-6 max-w-2xl pb-24">
+      <div className="container mx-auto px-8 py-8 max-w-2xl pb-32">
         {/* Step 0: Type de poster (seulement pour les particuliers) */}
         {currentStep === 0 && profile?.user_type !== 'agence' && (
-          <Card className="p-8 space-y-6">
+          <Card className="p-12 space-y-8">
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-bold">Comment souhaitez-vous poster cette annonce ?</h2>
               <p className="text-muted-foreground">
@@ -522,7 +522,7 @@ export default function CreateListing() {
 
         {/* Step 1: Type & Purpose */}
         {currentStep === 1 && (
-          <Card className="p-8 space-y-8">
+          <Card className="p-12 space-y-8">
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-bold">Quel type de bien proposez-vous ?</h2>
               <p className="text-muted-foreground">
@@ -578,7 +578,7 @@ export default function CreateListing() {
 
         {/* Step 2: Location */}
         {currentStep === 2 && (
-          <Card className="p-8 space-y-6">
+          <Card className="p-12 space-y-8">
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-bold">Où se trouve votre bien ?</h2>
               <p className="text-muted-foreground">
@@ -656,7 +656,7 @@ export default function CreateListing() {
 
         {/* Step 3: Details */}
         {currentStep === 3 && (
-          <Card className="p-8 space-y-6">
+          <Card className="p-12 space-y-8">
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-bold">Détails de la propriété</h2>
               <p className="text-muted-foreground">
@@ -875,7 +875,7 @@ export default function CreateListing() {
 
         {/* Step 4: Price */}
         {currentStep === 4 && (
-          <Card className="p-8 space-y-6">
+          <Card className="p-12 space-y-8">
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-bold">Quel est le prix ?</h2>
               <p className="text-muted-foreground">
@@ -987,7 +987,7 @@ export default function CreateListing() {
 
         {/* Step 5: Médias */}
         {currentStep === 5 && (
-          <Card className="p-8 space-y-8">
+          <Card className="p-12 space-y-8">
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-bold">Ajoutez vos médias</h2>
               <p className="text-muted-foreground">
@@ -1172,7 +1172,7 @@ export default function CreateListing() {
 
         {/* Step 6: Preview */}
         {currentStep === 6 && (
-          <Card className="p-8 space-y-6">
+          <Card className="p-12 space-y-8">
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-bold">Aperçu de votre annonce</h2>
               <p className="text-muted-foreground">
