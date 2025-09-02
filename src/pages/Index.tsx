@@ -74,11 +74,9 @@ const Index = () => {
         query = query.eq('purpose', searchMode === 'buy' ? 'sale' : searchMode);
       }
 
-      // Ne pas filtrer par pays par défaut pour voir toutes les annonces
-      // Optionnel: filtrer seulement si un pays spécifique est sélectionné
-      // if (selectedCountry) {
-      //   query = query.eq('country', selectedCountry);
-      // }
+      // Filtrer par pays prioritairement, ou Côte d'Ivoire par défaut
+      const targetCountry = selectedCountry || 'Côte d\'Ivoire';
+      query = query.eq('country', targetCountry);
 
       const { data, error } = await query.order('created_at', { ascending: false });
       
