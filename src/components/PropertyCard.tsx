@@ -133,17 +133,19 @@ export default function PropertyCard({
               loop: true,
             }}
           >
-            <CarouselContent className="w-full h-full -ml-0">
+            <CarouselContent className="h-full -ml-0">
               {displayImages.slice(0, maxVisibleImages).map((image, index) => (
-                <CarouselItem key={index} className="w-full h-full pl-0">
-                  <ImageOptimizer
-                    src={image}
-                    alt={`${property.title} - Image ${index + 1}`}
-                    className="w-full h-full object-cover"
-                    quality={shouldOptimizeImages ? maxImageQuality : 85}
-                    lazy={index > 0}
-                    fallbackSrc="/placeholder.svg"
-                  />
+                <CarouselItem key={index} className="h-full pl-0 basis-full">
+                  <div className="relative w-full h-full">
+                    <ImageOptimizer
+                      src={image}
+                      alt={`${property.title} - Image ${index + 1}`}
+                      className="w-full h-full object-cover"
+                      quality={shouldOptimizeImages ? maxImageQuality : 85}
+                      lazy={index > 0}
+                      fallbackSrc="/placeholder.svg"
+                    />
+                  </div>
                 </CarouselItem>
               ))}
             </CarouselContent>
