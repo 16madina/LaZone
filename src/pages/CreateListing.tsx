@@ -141,7 +141,8 @@ export default function CreateListing() {
         break;
       case 3:
         if (!formData.title) newErrors.title = 'Le titre est requis';
-        if (!formData.area || parseFloat(formData.area) <= 0 || isNaN(parseFloat(formData.area))) {
+        // La surface n'est requise que pour les terrains
+        if (formData.propertyType === 'land' && (!formData.area || parseFloat(formData.area) <= 0 || isNaN(parseFloat(formData.area)))) {
           newErrors.area = 'La surface est requise et doit être un nombre valide';
         }
         if (formData.propertyType !== 'land' && formData.propertyType !== 'commercial') {
