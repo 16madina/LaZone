@@ -74,9 +74,11 @@ const Index = () => {
         query = query.eq('purpose', searchMode === 'buy' ? 'sale' : searchMode);
       }
 
-      if (selectedCountry) {
-        query = query.eq('country', selectedCountry);
-      }
+      // Ne pas filtrer par pays par défaut pour voir toutes les annonces
+      // Optionnel: filtrer seulement si un pays spécifique est sélectionné
+      // if (selectedCountry) {
+      //   query = query.eq('country', selectedCountry);
+      // }
 
       const { data, error } = await query.order('created_at', { ascending: false });
       
