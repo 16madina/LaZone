@@ -76,6 +76,8 @@ export default function PropertyDetail() {
             area: data.area,
             landArea: data.land_area,
             amenities: data.amenities || [],
+            landDocuments: data.land_documents || [],
+            additionalInfo: data.additional_info,
             isVerified: false,
             isNew: isNewListing(data.created_at),
             isFeatured: false,
@@ -420,6 +422,56 @@ export default function PropertyDetail() {
                     })}
                   </div>
                 </div>
+              </>
+            )}
+
+            {/* Informations spécifiques aux terrains */}
+            {property.type === 'land' && (
+              <>
+                {/* Documents du terrain */}
+                {property.landDocuments && property.landDocuments.length > 0 && (
+                  <>
+                    <Separator />
+                    <div className="space-y-3">
+                      <h2 className="text-xl font-semibold">Documents disponibles</h2>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {property.landDocuments.map((docKey) => {
+                          // Mapping des clés vers les libellés
+                          const docLabels: Record<string, string> = {
+                            'acd': 'ACD (Arrêté de Concession Définitive)',
+                            'lettre_attribution': 'Lettre d\'attribution',
+                            'attestation_villageoise': 'Attestation villageoise',
+                            'titre_foncier': 'Titre foncier',
+                            'calque': 'Calque (plan technique)',
+                            'certificat_propriete': 'Certificat de propriété',
+                            'quitus_fiscal': 'Quitus fiscal',
+                            'pv_bornage': 'Procès-verbal de bornage',
+                            'certificat_non_hypotheque': 'Certificat de non-hypothèque',
+                            'attestation_mise_en_valeur': 'Attestation de mise en valeur'
+                          };
+
+                          return (
+                            <div key={docKey} className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                              <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                              <span className="text-sm">{docLabels[docKey] || docKey}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Informations supplémentaires */}
+                {property.additionalInfo && (
+                  <>
+                    <Separator />
+                    <div className="space-y-3">
+                      <h2 className="text-xl font-semibold">Informations supplémentaires</h2>
+                      <p className="text-muted-foreground leading-relaxed">{property.additionalInfo}</p>
+                    </div>
+                  </>
+                )}
               </>
             )}
 

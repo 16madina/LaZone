@@ -29,6 +29,8 @@ export interface Property {
   area: number;
   landArea?: number;
   amenities: string[];
+  landDocuments?: string[];
+  additionalInfo?: string;
   isVerified: boolean;
   isNew: boolean;
   isFeatured: boolean;

@@ -165,6 +165,7 @@ export type Database = {
       }
       listings: {
         Row: {
+          additional_info: string | null
           address: string
           amenities: string[] | null
           area: number
@@ -178,6 +179,7 @@ export type Database = {
           id: string
           images: string[] | null
           land_area: number | null
+          land_documents: string[] | null
           latitude: number | null
           longitude: number | null
           neighborhood: string
@@ -192,6 +194,7 @@ export type Database = {
           virtual_tour_url: string | null
         }
         Insert: {
+          additional_info?: string | null
           address: string
           amenities?: string[] | null
           area: number
@@ -205,6 +208,7 @@ export type Database = {
           id?: string
           images?: string[] | null
           land_area?: number | null
+          land_documents?: string[] | null
           latitude?: number | null
           longitude?: number | null
           neighborhood: string
@@ -219,6 +223,7 @@ export type Database = {
           virtual_tour_url?: string | null
         }
         Update: {
+          additional_info?: string | null
           address?: string
           amenities?: string[] | null
           area?: number
@@ -232,6 +237,7 @@ export type Database = {
           id?: string
           images?: string[] | null
           land_area?: number | null
+          land_documents?: string[] | null
           latitude?: number | null
           longitude?: number | null
           neighborhood?: string

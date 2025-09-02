@@ -403,6 +403,8 @@ export default function CreateListing() {
           images: imageUrls,
           video_url: videoUrl,
           virtual_tour_url: virtualTourUrl,
+          land_documents: formData.landDocuments || null,
+          additional_info: formData.additionalInfo || null,
           status: 'active'
         });
 
