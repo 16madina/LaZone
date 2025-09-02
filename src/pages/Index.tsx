@@ -74,9 +74,10 @@ const Index = () => {
         query = query.eq('purpose', searchMode === 'buy' ? 'sale' : searchMode);
       }
 
-      // Filtrer par pays prioritairement, ou Côte d'Ivoire par défaut
-      const targetCountry = selectedCountry || 'Côte d\'Ivoire';
-      query = query.eq('country', targetCountry);
+      // Filtrage strict par pays sélectionné
+      if (selectedCountry) {
+        query = query.eq('country', selectedCountry);
+      }
 
       const { data, error } = await query.order('created_at', { ascending: false });
       
@@ -114,31 +115,33 @@ const Index = () => {
         })
       );
 
-      // Add demo properties to diversify the listings (always mix some demo properties)
+      // Ajouter des propriétés de démonstration seulement si elles correspondent au pays sélectionné
       let finalProperties = convertedProperties;
       
-      // Always add some demo properties to show variety in agents
-      let demoProperties;
-      if (searchMode === 'commercial') {
-        demoProperties = extendedMockProperties
-          .filter(prop => prop.type === 'commercial');
-      } else {
-        const targetPurpose = searchMode === 'buy' ? 'sale' : 'rent';
-        demoProperties = extendedMockProperties
-          .filter(prop => prop.purpose === targetPurpose);
+      // Filtrer les propriétés de démonstration selon le pays sélectionné
+      if (!selectedCountry || selectedCountry === 'Côte d\'Ivoire') {
+        let demoProperties;
+        if (searchMode === 'commercial') {
+          demoProperties = extendedMockProperties
+            .filter(prop => prop.type === 'commercial' && (!selectedCountry || prop.location.city.includes('Abidjan') || prop.location.city.includes('Côte')));
+        } else {
+          const targetPurpose = searchMode === 'buy' ? 'sale' : 'rent';
+          demoProperties = extendedMockProperties
+            .filter(prop => prop.purpose === targetPurpose && (!selectedCountry || prop.location.city.includes('Abidjan') || prop.location.city.includes('Côte')));
+        }
+        
+        // Prendre jusqu'à 3 propriétés de démonstration
+        demoProperties = demoProperties
+          .slice(0, 3)
+          .map((prop) => ({
+            ...prop,
+            // Utiliser un ID fixe pour la démonstration
+            id: generateFixedDemoId(prop.id)
+          }));
+        
+        // Mélanger les propriétés de démonstration avec les vraies
+        finalProperties = [...demoProperties, ...convertedProperties];
       }
-      
-      // Take up to 3 demo properties to mix with real ones
-      demoProperties = demoProperties
-        .slice(0, 3)
-        .map((prop) => ({
-          ...prop,
-          // Use fixed demo ID so it can be found in PropertyDetail
-          id: generateFixedDemoId(prop.id)
-        }));
-      
-      // Mix demo properties with real ones (demo first to ensure variety)
-      finalProperties = [...demoProperties, ...convertedProperties];
 
       setProperties(finalProperties);
     } catch (error) {
