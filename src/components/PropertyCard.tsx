@@ -1,9 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, CarouselApi } from "@/components/ui/carousel";
 import { Heart, MapPin, Bed, Bath, Maximize, Phone, MessageCircle, Eye, ChevronLeft, ChevronRight, Building2, UserCheck, User } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "@/contexts/LocationContext";
 import { formatPrice } from "@/utils/currency";
@@ -62,6 +62,7 @@ export default function PropertyCard({
   const { currency } = useLocation();
   const { maxImageQuality, shouldOptimizeImages } = useMobileOptimizations();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [api, setApi] = useState<CarouselApi>();
   
   // Ensure we always show property details - activate all properties
   const hasImages = property.images && property.images.length > 0;
@@ -70,6 +71,18 @@ export default function PropertyCard({
 
   // Use current currency from location context, fallback to property currency
   const displayCurrency = currency || property.currency;
+
+  useEffect(() => {
+    if (!api) {
+      return;
+    }
+
+    setCurrentImageIndex(api.selectedScrollSnap());
+
+    api.on("select", () => {
+      setCurrentImageIndex(api.selectedScrollSnap());
+    });
+  }, [api]);
 
   const getTypeLabel = (type: string) => {
     switch (type) {
@@ -112,10 +125,17 @@ export default function PropertyCard({
       {/* Image Container with Carousel */}
       <div className="relative aspect-[16/10] overflow-hidden">
         {displayImages.length > 1 ? (
-          <Carousel className="w-full h-full">
-            <CarouselContent className="w-full h-full">
+          <Carousel 
+            className="w-full h-full" 
+            setApi={setApi}
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+          >
+            <CarouselContent className="w-full h-full -ml-0">
               {displayImages.slice(0, maxVisibleImages).map((image, index) => (
-                <CarouselItem key={index} className="w-full h-full">
+                <CarouselItem key={index} className="w-full h-full pl-0">
                   <ImageOptimizer
                     src={image}
                     alt={`${property.title} - Image ${index + 1}`}
@@ -128,13 +148,38 @@ export default function PropertyCard({
               ))}
             </CarouselContent>
             
-            {/* Navigation Arrows */}
-            <CarouselPrevious 
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/80 backdrop-blur-sm hover:bg-background/90"
-            />
-            <CarouselNext 
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/80 backdrop-blur-sm hover:bg-background/90"
-            />
+            {/* Navigation Arrows - Only show if more than 1 image */}
+            {displayImages.length > 1 && (
+              <>
+                <CarouselPrevious 
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 border-0 text-white"
+                />
+                <CarouselNext 
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/50 hover:bg-black/70 border-0 text-white"
+                />
+              </>
+            )}
+
+            {/* Pagination Dots */}
+            {displayImages.length > 1 && (
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+                {displayImages.slice(0, maxVisibleImages).map((_, index) => (
+                  <button
+                    key={index}
+                    className={cn(
+                      "w-2 h-2 rounded-full transition-all duration-200",
+                      index === currentImageIndex
+                        ? "bg-white scale-125"
+                        : "bg-white/50 hover:bg-white/75"
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      api?.scrollTo(index);
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </Carousel>
         ) : (
           <ImageOptimizer
@@ -182,11 +227,13 @@ export default function PropertyCard({
           <Heart className={cn("w-4 h-4", isFavorited && "fill-current")} />
         </Button>
 
-        {/* Image Count - Always show in top right corner */}
-        <div className="absolute top-12 right-3 bg-background/80 backdrop-blur-sm rounded-lg px-2 py-1 text-xs font-medium flex items-center gap-1 z-10">
-          <Eye className="w-3 h-3" />
-          {displayImages.length}
-        </div>
+        {/* Image Count */}
+        {displayImages.length > 1 && (
+          <div className="absolute top-3 right-12 bg-black/50 backdrop-blur-sm rounded-lg px-2 py-1 text-xs font-medium flex items-center gap-1 z-10 text-white">
+            <Eye className="w-3 h-3" />
+            {currentImageIndex + 1}/{displayImages.length}
+          </div>
+        )}
 
         {/* See More Button - Show when more than 5 images */}
         {hasImages && property.images.length > maxVisibleImages && (
