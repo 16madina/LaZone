@@ -14,7 +14,7 @@ import {
   ArrowLeft, ArrowRight, Home, Building2, MapPin, 
   Upload, X, Camera, DollarSign, Bed, Bath, 
   Maximize, TreePine, Car, Shield, User, Users,
-  Video, Rotate3D, Play, Pause, Volume2 
+  Video, Rotate3D, Play, Pause, Volume2, FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -52,6 +52,8 @@ interface ListingData {
   isNegotiable: boolean;
   securityDeposit?: string; // en nombre de mois
   advancePayment?: string; // en nombre de mois
+  // Champs spécifiques aux terrains
+  landDocuments?: string[];
 }
 
 const AMENITIES = [
@@ -115,7 +117,8 @@ export default function CreateListing() {
     parkingSpaces: '',
     isNegotiable: false,
     securityDeposit: '',
-    advancePayment: ''
+    advancePayment: '',
+    landDocuments: []
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -688,6 +691,7 @@ export default function CreateListing() {
                 />
               </div>
 
+              {/* Chambres et salles de bain pour les habitations */}
               {(formData.propertyType !== 'land' && formData.propertyType !== 'commercial') && (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -724,6 +728,58 @@ export default function CreateListing() {
         </SelectContent>
                     </Select>
                     {errors.bathrooms && <p className="text-sm text-destructive">{errors.bathrooms}</p>}
+                  </div>
+                </div>
+              )}
+
+              {/* Documents du terrain */}
+              {formData.propertyType === 'land' && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Documents disponibles
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Sélectionnez les documents que vous possédez pour ce terrain
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-3">
+                    {[
+                      { value: 'acd', label: 'ACD (Arrêté de Concession Définitive)' },
+                      { value: 'lettre_attribution', label: 'Lettre d\'attribution' },
+                      { value: 'attestation_villageoise', label: 'Attestation villageoise' },
+                      { value: 'titre_foncier', label: 'Titre foncier' },
+                      { value: 'calque', label: 'Calque (plan technique)' },
+                      { value: 'certificat_propriete', label: 'Certificat de propriété' },
+                      { value: 'quitus_fiscal', label: 'Quitus fiscal' },
+                      { value: 'pv_bornage', label: 'Procès-verbal de bornage' },
+                      { value: 'certificat_non_hypotheque', label: 'Certificat de non-hypothèque' },
+                      { value: 'attestation_mise_en_valeur', label: 'Attestation de mise en valeur' }
+                    ].map((doc) => (
+                      <div key={doc.value} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={doc.value}
+                          checked={formData.landDocuments?.includes(doc.value) || false}
+                          onCheckedChange={(checked) => {
+                            const currentDocs = formData.landDocuments || [];
+                            if (checked) {
+                              updateFormData({ 
+                                landDocuments: [...currentDocs, doc.value] 
+                              });
+                            } else {
+                              updateFormData({ 
+                                landDocuments: currentDocs.filter(d => d !== doc.value) 
+                              });
+                            }
+                          }}
+                        />
+                        <Label htmlFor={doc.value} className="text-sm font-normal cursor-pointer">
+                          {doc.label}
+                        </Label>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
