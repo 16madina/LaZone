@@ -683,6 +683,26 @@ export type Database = {
         Args: { user_id_param: string }
         Returns: boolean
       }
+      get_public_profile_data: {
+        Args: { profile_user_id: string }
+        Returns: {
+          agency_name: string
+          agent_rating: number
+          agent_verified: boolean
+          avatar_url: string
+          city: string
+          country: string
+          first_name: string
+          id: string
+          languages_spoken: string[]
+          last_name: string
+          specializations: string[]
+          total_reviews: number
+          user_id: string
+          user_type: string
+          years_experience: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -693,6 +713,18 @@ export type Database = {
       is_verified_agent: {
         Args: { user_id_param: string }
         Returns: boolean
+      }
+      log_security_event: {
+        Args: {
+          p_action_type: string
+          p_error_message?: string
+          p_ip_address?: unknown
+          p_resource_id?: string
+          p_resource_type: string
+          p_success?: boolean
+          p_user_id: string
+        }
+        Returns: string
       }
     }
     Enums: {
