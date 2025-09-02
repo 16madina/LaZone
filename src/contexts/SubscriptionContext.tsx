@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
 interface SubscriptionData {
   subscribed: boolean;
@@ -55,7 +56,10 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       const { data: subData, error: subError } = await supabase.functions.invoke('check-subscription');
       
       if (subError) {
-        console.error('Error checking subscription:', subError);
+        logger.error('Error checking subscription', subError as Error, { 
+          component: 'SubscriptionContext',
+          userId: user.id 
+        });
         setSubscription({ subscribed: false });
         return;
       }
@@ -68,7 +72,10 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
         .maybeSingle();
 
       if (dbError) {
-        console.error('Error fetching subscription from DB:', dbError);
+        logger.error('Error fetching subscription from DB', dbError as Error, { 
+          component: 'SubscriptionContext',
+          userId: user.id 
+        });
       }
 
       // Vérifier si l'utilisateur est admin
@@ -80,7 +87,10 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
         .rpc('can_create_listing', { user_id_param: user.id });
 
       if (canCreateError) {
-        console.error('Error checking can create listing:', canCreateError);
+        logger.error('Error checking can create listing', canCreateError as Error, {
+          component: 'SubscriptionContext',
+          userId: user.id
+        });
       }
 
       setSubscription({
@@ -91,7 +101,10 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
         can_create_listing: canCreateData || false,
       });
     } catch (error) {
-      console.error('Error refreshing subscription:', error);
+      logger.error('Error refreshing subscription', error as Error, { 
+        component: 'SubscriptionContext',
+        userId: user?.id 
+      });
       setSubscription({ subscribed: false });
     } finally {
       setLoading(false);
@@ -114,13 +127,19 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
         .rpc('can_create_listing', { user_id_param: user.id });
 
       if (error) {
-        console.error('Error checking can create listing:', error);
+        logger.error('Error checking can create listing', error as Error, {
+          component: 'SubscriptionContext',
+          userId: user.id
+        });
         return false;
       }
 
       return data || false;
     } catch (error) {
-      console.error('Error checking can create listing:', error);
+      logger.error('Error checking can create listing', error as Error, {
+        component: 'SubscriptionContext',
+        userId: user?.id
+      });
       return false;
     }
   };

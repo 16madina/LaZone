@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/utils/logger';
 
 interface PerformanceMetric {
   name: string;
@@ -26,7 +27,10 @@ export const usePerformanceMonitor = () => {
           user_id: user.id
         });
     } catch (error) {
-      console.error('Error tracking performance metric:', error);
+      logger.error('Error tracking performance metric', error as Error, { 
+        component: 'usePerformanceMonitor',
+        metricName: metric.name 
+      });
     }
   }, [user]);
 
@@ -102,7 +106,11 @@ export const usePerformanceMonitor = () => {
           }
         });
     } catch (error) {
-      console.error('Error tracking error event:', error);
+      logger.error('Error tracking error event', error as Error, { 
+        component: 'usePerformanceMonitor',
+        errorType,
+        originalError: errorMessage 
+      });
     }
   }, [user, trackMetric]);
 

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/utils/logger';
 
 interface SecurityEvent {
   id: string;
@@ -102,7 +103,7 @@ const SecurityMonitor: React.FC = () => {
       }
 
     } catch (error) {
-      console.error('Error fetching security data:', error);
+      logger.error('Error fetching security data', error as Error, { component: 'SecurityMonitor' });
       // Set mock data for demonstration
       const mockStats: SecurityStats = {
         totalLogins: 45,
@@ -150,7 +151,11 @@ const SecurityMonitor: React.FC = () => {
           ip_address: '0.0.0.0' // In real implementation, get actual IP
         });
     } catch (error) {
-      console.error('Error logging security event:', error);
+      logger.error('Error logging security event', error as Error, { 
+        component: 'SecurityMonitor',
+        actionType,
+        resourceType 
+      });
     }
   };
 

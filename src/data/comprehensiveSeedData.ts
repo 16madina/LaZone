@@ -64,4 +64,4 @@ export const seedDataStats = {
   featured: comprehensiveMockProperties.filter(p => p.isFeatured).length,
 };
 
-console.log("🏠 LaZone Seed Data Generated:", seedDataStats);
+// Seed data generated - removed console.log for production

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useCapacitor } from '@/hooks/useCapacitor';
 import { toast } from '@/hooks/use-toast';
 import { getCountryByName, WORLDWIDE_COUNTRIES } from '@/data/worldwideCountries';
+import { logger } from '@/utils/logger';
 
 interface LocationState {
   detectedCountry: string | null;
@@ -138,7 +139,11 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
       throw new Error('Données géocodage incomplètes');
       
     } catch (error) {
-      console.error('Erreur géocodage inversé:', error);
+      logger.error('Reverse geocoding error', error as Error, { 
+        component: 'LocationContext',
+        lat,
+        lng 
+      });
       
       // Fallback avec zones géographiques étendues pour tous les continents
       return getFallbackLocation(lat, lng);
@@ -290,7 +295,7 @@ export const LocationProvider: React.FC<LocationProviderProps> = ({ children }) 
         });
       }
     } catch (error) {
-      console.error('Erreur géolocalisation:', error);
+      logger.error('Geolocation error', error as Error, { component: 'LocationContext' });
       toast({
         title: "Erreur de géolocalisation",
         description: "Impossible de détecter votre position",

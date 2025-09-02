@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Layers, Maximize2, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { AFRICAN_CITIES_DATA, searchCities, searchNeighborhoods } from '@/data/africanCities';
+import { logger } from '@/utils/logger';
 
 interface PropertyMapProps {
   properties: Property[];
@@ -66,7 +67,7 @@ const PropertyMap = React.forwardRef<
           setError('Token Mapbox non disponible');
         }
       } catch (err) {
-        console.error('Error fetching Mapbox token:', err);
+        logger.error('Error fetching Mapbox token', err as Error, { component: 'PropertyMap' });
         setError('Erreur lors du chargement de la carte');
       } finally {
         setIsLoading(false);
@@ -78,7 +79,7 @@ const PropertyMap = React.forwardRef<
 
   // Handle search input and generate suggestions
   const handleSearchChange = (value: string) => {
-    console.log('🔍 Search input:', value);
+    logger.debug('Search input', { component: 'PropertyMap', searchQuery: value });
     setSearchQuery(value);
     
     if (value.length < 1) {
@@ -115,7 +116,10 @@ const PropertyMap = React.forwardRef<
       });
     });
 
-    console.log('📝 Total suggestions found:', suggestions.length);
+    logger.debug('Search suggestions generated', { 
+      component: 'PropertyMap', 
+      suggestionsCount: suggestions.length 
+    });
     // Limit suggestions to 8 for better UX
     setSearchSuggestions(suggestions.slice(0, 8));
     setShowSuggestions(suggestions.length > 0);
@@ -124,11 +128,11 @@ const PropertyMap = React.forwardRef<
   // Navigate to selected location
   const handleLocationSelect = async (suggestion: {type: 'city' | 'neighborhood', name: string, country: string, city?: string}) => {
     if (!map.current || !mapboxToken) {
-      console.log('❌ Map or token not ready');
+      logger.warn('Map or token not ready for navigation', { component: 'PropertyMap' });
       return;
     }
 
-    console.log('🎯 Navigating to:', suggestion);
+    logger.debug('Navigating to location', { component: 'PropertyMap', location: suggestion });
     setSearchQuery(suggestion.name);
     setShowSuggestions(false);
 
@@ -143,13 +147,17 @@ const PropertyMap = React.forwardRef<
       );
       
       const data = await response.json();
-      console.log('🌍 Geocoding response:', data);
+      logger.debug('Geocoding response received', { component: 'PropertyMap', featuresCount: data.features?.length });
       
       if (data.features && data.features.length > 0) {
         const [lng, lat] = data.features[0].center;
         const zoom = suggestion.type === 'city' ? 11 : 14;
         
-        console.log('🚀 Flying to coordinates:', [lng, lat], 'zoom:', zoom);
+        logger.debug('Flying to coordinates', { 
+          component: 'PropertyMap', 
+          coordinates: [lng, lat], 
+          zoom 
+        });
         
         map.current.flyTo({
           center: [lng, lat],
@@ -157,12 +165,15 @@ const PropertyMap = React.forwardRef<
           duration: 2000
         });
         
-        console.log('✅ Navigation completed');
+        logger.debug('Navigation completed', { component: 'PropertyMap' });
       } else {
-        console.log('❌ No geocoding results found');
+        logger.warn('No geocoding results found', { component: 'PropertyMap', suggestion });
       }
     } catch (error) {
-      console.error('❌ Error geocoding location:', error);
+      logger.error('Error geocoding location', error as Error, { 
+        component: 'PropertyMap', 
+        suggestion 
+      });
     }
   };
 
@@ -173,12 +184,12 @@ const PropertyMap = React.forwardRef<
     // Wait a bit for the container to be ready
     const initMap = () => {
       if (!mapContainer.current) {
-        console.log('🗺️ Map container not ready, retrying...');
+        logger.debug('Map container not ready, retrying', { component: 'PropertyMap' });
         setTimeout(initMap, 100);
         return;
       }
 
-      console.log('🗺️ Initializing map with token:', mapboxToken.substring(0, 20) + '...');
+      logger.debug('Initializing map', { component: 'PropertyMap' });
 
       // Clean up existing map
       if (map.current) {
@@ -213,7 +224,7 @@ const PropertyMap = React.forwardRef<
         );
 
         map.current.on('load', () => {
-          console.log('🗺️ Map loaded successfully!');
+          logger.info('Map loaded successfully', { component: 'PropertyMap' });
           setMapLoaded(true);
           
           // Center map on user location if available (only if in Africa)
@@ -228,13 +239,16 @@ const PropertyMap = React.forwardRef<
               });
             } else {
               // Si hors d'Afrique, garder le centre par défaut
-              console.log('🌍 Localisation hors d\'Afrique, centre maintenu sur l\'Afrique');
+              logger.info('User location outside Africa, keeping default center', { 
+                component: 'PropertyMap',
+                userLocation 
+              });
             }
           }
         });
 
         map.current.on('error', (e) => {
-          console.error('🚨 Map error:', e);
+          logger.error('Map error', new Error(e.error?.message || 'Unknown map error'), { component: 'PropertyMap' });
           setError('Erreur lors du chargement de la carte');
         });
 
@@ -246,7 +260,7 @@ const PropertyMap = React.forwardRef<
         });
 
       } catch (error) {
-        console.error('🚨 Error initializing map:', error);
+        logger.error('Error initializing map', error as Error, { component: 'PropertyMap' });
         setError('Erreur lors de l\'initialisation de la carte');
       }
     };
@@ -503,16 +517,21 @@ const PropertyMap = React.forwardRef<
 
   // Add method to navigate to location
   const navigateToLocationOnMap = (coordinates: [number, number], zoom: number) => {
-    console.log('🚀 Navigating to:', coordinates, 'zoom:', zoom);
+    logger.debug('Navigating to coordinates', { 
+      component: 'PropertyMap', 
+      coordinates, 
+      zoom 
+    });
+    
     if (map.current) {
       map.current.flyTo({
         center: coordinates,
         zoom: zoom,
-        duration: 2000
+        duration: 1500
       });
-      console.log('✅ Navigation command sent to map');
+      logger.debug('Navigation command sent to map', { component: 'PropertyMap' });
     } else {
-      console.log('❌ Map not ready for navigation');
+      logger.warn('Map not ready for navigation', { component: 'PropertyMap' });
     }
   };
 
@@ -521,7 +540,7 @@ const PropertyMap = React.forwardRef<
     navigateToLocation: navigateToLocationOnMap
   }), []);
 
-  console.log('🗺️ PropertyMap render, ref available:', !!ref);
+  logger.debug('PropertyMap render', { component: 'PropertyMap', refAvailable: !!ref });
 
   const handleApiKeySubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -612,7 +631,10 @@ const PropertyMap = React.forwardRef<
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               onFocus={() => {
-                console.log('🎯 Search focused, suggestions:', searchSuggestions.length);
+                logger.debug('Search focused', { 
+                  component: 'PropertyMap', 
+                  suggestionsCount: searchSuggestions.length 
+                });
                 if (searchSuggestions.length > 0) setShowSuggestions(true);
               }}
               className="pl-8 pr-3 py-2 h-8 text-xs bg-background/95 backdrop-blur-sm border-border/50 focus:border-primary"
@@ -628,7 +650,10 @@ const PropertyMap = React.forwardRef<
                     key={index}
                     className="p-3 hover:bg-muted/50 cursor-pointer border-b border-border/30 last:border-b-0 transition-colors"
                     onClick={() => {
-                      console.log('🖱️ Suggestion clicked:', suggestion);
+                      logger.debug('Suggestion clicked', { 
+                        component: 'PropertyMap', 
+                        suggestion 
+                      });
                       handleLocationSelect(suggestion);
                     }}
                   >
