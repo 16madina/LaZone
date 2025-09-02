@@ -54,6 +54,7 @@ interface ListingData {
   advancePayment?: string; // en nombre de mois
   // Champs spécifiques aux terrains
   landDocuments?: string[];
+  additionalInfo?: string;
 }
 
 const AMENITIES = [
@@ -118,7 +119,8 @@ export default function CreateListing() {
     isNegotiable: false,
     securityDeposit: '',
     advancePayment: '',
-    landDocuments: []
+    landDocuments: [],
+    additionalInfo: ''
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -906,25 +908,43 @@ export default function CreateListing() {
                 )}
               </div>
 
-              {/* Amenities */}
-              <div className="space-y-3">
-                <Label>Commodités</Label>
-                <div className="flex flex-wrap gap-2">
-                  {(formData.propertyType === 'commercial' ? COMMERCIAL_AMENITIES : AMENITIES).map((amenity) => {
-                    const isSelected = formData.amenities.includes(amenity);
-                    return (
-                      <Badge
-                        key={amenity}
-                        variant={isSelected ? "default" : "outline"}
-                        className="cursor-pointer"
-                        onClick={() => toggleAmenity(amenity)}
-                      >
-                        {amenity}
-                      </Badge>
-                    );
-                  })}
+              {/* Commodités pour les propriétés non-terrains */}
+              {formData.propertyType !== 'land' && (
+                <div className="space-y-3">
+                  <Label>Commodités</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {(formData.propertyType === 'commercial' ? COMMERCIAL_AMENITIES : AMENITIES).map((amenity) => {
+                      const isSelected = formData.amenities.includes(amenity);
+                      return (
+                        <Badge
+                          key={amenity}
+                          variant={isSelected ? "default" : "outline"}
+                          className="cursor-pointer"
+                          onClick={() => toggleAmenity(amenity)}
+                        >
+                          {amenity}
+                        </Badge>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Informations supplémentaires pour les terrains */}
+              {formData.propertyType === 'land' && (
+                <div className="space-y-2">
+                  <Label>Informations supplémentaires</Label>
+                  <Textarea
+                    value={formData.additionalInfo || ''}
+                    onChange={(e) => updateFormData({ additionalInfo: e.target.value })}
+                    placeholder="Ex: Proche école, accès goudronné, terrain plat, zone résidentielle..."
+                    rows={4}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Décrivez les caractéristiques et avantages du terrain
+                  </p>
+                </div>
+              )}
             </div>
           </Card>
         )}
