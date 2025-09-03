@@ -703,6 +703,25 @@ export type Database = {
           years_experience: number
         }[]
       }
+      get_safe_agent_profile: {
+        Args: { profile_user_id: string }
+        Returns: {
+          agency_name: string
+          agent_rating: number
+          agent_verified: boolean
+          avatar_url: string
+          city: string
+          country: string
+          first_name: string
+          id: string
+          languages_spoken: string[]
+          specializations: string[]
+          total_reviews: number
+          user_id: string
+          user_type: string
+          years_experience: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
