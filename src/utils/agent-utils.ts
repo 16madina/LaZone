@@ -23,14 +23,14 @@ export const getAgentInfo = async (userId: string): Promise<AgentInfo> => {
   if (!userId) return defaultAgent;
 
   try {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('first_name, last_name, user_type, agency_name, agent_verified, phone')
-      .eq('user_id', userId)
-      .maybeSingle();
+    // Use the secure function for public agent data access
+    const { data: profiles, error } = await supabase.rpc('get_public_profile_data', {
+      profile_user_id: userId
+    });
     
-    if (!profile) return defaultAgent;
+    if (error || !profiles || profiles.length === 0) return defaultAgent;
 
+    const profile = profiles[0];
     let agentName = 'Propriétaire';
     if (profile.first_name && profile.last_name) {
       // Toujours afficher le nom complet de la personne
@@ -43,7 +43,7 @@ export const getAgentInfo = async (userId: string): Promise<AgentInfo> => {
 
     return {
       name: agentName,
-      avatar: '/placeholder.svg',
+      avatar: profile.avatar_url || '/placeholder.svg',
       isVerified: profile.agent_verified || false,
       type: (profile.user_type as 'particulier' | 'agence' | 'démarcheur') || 'particulier',
       agencyName: profile.agency_name
@@ -66,16 +66,17 @@ export const getAgentInfoWithPhone = async (userId: string): Promise<AgentInfoWi
   if (!userId) return defaultAgent;
 
   try {
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('first_name, last_name, user_type, agency_name, agent_verified, phone')
-      .eq('user_id', userId)
-      .maybeSingle();
+    // Note: Phone numbers are sensitive data. This function should only be used
+    // in contexts where phone access is appropriate (e.g., authenticated inquiries)
+    const { data: profiles, error } = await supabase.rpc('get_public_profile_data', {
+      profile_user_id: userId
+    });
     
-    if (!profile) {
+    if (error || !profiles || profiles.length === 0) {
       return defaultAgent;
     }
 
+    const profile = profiles[0];
     let agentName = 'Propriétaire';
     if (profile.first_name && profile.last_name) {
       // Toujours afficher le nom complet de la personne
@@ -88,9 +89,9 @@ export const getAgentInfoWithPhone = async (userId: string): Promise<AgentInfoWi
 
     return {
       name: agentName,
-      avatar: '/placeholder.svg',
+      avatar: profile.avatar_url || '/placeholder.svg',
       isVerified: profile.agent_verified || false,
-      phone: profile.phone,
+      phone: undefined, // Phone numbers are no longer exposed for security
       type: (profile.user_type as 'particulier' | 'agence' | 'démarcheur') || 'particulier',
       agencyName: profile.agency_name
     };
