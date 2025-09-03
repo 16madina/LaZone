@@ -683,7 +683,7 @@ export type Database = {
         Args: { user_id_param: string }
         Returns: boolean
       }
-      get_public_profile_data: {
+      get_safe_agent_profile: {
         Args: { profile_user_id: string }
         Returns: {
           agency_name: string
@@ -695,7 +695,6 @@ export type Database = {
           first_name: string
           id: string
           languages_spoken: string[]
-          last_name: string
           specializations: string[]
           total_reviews: number
           user_id: string
@@ -703,7 +702,7 @@ export type Database = {
           years_experience: number
         }[]
       }
-      get_safe_agent_profile: {
+      get_safe_public_profile: {
         Args: { profile_user_id: string }
         Returns: {
           agency_name: string
