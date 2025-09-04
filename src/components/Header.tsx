@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import CountrySelector from "@/components/CountrySelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { Bell, Crown, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
+import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 
 interface HeaderProps {}
 
@@ -14,6 +16,7 @@ export default function Header({}: HeaderProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
+  const { notifications: notificationsCount } = useUnreadCounts();
 
   const handleLanguageToggle = () => {
     setLanguage(language === 'fr' ? 'en' : 'fr');
@@ -61,9 +64,17 @@ export default function Header({}: HeaderProps) {
               variant="ghost" 
               size="sm" 
               onClick={handleNotificationClick}
-              className="p-2"
+              className="p-2 relative"
             >
               <Bell className="w-5 h-5" />
+              {notificationsCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs animate-pulse"
+                >
+                  {notificationsCount > 99 ? '99+' : notificationsCount}
+                </Badge>
+              )}
             </Button>
             <Button 
               variant="ghost" 
