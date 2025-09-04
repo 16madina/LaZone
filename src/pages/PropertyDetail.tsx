@@ -1,6 +1,8 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -265,16 +267,37 @@ export default function PropertyDetail() {
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={() => {
-                  if (navigator.share) {
-                    navigator.share({
-                      title: property.title,
-                      text: `Découvrez cette propriété: ${property.title}`,
-                      url: window.location.href
-                    });
-                  } else {
-                    navigator.clipboard.writeText(window.location.href);
-                    // You'll need to add toast here if needed
+                onClick={async () => {
+                  try {
+                    if (Capacitor.isNativePlatform()) {
+                      // Use Capacitor Share plugin for native platforms
+                      await Share.share({
+                        title: property.title,
+                        text: `Découvrez cette propriété: ${property.title}`,
+                        url: window.location.href,
+                        dialogTitle: 'Partager cette annonce'
+                      });
+                    } else if (navigator.share) {
+                      // Use Web Share API for web platforms that support it
+                      await navigator.share({
+                        title: property.title,
+                        text: `Découvrez cette propriété: ${property.title}`,
+                        url: window.location.href
+                      });
+                    } else {
+                      // Fallback to clipboard for older browsers
+                      await navigator.clipboard.writeText(window.location.href);
+                      alert('Lien copié dans le presse-papiers');
+                    }
+                  } catch (error) {
+                    console.error('Error sharing:', error);
+                    // Fallback to clipboard if sharing fails
+                    try {
+                      await navigator.clipboard.writeText(window.location.href);
+                      alert('Lien copié dans le presse-papiers');
+                    } catch (clipboardError) {
+                      console.error('Clipboard error:', clipboardError);
+                    }
                   }
                 }}
               >
