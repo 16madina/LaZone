@@ -42,11 +42,13 @@ interface Conversation {
     first_name: string;
     last_name?: string;
     user_type: string;
+    phone?: string;
   };
   seller_profile?: {
     first_name: string;
     last_name?: string;
     user_type: string;
+    phone?: string;
   };
 }
 
@@ -101,18 +103,21 @@ export default function Messages() {
       const conversationsWithProfiles = await Promise.all(
         (data || []).map(async (conv) => {
           // Récupérer le profil de l'acheteur
-          const { data: buyerProfile } = await supabase
+          const { data: buyerProfile, error: buyerError } = await supabase
             .from('profiles')
-            .select('first_name, last_name, user_type')
+            .select('first_name, last_name, user_type, phone')
             .eq('user_id', conv.buyer_id)
-            .single();
+            .maybeSingle();
 
           // Récupérer le profil du vendeur
-          const { data: sellerProfile } = await supabase
+          const { data: sellerProfile, error: sellerError } = await supabase
             .from('profiles')
-            .select('first_name, last_name, user_type')
+            .select('first_name, last_name, user_type, phone')
             .eq('user_id', conv.seller_id)
-            .single();
+            .maybeSingle();
+
+          if (buyerError) console.error('Error fetching buyer profile:', buyerError);
+          if (sellerError) console.error('Error fetching seller profile:', sellerError);
 
           // Calculer le nombre de messages non lus
           const { count } = await supabase
@@ -412,7 +417,25 @@ export default function Messages() {
                       </div>
                     </div>
                     
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        const otherUser = activeConversation.buyer_id === user?.id 
+                          ? activeConversation.seller_profile 
+                          : activeConversation.buyer_profile;
+                        
+                        if (otherUser?.phone) {
+                          window.open(`tel:${otherUser.phone}`, '_self');
+                        } else {
+                          toast({
+                            title: 'Numéro non disponible',
+                            description: 'Ce contact n\'a pas partagé son numéro de téléphone',
+                            variant: 'destructive'
+                          });
+                        }
+                      }}
+                    >
                       <Phone className="w-4 h-4" />
                     </Button>
                   </div>
