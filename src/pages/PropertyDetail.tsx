@@ -262,7 +262,22 @@ export default function PropertyDetail() {
               >
                 <Heart className={cn("w-4 h-4", isFavorited && "fill-current")} />
               </Button>
-              <Button variant="ghost" size="sm">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({
+                      title: property.title,
+                      text: `Découvrez cette propriété: ${property.title}`,
+                      url: window.location.href
+                    });
+                  } else {
+                    navigator.clipboard.writeText(window.location.href);
+                    // You'll need to add toast here if needed
+                  }
+                }}
+              >
                 <Share2 className="w-4 h-4" />
               </Button>
             </div>

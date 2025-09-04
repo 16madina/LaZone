@@ -372,19 +372,55 @@ const ExternalIntegrations: React.FC = () => {
       <Card className="p-6">
         <h3 className="font-semibold text-lg mb-4">Actions Rapides</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Button variant="outline" className="h-auto flex-col gap-2 p-4">
+          <Button 
+            variant="outline" 
+            className="h-auto flex-col gap-2 p-4"
+            onClick={() => {
+              toast({
+                title: "Calcul de mensualités",
+                description: "Outil de simulation disponible prochainement"
+              });
+            }}
+          >
             <Calculator className="w-6 h-6" />
             <span className="text-sm">Calculer mensualités</span>
           </Button>
-          <Button variant="outline" className="h-auto flex-col gap-2 p-4">
+          <Button 
+            variant="outline" 
+            className="h-auto flex-col gap-2 p-4"
+            onClick={() => {
+              toast({
+                title: "Vérification de documents",
+                description: "Service de vérification en cours de développement"
+              });
+            }}
+          >
             <Shield className="w-6 h-6" />
             <span className="text-sm">Vérifier documents</span>
           </Button>
-          <Button variant="outline" className="h-auto flex-col gap-2 p-4">
+          <Button 
+            variant="outline" 
+            className="h-auto flex-col gap-2 p-4"
+            onClick={() => {
+              toast({
+                title: "Planification de visite",
+                description: "Système de rendez-vous bientôt disponible"
+              });
+            }}
+          >
             <Camera className="w-6 h-6" />
             <span className="text-sm">Planifier visite</span>
           </Button>
-          <Button variant="outline" className="h-auto flex-col gap-2 p-4">
+          <Button 
+            variant="outline" 
+            className="h-auto flex-col gap-2 p-4"
+            onClick={() => {
+              toast({
+                title: "Assistance juridique",
+                description: "Service juridique en cours d'intégration"
+              });
+            }}
+          >
             <FileCheck className="w-6 h-6" />
             <span className="text-sm">Assistance juridique</span>
           </Button>

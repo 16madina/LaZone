@@ -218,7 +218,13 @@ const AIRecommendations: React.FC<AIRecommendationsProps> = ({
                 </div>
                 
                 <div className="flex justify-end">
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      window.location.href = `/property/${rec.property.id}`;
+                    }}
+                  >
                     Voir détails
                   </Button>
                 </div>

@@ -279,22 +279,61 @@ export function AgentDashboard() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <Button variant="outline" className="h-auto p-4 flex flex-col gap-2">
+                <Button 
+                  variant="outline" 
+                  className="h-auto p-4 flex flex-col gap-2"
+                  onClick={() => {
+                    toast({
+                      title: "Nouvelle annonce",
+                      description: "Redirection vers la création d'annonce..."
+                    });
+                    window.location.href = '/create-listing';
+                  }}
+                >
                   <Home className="w-5 h-5" />
                   <span className="text-sm">Nouvelle annonce</span>
                 </Button>
                 
-                <Button variant="outline" className="h-auto p-4 flex flex-col gap-2">
+                <Button 
+                  variant="outline" 
+                  className="h-auto p-4 flex flex-col gap-2"
+                  onClick={() => {
+                    toast({
+                      title: "Messages",
+                      description: "Redirection vers vos messages..."
+                    });
+                    window.location.href = '/messages';
+                  }}
+                >
                   <MessageCircle className="w-5 h-5" />
                   <span className="text-sm">Messages</span>
                 </Button>
                 
-                <Button variant="outline" className="h-auto p-4 flex flex-col gap-2">
+                <Button 
+                  variant="outline" 
+                  className="h-auto p-4 flex flex-col gap-2"
+                  onClick={() => {
+                    toast({
+                      title: "Rendez-vous",
+                      description: "Fonction disponible prochainement"
+                    });
+                  }}
+                >
                   <Calendar className="w-5 h-5" />
                   <span className="text-sm">Rendez-vous</span>
                 </Button>
                 
-                <Button variant="outline" className="h-auto p-4 flex flex-col gap-2">
+                <Button 
+                  variant="outline" 
+                  className="h-auto p-4 flex flex-col gap-2"
+                  onClick={() => {
+                    toast({
+                      title: "Rapports",
+                      description: "Redirection vers les statistiques..."
+                    });
+                    window.location.href = '/stats';
+                  }}
+                >
                   <BarChart3 className="w-5 h-5" />
                   <span className="text-sm">Rapports</span>
                 </Button>
@@ -306,7 +345,13 @@ export function AgentDashboard() {
         <TabsContent value="listings" className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Mes annonces ({listings.length})</h3>
-            <Button>
+            <Button onClick={() => {
+              toast({
+                title: "Nouvelle annonce",
+                description: "Redirection vers la création d'annonce..."
+              });
+              window.location.href = '/create-listing';
+            }}>
               <Home className="w-4 h-4 mr-2" />
               Nouvelle annonce
             </Button>
