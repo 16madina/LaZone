@@ -38,6 +38,16 @@ interface Conversation {
     price: number;
     currency: string;
   };
+  buyer_profile?: {
+    first_name: string;
+    last_name?: string;
+    user_type: string;
+  };
+  seller_profile?: {
+    first_name: string;
+    last_name?: string;
+    user_type: string;
+  };
 }
 
 interface Message {
@@ -87,9 +97,24 @@ export default function Messages() {
 
       if (error) throw error;
 
-      // Calculer le nombre de messages non lus pour chaque conversation
-      const conversationsWithUnread = await Promise.all(
+      // Récupérer les profils des utilisateurs séparément
+      const conversationsWithProfiles = await Promise.all(
         (data || []).map(async (conv) => {
+          // Récupérer le profil de l'acheteur
+          const { data: buyerProfile } = await supabase
+            .from('profiles')
+            .select('first_name, last_name, user_type')
+            .eq('user_id', conv.buyer_id)
+            .single();
+
+          // Récupérer le profil du vendeur
+          const { data: sellerProfile } = await supabase
+            .from('profiles')
+            .select('first_name, last_name, user_type')
+            .eq('user_id', conv.seller_id)
+            .single();
+
+          // Calculer le nombre de messages non lus
           const { count } = await supabase
             .from('messages')
             .select('*', { count: 'exact' })
@@ -97,11 +122,16 @@ export default function Messages() {
             .eq('read', false)
             .neq('sender_id', user.id);
 
-          return { ...conv, unread_count: count || 0 };
+          return { 
+            ...conv, 
+            buyer_profile: buyerProfile,
+            seller_profile: sellerProfile,
+            unread_count: count || 0 
+          };
         })
       );
 
-      setConversations(conversationsWithUnread as Conversation[]);
+      setConversations(conversationsWithProfiles as Conversation[]);
     } catch (error) {
       console.error('Error fetching conversations:', error);
       toast({
@@ -193,8 +223,18 @@ export default function Messages() {
     if (!user) return 'Utilisateur';
     
     if (conversation.buyer_id === user.id) {
+      // L'utilisateur actuel est l'acheteur, donc afficher le nom du vendeur
+      const sellerProfile = conversation.seller_profile;
+      if (sellerProfile?.first_name) {
+        return `${sellerProfile.first_name}${sellerProfile.last_name ? ` ${sellerProfile.last_name}` : ''}`;
+      }
       return 'Vendeur';
     } else {
+      // L'utilisateur actuel est le vendeur, donc afficher le nom de l'acheteur
+      const buyerProfile = conversation.buyer_profile;
+      if (buyerProfile?.first_name) {
+        return `${buyerProfile.first_name}${buyerProfile.last_name ? ` ${buyerProfile.last_name}` : ''}`;
+      }
       return 'Acheteur';
     }
   };
