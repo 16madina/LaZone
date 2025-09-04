@@ -119,6 +119,8 @@ export default function Messages() {
           if (buyerError) console.error('Error fetching buyer profile:', buyerError);
           if (sellerError) console.error('Error fetching seller profile:', sellerError);
 
+          console.log('Debug - Conversation:', conv.id, 'Buyer Profile:', buyerProfile, 'Seller Profile:', sellerProfile);
+
           // Calculer le nombre de messages non lus
           const { count } = await supabase
             .from('messages')
@@ -227,9 +229,19 @@ export default function Messages() {
   const getOtherUserName = (conversation: Conversation) => {
     if (!user) return 'Utilisateur';
     
+    console.log('Debug - getOtherUserName called with:', {
+      conversationId: conversation.id,
+      currentUserId: user.id,
+      buyerId: conversation.buyer_id,
+      sellerId: conversation.seller_id,
+      buyerProfile: conversation.buyer_profile,
+      sellerProfile: conversation.seller_profile
+    });
+    
     if (conversation.buyer_id === user.id) {
       // L'utilisateur actuel est l'acheteur, donc afficher le nom du vendeur
       const sellerProfile = conversation.seller_profile;
+      console.log('Debug - User is buyer, showing seller:', sellerProfile);
       if (sellerProfile?.first_name) {
         return `${sellerProfile.first_name}${sellerProfile.last_name ? ` ${sellerProfile.last_name}` : ''}`;
       }
@@ -237,6 +249,7 @@ export default function Messages() {
     } else {
       // L'utilisateur actuel est le vendeur, donc afficher le nom de l'acheteur
       const buyerProfile = conversation.buyer_profile;
+      console.log('Debug - User is seller, showing buyer:', buyerProfile);
       if (buyerProfile?.first_name) {
         return `${buyerProfile.first_name}${buyerProfile.last_name ? ` ${buyerProfile.last_name}` : ''}`;
       }
