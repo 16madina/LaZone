@@ -495,11 +495,24 @@ export default function PropertyDetail() {
             <div className="space-y-3">
               <h2 className="text-xl font-semibold">Localisation</h2>
               <div className="h-64 rounded-xl overflow-hidden">
-                <PropertyMap
-                  properties={[property]}
-                  onPropertySelect={() => {}}
-                  className="w-full h-full"
-                />
+                {property.location.coordinates[0] !== 0 && property.location.coordinates[1] !== 0 ? (
+                  <PropertyMap
+                    properties={[property]}
+                    onPropertySelect={() => {}}
+                    className="w-full h-full"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center rounded-xl">
+                    <div className="text-center space-y-2">
+                      <MapPin className="w-8 h-8 text-muted-foreground mx-auto" />
+                      <div className="text-sm text-muted-foreground">
+                        <p className="font-medium">{property.location.neighborhood}</p>
+                        <p>{property.location.city}</p>
+                        <p className="mt-2 text-xs">Localisation exacte disponible sur demande</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               <p className="text-sm text-muted-foreground">
                 {property.location.neighborhood}, {property.location.city}
