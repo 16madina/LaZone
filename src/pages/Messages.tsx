@@ -340,30 +340,21 @@ export default function Messages() {
         .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
         .order('last_message_at', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false });
-
-      console.log('🔄 Fetching conversations for user:', user.id);
       
       if (error) {
-        console.error('❌ Error fetching conversations:', error);
+        console.error('Error fetching conversations:', error);
         throw error;
       }
-
-      console.log('✅ Raw conversations:', data);
 
       // Récupérer les profils des utilisateurs et les informations sur les biens
       const conversationsWithProfiles = await Promise.all(
         (data || []).map(async (conv) => {
-          console.log('🔍 Processing conversation:', conv.id, 'buyer:', conv.buyer_id, 'seller:', conv.seller_id);
-          
           // Récupérer le profil de l'acheteur
           const { data: buyerProfile, error: buyerError } = await supabase
             .from('profiles')
             .select('first_name, last_name, user_type, phone, agency_name')
             .eq('user_id', conv.buyer_id)
             .maybeSingle();
-          
-          console.log('👤 Buyer profile for', conv.buyer_id, ':', buyerProfile);
-          if (buyerError) console.error('❌ Buyer profile error:', buyerError);
 
           // Récupérer le profil du vendeur
           const { data: sellerProfile, error: sellerError } = await supabase
@@ -372,22 +363,17 @@ export default function Messages() {
             .eq('user_id', conv.seller_id)
             .maybeSingle();
 
-          console.log('🏠 Seller profile for', conv.seller_id, ':', sellerProfile);
-          if (sellerError) console.error('❌ Seller profile error:', sellerError);
-
           // Récupérer les informations sur le bien immobilier si disponible
           let listing = null;
           if (conv.listing_id) {
-            console.log('🏡 Fetching listing:', conv.listing_id);
             const { data: listingData, error: listingError } = await supabase
               .from('listings')
               .select('title, price, currency, address, city, property_type')
               .eq('id', conv.listing_id)
               .maybeSingle();
             
-            console.log('🏡 Listing data for', conv.listing_id, ':', listingData);
             if (listingError) {
-              console.error('❌ Error fetching listing:', listingError);
+              console.error('Error fetching listing:', listingError);
             } else {
               listing = listingData;
             }
@@ -505,65 +491,37 @@ export default function Messages() {
   const getOtherUserName = (conversation: Conversation) => {
     if (!user) return 'Utilisateur';
     
-    console.log('🏷️ getOtherUserName called for conversation:', {
-      id: conversation.id,
-      currentUserId: user.id,
-      isUserBuyer: conversation.buyer_id === user.id,
-      sellerProfile: conversation.seller_profile,
-      buyerProfile: conversation.buyer_profile
-    });
-    
     if (conversation.buyer_id === user.id) {
       // L'utilisateur actuel est l'acheteur, donc afficher le nom du vendeur
       const sellerProfile = conversation.seller_profile;
       
-      console.log('👤 Seller profile analysis:', {
-        profile: sellerProfile,
-        firstName: sellerProfile?.first_name,
-        lastName: sellerProfile?.last_name,
-        agencyName: sellerProfile?.agency_name
-      });
-      
       // Prioriser prénom + nom
       if (sellerProfile?.first_name && sellerProfile.first_name.trim()) {
         const fullName = `${sellerProfile.first_name}${sellerProfile.last_name && sellerProfile.last_name.trim() ? ` ${sellerProfile.last_name}` : ''}`;
-        console.log('✅ Using seller full name:', fullName);
         return fullName;
       }
       
       // Sinon essayer le nom d'agence
       if (sellerProfile?.agency_name && sellerProfile.agency_name.trim()) {
-        console.log('✅ Using seller agency name:', sellerProfile.agency_name);
         return sellerProfile.agency_name;
       }
       
-      console.log('⚠️ Falling back to "Vendeur"');
       return 'Vendeur';
     } else {
       // L'utilisateur actuel est le vendeur, donc afficher le nom de l'acheteur
       const buyerProfile = conversation.buyer_profile;
       
-      console.log('👤 Buyer profile analysis:', {
-        profile: buyerProfile,
-        firstName: buyerProfile?.first_name,
-        lastName: buyerProfile?.last_name,
-        agencyName: buyerProfile?.agency_name
-      });
-      
       // Prioriser prénom + nom
       if (buyerProfile?.first_name && buyerProfile.first_name.trim()) {
         const fullName = `${buyerProfile.first_name}${buyerProfile.last_name && buyerProfile.last_name.trim() ? ` ${buyerProfile.last_name}` : ''}`;
-        console.log('✅ Using buyer full name:', fullName);
         return fullName;
       }
       
       // Sinon essayer le nom d'agence
       if (buyerProfile?.agency_name && buyerProfile.agency_name.trim()) {
-        console.log('✅ Using buyer agency name:', buyerProfile.agency_name);
         return buyerProfile.agency_name;
       }
       
-      console.log('⚠️ Falling back to "Acheteur"');
       return 'Acheteur';
     }
   };
