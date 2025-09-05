@@ -83,7 +83,6 @@ export default function Messages() {
   const [isOnline, setIsOnline] = useState(true);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
-  const [debugInfo, setDebugInfo] = useState<any>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesChannelRef = useRef<any>(null);
@@ -489,20 +488,6 @@ export default function Messages() {
   const getOtherUserName = (conversation: Conversation) => {
     if (!user) return 'Utilisateur';
     
-    // Debug info pour affichage mobile
-    const debugData = {
-      currentUserId: user.id,
-      conversationId: conversation.id,
-      buyerId: conversation.buyer_id,
-      sellerId: conversation.seller_id,
-      isUserBuyer: conversation.buyer_id === user.id,
-      sellerProfile: conversation.seller_profile,
-      buyerProfile: conversation.buyer_profile
-    };
-    
-    // Sauvegarder les infos de debug pour l'affichage
-    setDebugInfo(debugData);
-    
     if (conversation.buyer_id === user.id) {
       // L'utilisateur actuel est l'acheteur, donc afficher le nom du vendeur
       const sellerProfile = conversation.seller_profile;
@@ -592,35 +577,6 @@ export default function Messages() {
               </p>
             </div>
           </div>
-
-          {/* DEBUG TEMPORAIRE - À ENLEVER PLUS TARD */}
-          {debugInfo && (
-            <Card className="mb-4 p-4 bg-yellow-50 border-yellow-200">
-              <h3 className="font-bold text-yellow-800 mb-2">🔍 Debug Info (Temporaire)</h3>
-              <div className="text-xs space-y-1">
-                <div><strong>Je suis:</strong> {debugInfo.isUserBuyer ? 'Acheteur' : 'Vendeur'}</div>
-                <div><strong>ID:</strong> {debugInfo.currentUserId}</div>
-                <div><strong>Vendeur ID:</strong> {debugInfo.sellerId}</div>
-                <div><strong>Acheteur ID:</strong> {debugInfo.buyerId}</div>
-                <div><strong>Profil vendeur:</strong> 
-                  {debugInfo.sellerProfile ? (
-                    <span className="ml-2">
-                      Nom: {debugInfo.sellerProfile.first_name || 'null'} {debugInfo.sellerProfile.last_name || 'null'} | 
-                      Agence: {debugInfo.sellerProfile.agency_name || 'null'}
-                    </span>
-                  ) : 'null'}
-                </div>
-                <div><strong>Profil acheteur:</strong> 
-                  {debugInfo.buyerProfile ? (
-                    <span className="ml-2">
-                      Nom: {debugInfo.buyerProfile.first_name || 'null'} {debugInfo.buyerProfile.last_name || 'null'} | 
-                      Agence: {debugInfo.buyerProfile.agency_name || 'null'}
-                    </span>
-                  ) : 'null'}
-                </div>
-              </div>
-            </Card>
-          )}
 
           <Tabs defaultValue="conversations" className="space-y-6">
             <TabsList className="grid w-full grid-cols-3">
