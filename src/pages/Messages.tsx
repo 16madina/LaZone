@@ -495,15 +495,15 @@ export default function Messages() {
       // L'utilisateur actuel est l'acheteur, donc afficher le nom du vendeur
       const sellerProfile = conversation.seller_profile;
       
-      // Prioriser prénom + nom
+      // Prioriser le nom d'agence d'abord
+      if (sellerProfile?.agency_name && sellerProfile.agency_name.trim()) {
+        return sellerProfile.agency_name;
+      }
+      
+      // Sinon essayer prénom + nom
       if (sellerProfile?.first_name && sellerProfile.first_name.trim()) {
         const fullName = `${sellerProfile.first_name}${sellerProfile.last_name && sellerProfile.last_name.trim() ? ` ${sellerProfile.last_name}` : ''}`;
         return fullName;
-      }
-      
-      // Sinon essayer le nom d'agence
-      if (sellerProfile?.agency_name && sellerProfile.agency_name.trim()) {
-        return sellerProfile.agency_name;
       }
       
       return 'Vendeur';
@@ -511,15 +511,15 @@ export default function Messages() {
       // L'utilisateur actuel est le vendeur, donc afficher le nom de l'acheteur
       const buyerProfile = conversation.buyer_profile;
       
-      // Prioriser prénom + nom
+      // Prioriser le nom d'agence d'abord
+      if (buyerProfile?.agency_name && buyerProfile.agency_name.trim()) {
+        return buyerProfile.agency_name;
+      }
+      
+      // Sinon essayer prénom + nom
       if (buyerProfile?.first_name && buyerProfile.first_name.trim()) {
         const fullName = `${buyerProfile.first_name}${buyerProfile.last_name && buyerProfile.last_name.trim() ? ` ${buyerProfile.last_name}` : ''}`;
         return fullName;
-      }
-      
-      // Sinon essayer le nom d'agence
-      if (buyerProfile?.agency_name && buyerProfile.agency_name.trim()) {
-        return buyerProfile.agency_name;
       }
       
       return 'Acheteur';
