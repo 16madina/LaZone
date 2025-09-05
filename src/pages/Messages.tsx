@@ -37,16 +37,19 @@ interface Conversation {
     title: string;
     price: number;
     currency: string;
+    address?: string;
+    city?: string;
+    property_type?: string;
   };
   buyer_profile?: {
-    first_name: string;
+    first_name?: string;
     last_name?: string;
     user_type: string;
     phone?: string;
     agency_name?: string;
   };
   seller_profile?: {
-    first_name: string;
+    first_name?: string;
     last_name?: string;
     user_type: string;
     phone?: string;
@@ -101,7 +104,7 @@ export default function Messages() {
 
       if (error) throw error;
 
-      // Récupérer les profils des utilisateurs séparément
+      // Récupérer les profils des utilisateurs et les informations sur les biens
       const conversationsWithProfiles = await Promise.all(
         (data || []).map(async (conv) => {
           // Récupérer le profil de l'acheteur
@@ -118,10 +121,24 @@ export default function Messages() {
             .eq('user_id', conv.seller_id)
             .maybeSingle();
 
+          // Récupérer les informations sur le bien immobilier si disponible
+          let listing = null;
+          if (conv.listing_id) {
+            const { data: listingData, error: listingError } = await supabase
+              .from('listings')
+              .select('title, price, currency, address, city, property_type')
+              .eq('id', conv.listing_id)
+              .maybeSingle();
+            
+            if (listingError) {
+              console.error('Error fetching listing:', listingError);
+            } else {
+              listing = listingData;
+            }
+          }
+
           if (buyerError) console.error('Error fetching buyer profile:', buyerError);
           if (sellerError) console.error('Error fetching seller profile:', sellerError);
-
-          console.log('Debug - Conversation:', conv.id, 'Buyer Profile:', buyerProfile, 'Seller Profile:', sellerProfile);
 
           // Calculer le nombre de messages non lus
           const { count } = await supabase
@@ -135,6 +152,7 @@ export default function Messages() {
             ...conv, 
             buyer_profile: buyerProfile,
             seller_profile: sellerProfile,
+            listings: listing,
             unread_count: count || 0 
           };
         })
@@ -231,53 +249,38 @@ export default function Messages() {
   const getOtherUserName = (conversation: Conversation) => {
     if (!user) return 'Utilisateur';
     
-    console.log('Debug getOtherUserName:', {
-      currentUserId: user.id,
-      buyerId: conversation.buyer_id,
-      sellerId: conversation.seller_id,
-      userIsBuyer: conversation.buyer_id === user.id,
-      sellerProfile: conversation.seller_profile,
-      buyerProfile: conversation.buyer_profile
-    });
-    
     if (conversation.buyer_id === user.id) {
       // L'utilisateur actuel est l'acheteur, donc afficher le nom du vendeur
       const sellerProfile = conversation.seller_profile;
-      console.log('User is buyer, seller profile:', sellerProfile);
       if (sellerProfile?.first_name) {
-        const name = `${sellerProfile.first_name}${sellerProfile.last_name ? ` ${sellerProfile.last_name}` : ''}`;
-        console.log('Returning seller name:', name);
-        return name;
+        return `${sellerProfile.first_name}${sellerProfile.last_name ? ` ${sellerProfile.last_name}` : ''}`;
       }
       // Si pas de prénom, essayer le nom d'agence
       if (sellerProfile?.agency_name) {
-        console.log('Returning seller agency:', sellerProfile.agency_name);
         return sellerProfile.agency_name;
       }
-      console.log('Returning fallback: Vendeur');
       return 'Vendeur';
     } else {
       // L'utilisateur actuel est le vendeur, donc afficher le nom de l'acheteur
       const buyerProfile = conversation.buyer_profile;
-      console.log('User is seller, buyer profile:', buyerProfile);
       if (buyerProfile?.first_name) {
-        const name = `${buyerProfile.first_name}${buyerProfile.last_name ? ` ${buyerProfile.last_name}` : ''}`;
-        console.log('Returning buyer name:', name);
-        return name;
+        return `${buyerProfile.first_name}${buyerProfile.last_name ? ` ${buyerProfile.last_name}` : ''}`;
       }
       // Si pas de prénom, essayer le nom d'agence
       if (buyerProfile?.agency_name) {
-        console.log('Returning buyer agency:', buyerProfile.agency_name);
         return buyerProfile.agency_name;
       }
-      console.log('Returning fallback: Acheteur');
       return 'Acheteur';
     }
   };
 
-  const filteredConversations = conversations.filter(conv =>
-    getOtherUserName(conv).toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredConversations = conversations.filter(conv => {
+    const otherUserName = getOtherUserName(conv).toLowerCase();
+    const listingTitle = conv.listings?.title?.toLowerCase() || '';
+    const searchTerm = searchQuery.toLowerCase();
+    
+    return otherUserName.includes(searchTerm) || listingTitle.includes(searchTerm);
+  });
 
   const totalUnreadMessages = conversations.reduce((total, conv) => total + (conv.unread_count || 0), 0);
 
@@ -346,7 +349,7 @@ export default function Messages() {
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                       <Input
-                        placeholder="Rechercher une conversation..."
+                        placeholder="Rechercher par nom ou bien immobilier..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-10"
@@ -375,23 +378,29 @@ export default function Messages() {
                             className="p-6 cursor-pointer hover:bg-muted/50 transition-colors border-b last:border-b-0"
                             onClick={() => setActiveConversation(conversation)}
                           >
-                            <div className="flex items-center gap-4">
-                              <Avatar className="w-12 h-12">
+                            <div className="flex items-start gap-4">
+                              <Avatar className="w-12 h-12 mt-1">
                                 <AvatarFallback>
-                                  <User className="w-6 h-6" />
+                                  {conversation.buyer_id === user?.id ? (
+                                    <Home className="w-6 h-6" />
+                                  ) : (
+                                    <User className="w-6 h-6" />
+                                  )}
                                 </AvatarFallback>
                               </Avatar>
                               
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between mb-1">
-                                  <h4 className="text-sm font-medium flex items-center gap-2">
-                                    {getOtherUserName(conversation)}
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="text-sm font-medium">
+                                      {getOtherUserName(conversation)}
+                                    </h4>
                                     {conversation.unread_count! > 0 && (
                                       <Badge variant="destructive" className="text-xs">
                                         {conversation.unread_count}
                                       </Badge>
                                     )}
-                                  </h4>
+                                  </div>
                                   {conversation.last_message_at && (
                                     <span className="text-xs text-muted-foreground">
                                       {new Date(conversation.last_message_at).toLocaleDateString('fr-FR', {
@@ -404,6 +413,32 @@ export default function Messages() {
                                   )}
                                 </div>
                                 
+                                {/* Informations sur le bien */}
+                                {conversation.listings && (
+                                  <div className="mb-2">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <Home className="w-3 h-3 text-muted-foreground" />
+                                      <span className="text-sm text-foreground font-medium truncate">
+                                        {conversation.listings.title}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                      <span className="font-medium text-primary">
+                                        {formatPrice(conversation.listings.price, conversation.listings.currency)}
+                                      </span>
+                                      {conversation.listings.property_type && (
+                                        <span className="capitalize">{conversation.listings.property_type}</span>
+                                      )}
+                                      {conversation.listings.city && (
+                                        <div className="flex items-center gap-1">
+                                          <MapPin className="w-3 h-3" />
+                                          <span>{conversation.listings.city}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                                
                                 <div className="flex items-center gap-2">
                                   <Badge 
                                     variant={conversation.status === 'active' ? 'default' : 'secondary'}
@@ -411,6 +446,11 @@ export default function Messages() {
                                   >
                                     {conversation.status === 'active' ? 'Active' : 'Fermée'}
                                   </Badge>
+                                  {!conversation.listings && (
+                                    <Badge variant="outline" className="text-xs">
+                                      Conversation générale
+                                    </Badge>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -435,16 +475,42 @@ export default function Messages() {
                       </Button>
                       <Avatar className="w-10 h-10">
                         <AvatarFallback>
-                          <User className="w-5 h-5" />
+                          {activeConversation.buyer_id === user?.id ? (
+                            <Home className="w-5 h-5" />
+                          ) : (
+                            <User className="w-5 h-5" />
+                          )}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
+                      <div className="flex-1">
                         <h3 className="text-lg font-medium">
                           {getOtherUserName(activeConversation)}
                         </h3>
-                        <p className="text-sm text-muted-foreground">
-                          Conversation
-                        </p>
+                        {activeConversation.listings ? (
+                          <div className="text-sm text-muted-foreground">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Home className="w-3 h-3" />
+                              <span className="font-medium text-foreground truncate">
+                                {activeConversation.listings.title}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs">
+                              <span className="font-medium text-primary">
+                                {formatPrice(activeConversation.listings.price, activeConversation.listings.currency)}
+                              </span>
+                              {activeConversation.listings.city && (
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="w-3 h-3" />
+                                  <span>{activeConversation.listings.city}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            Conversation générale
+                          </p>
+                        )}
                       </div>
                     </div>
                     
