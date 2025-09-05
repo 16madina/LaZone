@@ -231,27 +231,46 @@ export default function Messages() {
   const getOtherUserName = (conversation: Conversation) => {
     if (!user) return 'Utilisateur';
     
+    console.log('Debug getOtherUserName:', {
+      currentUserId: user.id,
+      buyerId: conversation.buyer_id,
+      sellerId: conversation.seller_id,
+      userIsBuyer: conversation.buyer_id === user.id,
+      sellerProfile: conversation.seller_profile,
+      buyerProfile: conversation.buyer_profile
+    });
+    
     if (conversation.buyer_id === user.id) {
       // L'utilisateur actuel est l'acheteur, donc afficher le nom du vendeur
       const sellerProfile = conversation.seller_profile;
+      console.log('User is buyer, seller profile:', sellerProfile);
       if (sellerProfile?.first_name) {
-        return `${sellerProfile.first_name}${sellerProfile.last_name ? ` ${sellerProfile.last_name}` : ''}`;
+        const name = `${sellerProfile.first_name}${sellerProfile.last_name ? ` ${sellerProfile.last_name}` : ''}`;
+        console.log('Returning seller name:', name);
+        return name;
       }
       // Si pas de prénom, essayer le nom d'agence
       if (sellerProfile?.agency_name) {
+        console.log('Returning seller agency:', sellerProfile.agency_name);
         return sellerProfile.agency_name;
       }
+      console.log('Returning fallback: Vendeur');
       return 'Vendeur';
     } else {
       // L'utilisateur actuel est le vendeur, donc afficher le nom de l'acheteur
       const buyerProfile = conversation.buyer_profile;
+      console.log('User is seller, buyer profile:', buyerProfile);
       if (buyerProfile?.first_name) {
-        return `${buyerProfile.first_name}${buyerProfile.last_name ? ` ${buyerProfile.last_name}` : ''}`;
+        const name = `${buyerProfile.first_name}${buyerProfile.last_name ? ` ${buyerProfile.last_name}` : ''}`;
+        console.log('Returning buyer name:', name);
+        return name;
       }
       // Si pas de prénom, essayer le nom d'agence
       if (buyerProfile?.agency_name) {
+        console.log('Returning buyer agency:', buyerProfile.agency_name);
         return buyerProfile.agency_name;
       }
+      console.log('Returning fallback: Acheteur');
       return 'Acheteur';
     }
   };
