@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from '@/components/Header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,9 @@ import {
   User,
   Home,
   MapPin,
-  Clock
+  Clock,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -77,6 +79,217 @@ export default function Messages() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+  const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+  
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesChannelRef = useRef<any>(null);
+  const conversationsChannelRef = useRef<any>(null);
+  const presenceChannelRef = useRef<any>(null);
+
+  // Fonction pour faire défiler automatiquement vers le bas
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Scroll automatique quand les messages changent
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Configuration du système temps réel pour les messages
+  useEffect(() => {
+    if (!user || !activeConversation) return;
+
+    console.log('🔄 Setting up realtime for conversation:', activeConversation.id);
+
+    // Nettoyer les anciens abonnements
+    if (messagesChannelRef.current) {
+      console.log('🧹 Cleaning up old messages channel');
+      supabase.removeChannel(messagesChannelRef.current);
+    }
+
+    // Créer un nouveau channel pour cette conversation
+    const channel = supabase
+      .channel(`messages-${activeConversation.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${activeConversation.id}`
+        },
+        (payload) => {
+          console.log('📨 New message received:', payload.new);
+          const newMessage = payload.new as Message;
+          setMessages(prev => {
+            const exists = prev.find(m => m.id === newMessage.id);
+            if (exists) return prev;
+            return [...prev, newMessage].sort((a, b) => 
+              new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+            );
+          });
+
+          // Marquer comme lu automatiquement si l'expéditeur n'est pas l'utilisateur actuel
+          if (newMessage.sender_id !== user.id) {
+            markMessagesAsRead(activeConversation.id);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${activeConversation.id}`
+        },
+        (payload) => {
+          console.log('📝 Message updated:', payload.new);
+          const updatedMessage = payload.new as Message;
+          setMessages(prev => 
+            prev.map(msg => msg.id === updatedMessage.id ? updatedMessage : msg)
+          );
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Messages channel status:', status);
+        setIsOnline(status === 'SUBSCRIBED');
+      });
+
+    messagesChannelRef.current = channel;
+
+    return () => {
+      console.log('🧹 Cleaning up messages channel');
+      if (messagesChannelRef.current) {
+        supabase.removeChannel(messagesChannelRef.current);
+        messagesChannelRef.current = null;
+      }
+    };
+  }, [user, activeConversation]);
+
+  // Configuration du système temps réel pour les conversations
+  useEffect(() => {
+    if (!user) return;
+
+    console.log('🔄 Setting up realtime for conversations');
+
+    // Nettoyer les anciens abonnements
+    if (conversationsChannelRef.current) {
+      console.log('🧹 Cleaning up old conversations channel');
+      supabase.removeChannel(conversationsChannelRef.current);
+    }
+
+    const channel = supabase
+      .channel('user-conversations')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'conversations',
+          filter: `buyer_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('🆕 New conversation (as buyer):', payload.new);
+          fetchConversations(); // Recharger toutes les conversations
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'conversations',
+          filter: `seller_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('🆕 New conversation (as seller):', payload.new);
+          fetchConversations(); // Recharger toutes les conversations
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'conversations'
+        },
+        (payload) => {
+          const updatedConv = payload.new as any;
+          if (updatedConv.buyer_id === user.id || updatedConv.seller_id === user.id) {
+            console.log('📝 Conversation updated:', updatedConv);
+            fetchConversations(); // Recharger pour mettre à jour les compteurs
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Conversations channel status:', status);
+        setIsOnline(status === 'SUBSCRIBED');
+      });
+
+    conversationsChannelRef.current = channel;
+
+    return () => {
+      console.log('🧹 Cleaning up conversations channel');
+      if (conversationsChannelRef.current) {
+        supabase.removeChannel(conversationsChannelRef.current);
+        conversationsChannelRef.current = null;
+      }
+    };
+  }, [user]);
+
+  // Système de présence utilisateur
+  useEffect(() => {
+    if (!user) return;
+
+    console.log('🔄 Setting up user presence');
+
+    const channel = supabase.channel('user-presence')
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        console.log('👥 Presence sync:', state);
+        const onlineUserIds = new Set(
+          Object.keys(state).filter(key => state[key].length > 0)
+        );
+        setOnlineUsers(onlineUserIds);
+      })
+      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        console.log('👋 User joined:', key, newPresences);
+        setOnlineUsers(prev => new Set([...prev, key]));
+      })
+      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+        console.log('👋 User left:', key, leftPresences);
+        setOnlineUsers(prev => {
+          const updated = new Set(prev);
+          updated.delete(key);
+          return updated;
+        });
+      })
+      .subscribe(async (status) => {
+        console.log('📡 Presence channel status:', status);
+        if (status === 'SUBSCRIBED') {
+          const presenceStatus = await channel.track({
+            user_id: user.id,
+            online_at: new Date().toISOString(),
+          });
+          console.log('📍 Presence tracked:', presenceStatus);
+        }
+      });
+
+    presenceChannelRef.current = channel;
+
+    // Cleanup au démontage
+    return () => {
+      console.log('🧹 Cleaning up presence channel');
+      if (presenceChannelRef.current) {
+        supabase.removeChannel(presenceChannelRef.current);
+        presenceChannelRef.current = null;
+      }
+    };
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -307,7 +520,22 @@ export default function Messages() {
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Messages</h1>
+              <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
+                Messages
+                <div className="flex items-center gap-2">
+                  {isOnline ? (
+                    <div className="flex items-center gap-1 text-sm text-green-600">
+                      <Wifi className="w-4 h-4" />
+                      <span className="text-xs">En ligne</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 text-sm text-red-500">
+                      <WifiOff className="w-4 h-4" />
+                      <span className="text-xs">Hors ligne</span>
+                    </div>
+                  )}
+                </div>
+              </h1>
               <p className="text-muted-foreground">
                 Gérez vos conversations avec les acheteurs et vendeurs
               </p>
@@ -392,8 +620,12 @@ export default function Messages() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center gap-2">
-                                    <h4 className="text-sm font-medium">
+                                    <h4 className="text-sm font-medium flex items-center gap-2">
                                       {getOtherUserName(conversation)}
+                                      {/* Indicateur de présence */}
+                                      {onlineUsers.has(conversation.buyer_id === user?.id ? conversation.seller_id : conversation.buyer_id) && (
+                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="En ligne" />
+                                      )}
                                     </h4>
                                     {conversation.unread_count! > 0 && (
                                       <Badge variant="destructive" className="text-xs">
@@ -482,10 +714,14 @@ export default function Messages() {
                           )}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-medium">
-                          {getOtherUserName(activeConversation)}
-                        </h3>
+                       <div className="flex-1">
+                         <h3 className="text-lg font-medium flex items-center gap-2">
+                           {getOtherUserName(activeConversation)}
+                           {/* Indicateur de présence dans l'en-tête */}
+                           {onlineUsers.has(activeConversation.buyer_id === user?.id ? activeConversation.seller_id : activeConversation.buyer_id) && (
+                             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="En ligne" />
+                           )}
+                         </h3>
                         {activeConversation.listings ? (
                           <div className="text-sm text-muted-foreground">
                             <div className="flex items-center gap-2 mb-1">
@@ -537,54 +773,56 @@ export default function Messages() {
                     </Button>
                   </div>
 
-                  {/* Messages */}
-                  <ScrollArea className="flex-1 p-6">
-                    <div className="space-y-4">
-                      {messages.map((message) => (
-                        <div
-                          key={message.id}
-                          className={cn(
-                            "flex gap-3",
-                            message.sender_id === user?.id ? "justify-end" : "justify-start"
-                          )}
-                        >
-                          {message.sender_id !== user?.id && (
-                            <Avatar className="w-8 h-8">
-                              <AvatarFallback>
-                                <User className="w-4 h-4" />
-                              </AvatarFallback>
-                            </Avatar>
-                          )}
-                          
-                          <div
-                            className={cn(
-                              "max-w-[70%] rounded-lg px-4 py-3",
-                              message.sender_id === user?.id
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-muted"
-                            )}
-                          >
-                            <p className="text-sm">{message.message}</p>
-                            <span
-                              className={cn(
-                                "text-xs opacity-70 mt-2 block",
-                                message.sender_id === user?.id
-                                  ? "text-primary-foreground/70"
-                                  : "text-muted-foreground"
-                              )}
-                            >
-                              {new Date(message.created_at).toLocaleString('fr-FR', {
-                                day: 'numeric',
-                                month: 'short',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
+                   {/* Messages */}
+                   <ScrollArea className="flex-1 p-6">
+                     <div className="space-y-4">
+                       {messages.map((message) => (
+                         <div
+                           key={message.id}
+                           className={cn(
+                             "flex gap-3",
+                             message.sender_id === user?.id ? "justify-end" : "justify-start"
+                           )}
+                         >
+                           {message.sender_id !== user?.id && (
+                             <Avatar className="w-8 h-8">
+                               <AvatarFallback>
+                                 <User className="w-4 h-4" />
+                               </AvatarFallback>
+                             </Avatar>
+                           )}
+                           
+                           <div
+                             className={cn(
+                               "max-w-[70%] rounded-lg px-4 py-3",
+                               message.sender_id === user?.id
+                                 ? "bg-primary text-primary-foreground"
+                                 : "bg-muted"
+                             )}
+                           >
+                             <p className="text-sm">{message.message}</p>
+                             <span
+                               className={cn(
+                                 "text-xs opacity-70 mt-2 block",
+                                 message.sender_id === user?.id
+                                   ? "text-primary-foreground/70"
+                                   : "text-muted-foreground"
+                               )}
+                             >
+                               {new Date(message.created_at).toLocaleString('fr-FR', {
+                                 day: 'numeric',
+                                 month: 'short',
+                                 hour: '2-digit',
+                                 minute: '2-digit'
+                               })}
+                             </span>
+                           </div>
+                         </div>
+                       ))}
+                       {/* Référence pour le scroll automatique */}
+                       <div ref={messagesEndRef} />
+                     </div>
+                   </ScrollArea>
 
                   {/* Input de message */}
                   <div className="p-6 border-t">
