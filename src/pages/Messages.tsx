@@ -95,7 +95,12 @@ export default function Messages() {
 
   // Scroll automatique quand les messages changent
   useEffect(() => {
-    scrollToBottom();
+    const scrollToBottomImmediate = () => {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    };
+    scrollToBottomImmediate();
   }, [messages]);
 
   // Configuration du système temps réel pour les messages
@@ -127,14 +132,19 @@ export default function Messages() {
           setMessages(prev => {
             const exists = prev.find(m => m.id === newMessage.id);
             if (exists) return prev;
-            return [...prev, newMessage].sort((a, b) => 
+            const updated = [...prev, newMessage].sort((a, b) => 
               new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
             );
+            // Force scroll après ajout du message
+            setTimeout(() => {
+              messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }, 50);
+            return updated;
           });
 
           // Marquer comme lu automatiquement si l'expéditeur n'est pas l'utilisateur actuel
           if (newMessage.sender_id !== user.id) {
-            markMessagesAsRead(activeConversation.id);
+            setTimeout(() => markMessagesAsRead(activeConversation.id), 1000);
           }
         }
       )
@@ -251,21 +261,34 @@ export default function Messages() {
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
         console.log('👥 Presence sync:', state);
-        const onlineUserIds = new Set(
-          Object.keys(state).filter(key => state[key].length > 0)
-        );
+        const onlineUserIds = new Set<string>();
+        Object.values(state).forEach((presences: any[]) => {
+          presences.forEach((presence: any) => {
+            if (presence.user_id) {
+              onlineUserIds.add(presence.user_id);
+            }
+          });
+        });
         setOnlineUsers(onlineUserIds);
       })
       .on('presence', { event: 'join' }, ({ key, newPresences }) => {
         console.log('👋 User joined:', key, newPresences);
-        setOnlineUsers(prev => new Set([...prev, key]));
+        newPresences.forEach((presence: any) => {
+          if (presence.user_id) {
+            setOnlineUsers(prev => new Set([...prev, presence.user_id]));
+          }
+        });
       })
       .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
         console.log('👋 User left:', key, leftPresences);
-        setOnlineUsers(prev => {
-          const updated = new Set(prev);
-          updated.delete(key);
-          return updated;
+        leftPresences.forEach((presence: any) => {
+          if (presence.user_id) {
+            setOnlineUsers(prev => {
+              const updated = new Set(prev);
+              updated.delete(presence.user_id);
+              return updated;
+            });
+          }
         });
       })
       .subscribe(async (status) => {
@@ -300,6 +323,8 @@ export default function Messages() {
   useEffect(() => {
     if (activeConversation) {
       fetchMessages(activeConversation.id);
+      // Marquer automatiquement les messages comme lus quand on ouvre une conversation
+      setTimeout(() => markMessagesAsRead(activeConversation.id), 500);
     }
   }, [activeConversation]);
 
