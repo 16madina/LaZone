@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Header from '@/components/Header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -82,6 +83,7 @@ export default function Messages() {
   const [isOnline, setIsOnline] = useState(true);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+  const [debugInfo, setDebugInfo] = useState<any>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesChannelRef = useRef<any>(null);
@@ -487,8 +489,8 @@ export default function Messages() {
   const getOtherUserName = (conversation: Conversation) => {
     if (!user) return 'Utilisateur';
     
-    // Debug logs pour diagnostiquer le problème
-    console.log('🔍 Debug getOtherUserName:', {
+    // Debug info pour affichage mobile
+    const debugData = {
       currentUserId: user.id,
       conversationId: conversation.id,
       buyerId: conversation.buyer_id,
@@ -496,47 +498,42 @@ export default function Messages() {
       isUserBuyer: conversation.buyer_id === user.id,
       sellerProfile: conversation.seller_profile,
       buyerProfile: conversation.buyer_profile
-    });
+    };
+    
+    // Sauvegarder les infos de debug pour l'affichage
+    setDebugInfo(debugData);
     
     if (conversation.buyer_id === user.id) {
       // L'utilisateur actuel est l'acheteur, donc afficher le nom du vendeur
       const sellerProfile = conversation.seller_profile;
-      console.log('👤 Acheteur regarde le vendeur:', sellerProfile);
       
       // Prioriser prénom + nom
       if (sellerProfile?.first_name && sellerProfile.first_name.trim()) {
         const fullName = `${sellerProfile.first_name}${sellerProfile.last_name && sellerProfile.last_name.trim() ? ` ${sellerProfile.last_name}` : ''}`;
-        console.log('✅ Nom du vendeur trouvé:', fullName);
         return fullName;
       }
       
       // Sinon essayer le nom d'agence
       if (sellerProfile?.agency_name && sellerProfile.agency_name.trim()) {
-        console.log('✅ Agence du vendeur trouvée:', sellerProfile.agency_name);
         return sellerProfile.agency_name;
       }
       
-      console.log('❌ Aucun nom trouvé pour le vendeur, fallback vers "Vendeur"');
       return 'Vendeur';
     } else {
       // L'utilisateur actuel est le vendeur, donc afficher le nom de l'acheteur
       const buyerProfile = conversation.buyer_profile;
-      console.log('👤 Vendeur regarde l\'acheteur:', buyerProfile);
       
       // Prioriser prénom + nom
       if (buyerProfile?.first_name && buyerProfile.first_name.trim()) {
         const fullName = `${buyerProfile.first_name}${buyerProfile.last_name && buyerProfile.last_name.trim() ? ` ${buyerProfile.last_name}` : ''}`;
-        console.log('✅ Nom de l\'acheteur trouvé:', fullName);
         return fullName;
       }
       
       // Sinon essayer le nom d'agence
       if (buyerProfile?.agency_name && buyerProfile.agency_name.trim()) {
-        console.log('✅ Agence de l\'acheteur trouvée:', buyerProfile.agency_name);
         return buyerProfile.agency_name;
       }
       
-      console.log('❌ Aucun nom trouvé pour l\'acheteur, fallback vers "Acheteur"');
       return 'Acheteur';
     }
   };
@@ -595,6 +592,35 @@ export default function Messages() {
               </p>
             </div>
           </div>
+
+          {/* DEBUG TEMPORAIRE - À ENLEVER PLUS TARD */}
+          {debugInfo && (
+            <Card className="mb-4 p-4 bg-yellow-50 border-yellow-200">
+              <h3 className="font-bold text-yellow-800 mb-2">🔍 Debug Info (Temporaire)</h3>
+              <div className="text-xs space-y-1">
+                <div><strong>Je suis:</strong> {debugInfo.isUserBuyer ? 'Acheteur' : 'Vendeur'}</div>
+                <div><strong>ID:</strong> {debugInfo.currentUserId}</div>
+                <div><strong>Vendeur ID:</strong> {debugInfo.sellerId}</div>
+                <div><strong>Acheteur ID:</strong> {debugInfo.buyerId}</div>
+                <div><strong>Profil vendeur:</strong> 
+                  {debugInfo.sellerProfile ? (
+                    <span className="ml-2">
+                      Nom: {debugInfo.sellerProfile.first_name || 'null'} {debugInfo.sellerProfile.last_name || 'null'} | 
+                      Agence: {debugInfo.sellerProfile.agency_name || 'null'}
+                    </span>
+                  ) : 'null'}
+                </div>
+                <div><strong>Profil acheteur:</strong> 
+                  {debugInfo.buyerProfile ? (
+                    <span className="ml-2">
+                      Nom: {debugInfo.buyerProfile.first_name || 'null'} {debugInfo.buyerProfile.last_name || 'null'} | 
+                      Agence: {debugInfo.buyerProfile.agency_name || 'null'}
+                    </span>
+                  ) : 'null'}
+                </div>
+              </div>
+            </Card>
+          )}
 
           <Tabs defaultValue="conversations" className="space-y-6">
             <TabsList className="grid w-full grid-cols-3">
