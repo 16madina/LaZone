@@ -43,12 +43,14 @@ interface Conversation {
     last_name?: string;
     user_type: string;
     phone?: string;
+    agency_name?: string;
   };
   seller_profile?: {
     first_name: string;
     last_name?: string;
     user_type: string;
     phone?: string;
+    agency_name?: string;
   };
 }
 
@@ -105,14 +107,14 @@ export default function Messages() {
           // Récupérer le profil de l'acheteur
           const { data: buyerProfile, error: buyerError } = await supabase
             .from('profiles')
-            .select('first_name, last_name, user_type, phone')
+            .select('first_name, last_name, user_type, phone, agency_name')
             .eq('user_id', conv.buyer_id)
             .maybeSingle();
 
           // Récupérer le profil du vendeur
           const { data: sellerProfile, error: sellerError } = await supabase
             .from('profiles')
-            .select('first_name, last_name, user_type, phone')
+            .select('first_name, last_name, user_type, phone, agency_name')
             .eq('user_id', conv.seller_id)
             .maybeSingle();
 
@@ -229,29 +231,26 @@ export default function Messages() {
   const getOtherUserName = (conversation: Conversation) => {
     if (!user) return 'Utilisateur';
     
-    console.log('Debug - getOtherUserName called with:', {
-      conversationId: conversation.id,
-      currentUserId: user.id,
-      buyerId: conversation.buyer_id,
-      sellerId: conversation.seller_id,
-      buyerProfile: conversation.buyer_profile,
-      sellerProfile: conversation.seller_profile
-    });
-    
     if (conversation.buyer_id === user.id) {
       // L'utilisateur actuel est l'acheteur, donc afficher le nom du vendeur
       const sellerProfile = conversation.seller_profile;
-      console.log('Debug - User is buyer, showing seller:', sellerProfile);
       if (sellerProfile?.first_name) {
         return `${sellerProfile.first_name}${sellerProfile.last_name ? ` ${sellerProfile.last_name}` : ''}`;
+      }
+      // Si pas de prénom, essayer le nom d'agence
+      if (sellerProfile?.agency_name) {
+        return sellerProfile.agency_name;
       }
       return 'Vendeur';
     } else {
       // L'utilisateur actuel est le vendeur, donc afficher le nom de l'acheteur
       const buyerProfile = conversation.buyer_profile;
-      console.log('Debug - User is seller, showing buyer:', buyerProfile);
       if (buyerProfile?.first_name) {
         return `${buyerProfile.first_name}${buyerProfile.last_name ? ` ${buyerProfile.last_name}` : ''}`;
+      }
+      // Si pas de prénom, essayer le nom d'agence
+      if (buyerProfile?.agency_name) {
+        return buyerProfile.agency_name;
       }
       return 'Acheteur';
     }
