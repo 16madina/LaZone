@@ -487,27 +487,56 @@ export default function Messages() {
   const getOtherUserName = (conversation: Conversation) => {
     if (!user) return 'Utilisateur';
     
+    // Debug logs pour diagnostiquer le problème
+    console.log('🔍 Debug getOtherUserName:', {
+      currentUserId: user.id,
+      conversationId: conversation.id,
+      buyerId: conversation.buyer_id,
+      sellerId: conversation.seller_id,
+      isUserBuyer: conversation.buyer_id === user.id,
+      sellerProfile: conversation.seller_profile,
+      buyerProfile: conversation.buyer_profile
+    });
+    
     if (conversation.buyer_id === user.id) {
       // L'utilisateur actuel est l'acheteur, donc afficher le nom du vendeur
       const sellerProfile = conversation.seller_profile;
-      if (sellerProfile?.first_name) {
-        return `${sellerProfile.first_name}${sellerProfile.last_name ? ` ${sellerProfile.last_name}` : ''}`;
+      console.log('👤 Acheteur regarde le vendeur:', sellerProfile);
+      
+      // Prioriser prénom + nom
+      if (sellerProfile?.first_name && sellerProfile.first_name.trim()) {
+        const fullName = `${sellerProfile.first_name}${sellerProfile.last_name && sellerProfile.last_name.trim() ? ` ${sellerProfile.last_name}` : ''}`;
+        console.log('✅ Nom du vendeur trouvé:', fullName);
+        return fullName;
       }
-      // Si pas de prénom, essayer le nom d'agence
-      if (sellerProfile?.agency_name) {
+      
+      // Sinon essayer le nom d'agence
+      if (sellerProfile?.agency_name && sellerProfile.agency_name.trim()) {
+        console.log('✅ Agence du vendeur trouvée:', sellerProfile.agency_name);
         return sellerProfile.agency_name;
       }
+      
+      console.log('❌ Aucun nom trouvé pour le vendeur, fallback vers "Vendeur"');
       return 'Vendeur';
     } else {
       // L'utilisateur actuel est le vendeur, donc afficher le nom de l'acheteur
       const buyerProfile = conversation.buyer_profile;
-      if (buyerProfile?.first_name) {
-        return `${buyerProfile.first_name}${buyerProfile.last_name ? ` ${buyerProfile.last_name}` : ''}`;
+      console.log('👤 Vendeur regarde l\'acheteur:', buyerProfile);
+      
+      // Prioriser prénom + nom
+      if (buyerProfile?.first_name && buyerProfile.first_name.trim()) {
+        const fullName = `${buyerProfile.first_name}${buyerProfile.last_name && buyerProfile.last_name.trim() ? ` ${buyerProfile.last_name}` : ''}`;
+        console.log('✅ Nom de l\'acheteur trouvé:', fullName);
+        return fullName;
       }
-      // Si pas de prénom, essayer le nom d'agence
-      if (buyerProfile?.agency_name) {
+      
+      // Sinon essayer le nom d'agence
+      if (buyerProfile?.agency_name && buyerProfile.agency_name.trim()) {
+        console.log('✅ Agence de l\'acheteur trouvée:', buyerProfile.agency_name);
         return buyerProfile.agency_name;
       }
+      
+      console.log('❌ Aucun nom trouvé pour l\'acheteur, fallback vers "Acheteur"');
       return 'Acheteur';
     }
   };
