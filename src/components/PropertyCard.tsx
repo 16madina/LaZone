@@ -66,12 +66,23 @@ export default function PropertyCard({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [api, setApi] = useState<CarouselApi>();
   
-  // Only replace the specific /placeholder.svg, keep all real user images
-  const hasValidImages = property.images && property.images.length > 0 && 
-    !(property.images.length === 1 && property.images[0] === '/placeholder.svg');
+  // Production-ready image handling with validation
+  const cleanImages = (property.images || []).filter(img => 
+    img && 
+    img !== '/placeholder.svg' && 
+    img.trim() !== '' &&
+    img !== 'undefined' &&
+    img !== 'null'
+  );
   
-  const displayImages = hasValidImages ? property.images : 
+  const hasValidImages = cleanImages.length > 0;
+  const displayImages = hasValidImages ? cleanImages : 
     ['https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=500&fit=crop&crop=center'];
+    
+  // Log any image issues for debugging
+  if (!hasValidImages && property.images?.length > 0) {
+    console.warn(`Property ${property.id} has invalid images:`, property.images);
+  }
   const maxVisibleImages = 5;
 
   // Use current currency from location context, fallback to property currency
