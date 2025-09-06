@@ -66,16 +66,12 @@ export default function PropertyCard({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [api, setApi] = useState<CarouselApi>();
   
-  // Filter out placeholder images and ensure we have valid images
-  const validImages = property.images?.filter(img => 
-    img && 
-    img !== '/placeholder.svg' && 
-    !img.includes('placeholder.svg')
-  ) || [];
+  // Only replace the specific /placeholder.svg, keep all real user images
+  const hasValidImages = property.images && property.images.length > 0 && 
+    !(property.images.length === 1 && property.images[0] === '/placeholder.svg');
   
-  const hasImages = validImages.length > 0;
-  const fallbackImage = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=500&fit=crop&crop=center';
-  const displayImages = hasImages ? validImages : [fallbackImage];
+  const displayImages = hasValidImages ? property.images : 
+    ['https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=500&fit=crop&crop=center'];
   const maxVisibleImages = 5;
 
   // Use current currency from location context, fallback to property currency
@@ -247,7 +243,7 @@ export default function PropertyCard({
         )}
 
         {/* See More Button - Show when more than 5 images */}
-        {hasImages && property.images.length > maxVisibleImages && (
+        {hasValidImages && property.images.length > maxVisibleImages && (
           <Button
             size="sm"
             variant="secondary"
