@@ -63,6 +63,8 @@ const Index = () => {
   const fetchListings = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Fetching listings with:', { searchMode, selectedCountry });
+      
       let query = supabase
         .from('listings')
         .select('*')
@@ -70,18 +72,25 @@ const Index = () => {
       
       if (searchMode === 'commercial') {
         query = query.eq('property_type', 'commercial');
+        console.log('📊 Filtering for commercial properties');
       } else {
-        query = query.eq('purpose', searchMode === 'buy' ? 'sale' : searchMode);
+        const purpose = searchMode === 'buy' ? 'sale' : searchMode;
+        query = query.eq('purpose', purpose);
+        console.log('🏠 Filtering for purpose:', purpose);
       }
 
       // Filtrage strict par pays sélectionné
       if (selectedCountry) {
         query = query.eq('country', selectedCountry);
+        console.log('🌍 Filtering for country:', selectedCountry);
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });
       
       if (error) throw error;
+
+      console.log('📋 Raw listings from DB:', data?.length || 0, 'items');
+      console.log('📋 Sample listing:', data?.[0]);
 
       // Convert Supabase data to Property format
       const convertedProperties: Property[] = await Promise.all(
@@ -144,6 +153,8 @@ const Index = () => {
       }
 
       setProperties(finalProperties);
+      console.log('✅ Final properties set:', finalProperties.length, 'items');
+      console.log('✅ First 3 properties:', finalProperties.slice(0, 3).map(p => ({ title: p.title, purpose: p.purpose, city: p.location.city })));
     } catch (error) {
       console.error('Error fetching listings:', error);
       // Fallback to demo data if there's an error
@@ -311,7 +322,10 @@ const Index = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setSearchMode('rent')}
+                onClick={() => {
+                  console.log('🔄 Changing search mode from', searchMode, 'to rent');
+                  setSearchMode('rent');
+                }}
                 className={cn(
                   "px-4 py-2 rounded-lg transition-all duration-normal",
                   searchMode === 'rent' 
@@ -324,7 +338,10 @@ const Index = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setSearchMode('buy')}
+                onClick={() => {
+                  console.log('🔄 Changing search mode from', searchMode, 'to buy');
+                  setSearchMode('buy');
+                }}
                 className={cn(
                   "px-4 py-2 rounded-lg transition-all duration-normal",
                   searchMode === 'buy' 
@@ -337,7 +354,10 @@ const Index = () => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setSearchMode('commercial')}
+                onClick={() => {
+                  console.log('🔄 Changing search mode from', searchMode, 'to commercial');
+                  setSearchMode('commercial');
+                }}
                 className={cn(
                   "px-3 py-2 rounded-lg transition-all duration-normal text-xs",
                   searchMode === 'commercial' 
