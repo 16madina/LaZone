@@ -51,13 +51,6 @@ export const useUnreadCounts = (): UnreadCounts => {
   useEffect(() => {
     fetchUnreadCounts();
 
-    // Écouter l'événement personnalisé de lecture de messages
-    const handleMessagesRead = () => {
-      fetchUnreadCounts();
-    };
-    
-    window.addEventListener('messagesRead', handleMessagesRead);
-
     // Écouter les changements en temps réel
     const messagesSubscription = supabase
       .channel('messages-changes')
@@ -82,7 +75,6 @@ export const useUnreadCounts = (): UnreadCounts => {
       .subscribe();
 
     return () => {
-      window.removeEventListener('messagesRead', handleMessagesRead);
       messagesSubscription.unsubscribe();
       notificationsSubscription.unsubscribe();
     };
