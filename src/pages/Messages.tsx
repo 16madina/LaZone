@@ -446,6 +446,12 @@ export default function Messages() {
       
       // Rafraîchir les conversations pour mettre à jour les compteurs
       fetchConversations();
+      
+      // Force la mise à jour des compteurs en déclenchant un changement artificiel
+      // Cela permet au hook useUnreadCounts de se mettre à jour
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('messagesRead'));
+      }, 100);
     } catch (error) {
       console.error('Error marking messages as read:', error);
     }
