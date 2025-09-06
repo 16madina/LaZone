@@ -139,8 +139,8 @@ const Index = () => {
             id: generateFixedDemoId(prop.id)
           }));
         
-        // Mélanger les propriétés de démonstration avec les vraies
-        finalProperties = [...demoProperties, ...convertedProperties];
+        // Les annonces réelles d'abord, puis les propriétés de démonstration
+        finalProperties = [...convertedProperties, ...demoProperties];
       }
 
       setProperties(finalProperties);
