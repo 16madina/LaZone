@@ -448,17 +448,16 @@ const Index = () => {
               </SelectContent>
             </Select>
             
-            {/* Production Check Button (for development/testing) */}
-            {process.env.NODE_ENV === 'development' && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={runProductionCheck}
-                className="text-xs"
-              >
-                🔍 Check Production
-              </Button>
-            )}
+            {/* Production Check Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={runProductionCheck}
+              className="text-xs bg-warning/10 border-warning/30 text-warning-foreground hover:bg-warning/20"
+              title="Vérifier si l'application est prête pour la production"
+            >
+              🔍 Check Production
+            </Button>
 
           </div>
         </div>
