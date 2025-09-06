@@ -79,10 +79,10 @@ const Index = () => {
         console.log('🏠 Filtering for purpose:', purpose);
       }
 
-      // Filtrage strict par pays sélectionné
+      // Filtrage par pays avec inclusion des annonces sans pays spécifié
       if (selectedCountry) {
-        query = query.eq('country', selectedCountry);
-        console.log('🌍 Filtering for country:', selectedCountry);
+        query = query.or(`country.eq.${selectedCountry},country.is.null`);
+        console.log('🌍 Filtering for country:', selectedCountry, '(including listings without country)');
       }
       
       console.log('📊 About to query Supabase...');
