@@ -66,9 +66,16 @@ export default function PropertyCard({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [api, setApi] = useState<CarouselApi>();
   
-  // Ensure we always show property details - activate all properties
-  const hasImages = property.images && property.images.length > 0;
-  const displayImages = hasImages ? property.images : ['/placeholder.svg'];
+  // Filter out placeholder images and ensure we have valid images
+  const validImages = property.images?.filter(img => 
+    img && 
+    img !== '/placeholder.svg' && 
+    !img.includes('placeholder.svg')
+  ) || [];
+  
+  const hasImages = validImages.length > 0;
+  const fallbackImage = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=500&fit=crop&crop=center';
+  const displayImages = hasImages ? validImages : [fallbackImage];
   const maxVisibleImages = 5;
 
   // Use current currency from location context, fallback to property currency
