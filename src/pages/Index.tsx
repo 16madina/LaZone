@@ -84,19 +84,42 @@ const Index = () => {
         query = query.eq('country', selectedCountry);
         console.log('🌍 Filtering for country:', selectedCountry);
       }
-
-      const { data, error } = await query.order('created_at', { ascending: false });
       
-      if (error) throw error;
+      console.log('📊 About to query Supabase...');
+      const { data, error } = await query.order('created_at', { ascending: false });
+      console.log('📨 Supabase query completed');
+      
+      if (error) {
+        console.error('❌ Supabase error:', error);
+        throw error;
+      }
 
       console.log('📋 Raw listings from DB:', data?.length || 0, 'items');
       console.log('📋 Sample listing:', data?.[0]);
 
       // Convert Supabase data to Property format
+      console.log('🔄 Starting conversion...');
       const convertedProperties: Property[] = await Promise.all(
-        (data || []).map(async listing => {
-          const agentInfo = await getAgentInfo(listing.user_id);
+        (data || []).map(async (listing, index) => {
+          console.log(`🔄 Converting listing ${index + 1}:`, listing.title);
           
+          // Simplify agent info retrieval for debugging
+          let agentInfo;
+          try {
+            agentInfo = await getAgentInfo(listing.user_id);
+            console.log(`👤 Agent info for ${listing.title}:`, agentInfo.name);
+          } catch (agentError) {
+            console.error('❌ Agent info error:', agentError);
+            agentInfo = {
+              name: 'Propriétaire',
+              avatar: '/placeholder.svg',
+              isVerified: false,
+              type: 'particulier' as const,
+              agencyName: undefined
+            };
+          }
+          
+          console.log(`✅ Converted listing ${index + 1}:`, { title: listing.title, id: listing.id });
           return {
             id: listing.id,
             title: listing.title,
@@ -123,6 +146,8 @@ const Index = () => {
           };
         })
       );
+
+      console.log('🎯 Converted properties count:', convertedProperties.length);
 
       // Ajouter des propriétés de démonstration seulement si elles correspondent au pays sélectionné
       let finalProperties = convertedProperties;
