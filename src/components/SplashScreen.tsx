@@ -58,12 +58,12 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
             <img
               src="/lovable-uploads/83c5d50b-f3ab-4fc9-b897-2f44c7023df8.png"
               alt="LaZone Logo"
-              className="relative w-32 h-32 md:w-40 md:h-40 object-contain transition-transform duration-500 hover:scale-105"
+              className="relative w-48 h-48 md:w-56 md:h-56 object-contain transition-transform duration-500 hover:scale-105"
             />
           </div>
         </div>
 
-        {/* Text */}
+        {/* Slogan */}
         <div className={`mt-8 transition-all duration-800 delay-300 ${
           animationPhase === 'enter'
             ? 'opacity-0 translate-y-4'
@@ -71,11 +71,8 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
             ? 'opacity-100 translate-y-0'
             : 'opacity-0 translate-y-2'
         }`}>
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2 text-center">
-            LaZone
-          </h1>
-          <p className="text-muted-foreground text-base md:text-lg text-center font-light max-w-md">
-            Immobilier Panafricain
+          <p className="text-muted-foreground text-lg md:text-xl text-center font-light max-w-md leading-relaxed">
+            Trouve ton chez-toi dans ta Zone
           </p>
         </div>
 
