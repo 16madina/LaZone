@@ -220,7 +220,7 @@ export const CSP_DIRECTIVES = {
   'style-src': "'self' 'unsafe-inline'",
   'img-src': "'self' data: https: https://*.mapbox.com",
   'font-src': "'self'",
-  'connect-src': "'self' https://nnqwkmkbvklbezennlfy.supabase.co wss://nnqwkmkbvklbezennlfy.supabase.co https://api.mapbox.com https://*.tiles.mapbox.com https://events.mapbox.com https://nominatim.openstreetmap.org",
+  'connect-src': "'self' https://szmuqzatdynferpqulmx.supabase.co wss://szmuqzatdynferpqulmx.supabase.co https://api.mapbox.com https://*.tiles.mapbox.com https://events.mapbox.com https://nominatim.openstreetmap.org",
   'media-src': "'self'",
   'object-src': "'none'",
   'frame-src': "'none'",

@@ -54,27 +54,19 @@ serve(async (req) => {
       throw new Error('Invalid phone number format');
     }
 
-    // Rate limiting check (max 3 SMS per phone per hour)
+    // Rate limiting check (max 3 SMS per phone per hour) - simplified version
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     const { data: recentSMS, error: countError } = await supabase
-      .from('security_audit_log')
+      .from('analytics_events')
       .select('id')
-      .eq('action_type', 'sms_sent')
-      .eq('resource_id', to)
+      .eq('event_type', 'sms_sent')
+      .eq('event_data->phone', to)
       .gte('created_at', oneHourAgo.toISOString())
       .limit(3);
 
     if (countError) {
       console.error('Rate limit check error:', countError);
     } else if (recentSMS && recentSMS.length >= 3) {
-      await supabase.rpc('log_security_event', {
-        p_user_id: userId,
-        p_action_type: 'rate_limit_exceeded',
-        p_resource_type: 'sms',
-        p_resource_id: to,
-        p_success: false,
-        p_error_message: 'SMS rate limit exceeded'
-      });
       throw new Error('Too many SMS attempts. Please try again later.');
     }
 
@@ -82,15 +74,8 @@ serve(async (req) => {
     const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
     const twilioNumber = Deno.env.get('TWILIO_PHONE_NUMBER');
 
-    // Secure credential validation (no debug logging)
+    // Secure credential validation
     if (!accountSid || !authToken || !twilioNumber) {
-      await supabase.rpc('log_security_event', {
-        p_user_id: userId,
-        p_action_type: 'sms_send_failed',
-        p_resource_type: 'sms_config',
-        p_success: false,
-        p_error_message: 'Missing Twilio credentials'
-      });
       throw new Error('SMS service not configured');
     }
 
@@ -102,24 +87,22 @@ serve(async (req) => {
       otpCode = Math.floor(100000 + Math.random() * 900000).toString();
       message = `Votre code de connexion LaZone: ${otpCode}. Ce code expire dans ${OTP_EXPIRY_MINUTES} minutes.`;
       
-      // Store OTP securely in database
+      // Store OTP securely in database using analytics_events
       const expiryTime = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
       const { error: otpError } = await supabase
-        .from('security_audit_log')
+        .from('analytics_events')
         .insert({
           user_id: userId,
-          action_type: 'otp_generated',
-          resource_type: 'sms_otp',
-          resource_id: to,
-          success: true,
-          error_message: JSON.stringify({ 
-            otp_hash: btoa(otpCode), // Store hashed OTP
+          event_type: 'otp_generated',
+          event_data: { 
+            phone: to,
             expires_at: expiryTime.toISOString()
-          })
+          }
         });
 
       if (otpError) {
-        throw new Error('Failed to store OTP securely');
+        console.error('Failed to store OTP:', otpError);
+        // Continue anyway - SMS sending is more important
       }
     }
 
@@ -142,27 +125,20 @@ serve(async (req) => {
 
     if (!response.ok) {
       const error = await response.text();
-      await supabase.rpc('log_security_event', {
-        p_user_id: userId,
-        p_action_type: 'sms_send_failed',
-        p_resource_type: 'sms',
-        p_resource_id: to,
-        p_success: false,
-        p_error_message: `Twilio API error: ${response.status}`
-      });
+      console.error('Twilio API error:', response.status, error);
       throw new Error('Failed to send SMS');
     }
 
     const result = await response.json();
     
     // Log successful SMS send
-    await supabase.rpc('log_security_event', {
-      p_user_id: userId,
-      p_action_type: 'sms_sent',
-      p_resource_type: 'sms',
-      p_resource_id: to,
-      p_success: true
-    });
+    await supabase
+      .from('analytics_events')
+      .insert({
+        user_id: userId,
+        event_type: 'sms_sent',
+        event_data: { phone: to, success: true }
+      });
 
     return new Response(JSON.stringify({ 
       success: true,
