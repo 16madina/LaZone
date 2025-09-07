@@ -17,6 +17,7 @@ import CountryPhoneSelector from '@/components/CountryPhoneSelector';
 import { SecureForm } from '@/components/security/SecureForm';
 import { SecureInput } from '@/components/security/SecureInput';
 import { SecurityMonitor } from '@/utils/security';
+import { SmartGeolocation } from '@/components/geolocation/SmartGeolocation';
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
@@ -25,7 +26,8 @@ const Auth: React.FC = () => {
   const { 
     selectedCountry, 
     selectedCity, 
-    requestLocation, 
+    setSelectedCountry,
+    setSelectedCity,
     isLocationDetected,
     detectedCountry,
     detectedCity
@@ -39,7 +41,6 @@ const Auth: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState<'particulier' | 'agence'>('particulier');
-  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   
   // SMS Login states
   const [loginMethod, setLoginMethod] = useState<'email' | 'sms'>('email');
@@ -67,22 +68,13 @@ const Auth: React.FC = () => {
   const [agencyPhone, setAgencyPhone] = useState('');
   const [responsibleMobile, setResponsibleMobile] = useState('');
 
-  // Auto-detect location on first load if no country is selected
-  useEffect(() => {
-    if (!selectedCountry && !isLocationDetected) {
-      handleLocationDetection();
+  // Callback pour SmartGeolocation
+  const handleLocationDetected = (location: { city?: string; country?: string }) => {
+    if (location.country) {
+      setSelectedCountry(location.country);
     }
-  }, []);
-
-  const handleLocationDetection = async () => {
-    setIsDetectingLocation(true);
-    try {
-      await requestLocation();
-      // Toast is already shown in LocationContext with correct values
-    } catch (error) {
-      // Error is already handled in the context
-    } finally {
-      setIsDetectingLocation(false);
+    if (location.city) {
+      setSelectedCity(location.city);
     }
   };
   
@@ -633,10 +625,19 @@ const Auth: React.FC = () => {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                              <Label htmlFor="country">Pays</Label>
-                              <div className="relative">
+                          {/* Géolocalisation intelligente */}
+                          <div className="space-y-4">
+                            <Label>Localisation</Label>
+                            <SmartGeolocation 
+                              onLocationDetected={handleLocationDetected}
+                              showNearbyProperties={false}
+                              className="w-full"
+                            />
+                            
+                            {/* Affichage des valeurs détectées */}
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-2">
+                                <Label htmlFor="country">Pays</Label>
                                 <Input
                                   id="country"
                                   type="text"
@@ -646,57 +647,19 @@ const Auth: React.FC = () => {
                                   className="bg-muted pl-3"
                                 />
                               </div>
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="city">Ville</Label>
-                              <Input
-                                id="city"
-                                type="text"
-                                value={selectedCity || ''}
-                                placeholder={selectedCity ? "Ville détectée" : "Aucune ville détectée"}
-                                readOnly
-                                className="bg-muted"
-                              />
+                              <div className="space-y-2">
+                                <Label htmlFor="city">Ville</Label>
+                                <Input
+                                  id="city"
+                                  type="text"
+                                  value={selectedCity || ''}
+                                  placeholder={selectedCity ? "Ville détectée" : "Aucune ville détectée"}
+                                  readOnly
+                                  className="bg-muted"
+                                />
+                              </div>
                             </div>
                           </div>
-
-                          {!selectedCountry && (
-                            <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-md">
-                              <MapPin className="w-4 h-4 text-amber-600" />
-                              <span className="text-sm text-amber-700">Position non détectée</span>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={handleLocationDetection}
-                                disabled={isDetectingLocation}
-                                className="ml-auto"
-                              >
-                                <Navigation className={`w-3 h-3 mr-1 ${isDetectingLocation ? 'animate-spin' : ''}`} />
-                                {isDetectingLocation ? 'Détection...' : 'Détecter'}
-                              </Button>
-                            </div>
-                          )}
-
-                          {selectedCountry && (
-                            <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-md">
-                              <MapPin className="w-4 h-4 text-green-600" />
-                              <span className="text-sm text-green-700">
-                                Position : {selectedCity}, {selectedCountry}
-                              </span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleLocationDetection}
-                                disabled={isDetectingLocation}
-                                className="ml-auto"
-                              >
-                                <RotateCcw className={`w-3 h-3 mr-1 ${isDetectingLocation ? 'animate-spin' : ''}`} />
-                                Renouveler
-                              </Button>
-                            </div>
-                          )}
 
                           <div className="space-y-2">
                             <Label htmlFor="neighborhood">Quartier</Label>
@@ -778,10 +741,19 @@ const Auth: React.FC = () => {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                              <Label htmlFor="agencyCountry">Pays</Label>
-                              <div className="relative">
+                          {/* Géolocalisation intelligente pour agence */}
+                          <div className="space-y-4">
+                            <Label>Localisation de l'agence</Label>
+                            <SmartGeolocation 
+                              onLocationDetected={handleLocationDetected}
+                              showNearbyProperties={false}
+                              className="w-full"
+                            />
+                            
+                            {/* Affichage des valeurs détectées */}
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-2">
+                                <Label htmlFor="agencyCountry">Pays</Label>
                                 <Input
                                   id="agencyCountry"
                                   type="text"
@@ -791,57 +763,19 @@ const Auth: React.FC = () => {
                                   className="bg-muted pl-3"
                                 />
                               </div>
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="agencyCity">Ville</Label>
-                              <Input
-                                id="agencyCity"
-                                type="text"
-                                value={selectedCity || ''}
-                                placeholder={selectedCity ? "Ville détectée" : "Aucune ville détectée"}
-                                readOnly
-                                className="bg-muted"
-                              />
+                              <div className="space-y-2">
+                                <Label htmlFor="agencyCity">Ville</Label>
+                                <Input
+                                  id="agencyCity"
+                                  type="text"
+                                  value={selectedCity || ''}
+                                  placeholder={selectedCity ? "Ville détectée" : "Aucune ville détectée"}
+                                  readOnly
+                                  className="bg-muted"
+                                />
+                              </div>
                             </div>
                           </div>
-
-                          {!selectedCountry && (
-                            <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-md">
-                              <MapPin className="w-4 h-4 text-amber-600" />
-                              <span className="text-sm text-amber-700">Position non détectée</span>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={handleLocationDetection}
-                                disabled={isDetectingLocation}
-                                className="ml-auto"
-                              >
-                                <Navigation className={`w-3 h-3 mr-1 ${isDetectingLocation ? 'animate-spin' : ''}`} />
-                                {isDetectingLocation ? 'Détection...' : 'Détecter'}
-                              </Button>
-                            </div>
-                          )}
-
-                          {selectedCountry && (
-                            <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-md">
-                              <MapPin className="w-4 h-4 text-green-600" />
-                              <span className="text-sm text-green-700">
-                                Position : {selectedCity}, {selectedCountry}
-                              </span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleLocationDetection}
-                                disabled={isDetectingLocation}
-                                className="ml-auto"
-                              >
-                                <RotateCcw className={`w-3 h-3 mr-1 ${isDetectingLocation ? 'animate-spin' : ''}`} />
-                                Renouveler
-                              </Button>
-                            </div>
-                          )}
 
                           <div className="space-y-2">
                             <Label htmlFor="agencyNeighborhood">Quartier</Label>
