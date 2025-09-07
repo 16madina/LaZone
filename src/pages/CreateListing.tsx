@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import {
   Video, Rotate3D, Play, Pause, Volume2, FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ImagePreview from "@/components/ImagePreview";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLocation } from "@/contexts/LocationContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1139,24 +1140,13 @@ export default function CreateListing() {
               {formData.images.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {formData.images.map((image, index) => (
-                    <div key={index} className="relative group">
-                      <img
-                        src={URL.createObjectURL(image)}
-                        alt={`Upload ${index + 1}`}
-                        className="w-full h-20 object-cover rounded-lg"
-                      />
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="absolute top-1 right-1 w-5 h-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removeImage(index)}
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                      {index === 0 && (
-                        <Badge className="absolute bottom-1 left-1 text-xs">Photo principale</Badge>
-                      )}
-                    </div>
+                    <ImagePreview
+                      key={index}
+                      file={image}
+                      index={index}
+                      onRemove={removeImage}
+                      isMainPhoto={index === 0}
+                    />
                   ))}
                 </div>
               )}
