@@ -19,7 +19,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Input } from "@/components/ui/input";
 import AIRecommendations from "@/components/ai/AIRecommendations";
 import { getAgentInfo } from "@/utils/agent-utils";
-import { checkProductionReadiness, formatProductionReport, type ProductionIssue } from "@/utils/productionChecker";
 
 // Use fixed IDs for demo properties so they can be found in PropertyDetail
 const generateFixedDemoId = (originalId: string) => {
@@ -38,8 +37,6 @@ const Index = () => {
   const [sortBy, setSortBy] = useState('date');
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
-  const [productionIssues, setProductionIssues] = useState<ProductionIssue[]>([]);
-  const [showProductionReport, setShowProductionReport] = useState(false);
   
   const [filters, setFilters] = useState<FilterState>({
     propertyType: [],
@@ -216,49 +213,6 @@ const Index = () => {
     const diffTime = Math.abs(now.getTime() - created.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays <= 3;
-  };
-
-  // Production readiness check function
-  const runProductionCheck = async () => {
-    console.log('🔍 Running production readiness check...');
-    try {
-      const issues = await checkProductionReadiness();
-      setProductionIssues(issues);
-      setShowProductionReport(true);
-      
-      const report = formatProductionReport(issues);
-      console.log('📋 Production Report:\n', report);
-      
-      if (issues.length === 0) {
-        console.log('🎉 Application is ready for production!');
-        // Auto-close the modal after 3 seconds if no issues
-        setTimeout(() => setShowProductionReport(false), 3000);
-      }
-      
-      // Also check current properties for immediate issues
-      const currentIssues = properties.filter(prop => {
-        const hasNoImages = !prop.images || prop.images.length === 0;
-        const hasPlaceholder = prop.images?.includes('/placeholder.svg');
-        const hasMissingData = !prop.title || !prop.price || !prop.location.city;
-        return hasNoImages || hasPlaceholder || hasMissingData;
-      });
-      
-      if (currentIssues.length > 0) {
-        console.warn('⚠️ Issues found in current view:', currentIssues.map(p => ({
-          id: p.id,
-          title: p.title,
-          issues: {
-            noImages: !p.images || p.images.length === 0,
-            hasPlaceholder: p.images?.includes('/placeholder.svg'),
-            missingTitle: !p.title,
-            missingPrice: !p.price,
-            missingCity: !p.location.city
-          }
-        })));
-      }
-    } catch (error) {
-      console.error('Failed to run production check:', error);
-    }
   };
 
   // Filter properties based on filters
@@ -455,17 +409,6 @@ const Index = () => {
                 <SelectItem value="distance">Distance</SelectItem>
               </SelectContent>
             </Select>
-            
-            {/* Production Check Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={runProductionCheck}
-              className="text-xs bg-warning/10 border-warning/30 text-warning-foreground hover:bg-warning/20"
-              title="Vérifier si l'application est prête pour la production"
-            >
-              🔍 Check Production
-            </Button>
 
           </div>
         </div>
@@ -534,65 +477,6 @@ const Index = () => {
               )}
             </div>
 
-            {/* Production Report Modal */}
-            {showProductionReport && (
-              <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                <div className="bg-background rounded-xl max-w-2xl w-full max-h-[80vh] overflow-auto p-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold">Production Readiness Report</h3>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowProductionReport(false)}
-                    >
-                      ✕
-                    </Button>
-                  </div>
-                  <div className="space-y-4">
-                    {productionIssues.length === 0 ? (
-                      <div className="text-center py-8">
-                        <div className="text-4xl mb-2">✅</div>
-                        <h4 className="text-lg font-medium text-success">Application Ready for Production!</h4>
-                        <p className="text-muted-foreground">No critical issues found.</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {productionIssues.map((issue, index) => (
-                          <div 
-                            key={index}
-                            className={cn(
-                              "p-3 rounded-lg border-l-4",
-                              issue.type === 'critical' && "border-l-destructive bg-destructive/5",
-                              issue.type === 'warning' && "border-l-warning bg-warning/5",
-                              issue.type === 'info' && "border-l-info bg-info/5"
-                            )}
-                          >
-                            <div className="flex items-start gap-2">
-                              <span className="text-xs">
-                                {issue.type === 'critical' && '🚨'}
-                                {issue.type === 'warning' && '⚠️'}
-                                {issue.type === 'info' && 'ℹ️'}
-                              </span>
-                              <div className="flex-1">
-                                <p className="text-sm font-medium">{issue.message}</p>
-                                {issue.listingId && (
-                                  <p className="text-xs text-muted-foreground">ID: {issue.listingId}</p>
-                                )}
-                                {issue.details && (
-                                  <pre className="text-xs text-muted-foreground mt-1 bg-muted/30 p-2 rounded overflow-auto">
-                                    {JSON.stringify(issue.details, null, 2)}
-                                  </pre>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
           </TabsContent>
 
           <TabsContent value="recommendations" className="mt-6">
