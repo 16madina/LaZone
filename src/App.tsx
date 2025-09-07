@@ -32,6 +32,7 @@ import Layout from "./components/Layout";
 import Messages from "./pages/Messages";
 import { usePerformanceMonitor } from "./hooks/usePerformanceMonitor";
 import { CriticalResourceLoader } from "./components/mobile/CriticalResourceLoader";
+import { SecurityProvider } from "./components/security/SecurityProvider";
 
 // Performance monitoring wrapper component
 const PerformanceWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -83,6 +84,7 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <SecurityProvider>
         <AuthProvider>
           <SubscriptionProvider>
             <LocationProvider>
@@ -175,6 +177,7 @@ const App = () => {
           </LocationProvider>
         </SubscriptionProvider>
       </AuthProvider>
+      </SecurityProvider>
     </QueryClientProvider>
   );
 };

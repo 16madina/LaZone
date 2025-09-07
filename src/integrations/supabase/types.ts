@@ -702,6 +702,22 @@ export type Database = {
           years_experience: number
         }[]
       }
+      get_safe_listing_profile: {
+        Args: { profile_user_id: string }
+        Returns: {
+          agency_name: string
+          agent_rating: number
+          agent_verified: boolean
+          avatar_url: string
+          city: string
+          country: string
+          first_name: string
+          id: string
+          total_reviews: number
+          user_id: string
+          user_type: string
+        }[]
+      }
       get_safe_public_profile: {
         Args: { profile_user_id: string }
         Returns: {

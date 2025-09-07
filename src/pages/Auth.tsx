@@ -14,6 +14,9 @@ import { useGeolocation } from '@/hooks/useGeolocation';
 import { supabase } from '@/integrations/supabase/client';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import CountryPhoneSelector from '@/components/CountryPhoneSelector';
+import { SecureForm } from '@/components/security/SecureForm';
+import { SecureInput } from '@/components/security/SecureInput';
+import { SecurityMonitor } from '@/utils/security';
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
@@ -108,8 +111,12 @@ const Auth: React.FC = () => {
   const { flag: smsFlag, phoneCode: smsPhoneCode } = getSmsCountryInfo();
   const { flag, phoneCode } = getCountryInfo();
 
-  const handleSubmit = async (e: React.FormEvent, isSignUp: boolean) => {
-    e.preventDefault();
+  const handleSubmit = async (data: Record<string, string>) => {
+    const isSignUp = activeTab === 'register';
+    
+    // Log authentication attempt for security monitoring
+    SecurityMonitor.logAuthEvent(isSignUp ? 'signup' : 'login_success');
+    
     console.log('Form submission started', { isSignUp, userType });
     
     // Validation spéciale pour les agences - elles doivent être basées en Afrique
@@ -154,8 +161,8 @@ const Auth: React.FC = () => {
             };
 
         const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
+          email: data.email || email,
+          password: data.password || password,
           options: {
             emailRedirectTo: `${window.location.origin}/`,
             data: userMetadata
@@ -175,11 +182,14 @@ const Auth: React.FC = () => {
         }, 2000);
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password
+          email: data.email || email,
+          password: data.password || password
         });
 
         if (signInError) throw signInError;
+
+        // Log successful login
+        SecurityMonitor.logAuthEvent('login_success');
 
         toast({
           title: 'Connexion réussie',
@@ -192,6 +202,12 @@ const Auth: React.FC = () => {
         }, 500);
       }
     } catch (error: any) {
+      // Log failed authentication attempt
+      SecurityMonitor.logAuthEvent('login_failure', undefined, {
+        error: error.message,
+        userAgent: navigator.userAgent
+      });
+      
       toast({
         title: 'Erreur',
         description: error.message || 'Une erreur est survenue. Veuillez réessayer.',
@@ -394,15 +410,22 @@ const Auth: React.FC = () => {
                     </div>
 
                     {loginMethod === 'email' ? (
-                      <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-4">
+                      <SecureForm 
+                        onSubmit={handleSubmit} 
+                        rateLimitKey="auth_login"
+                        className="space-y-4"
+                      >
                         <div className="space-y-2">
                           <Label htmlFor="login-email">Email</Label>
                           <div className="relative">
                             <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                            <Input
+                            <SecureInput
                               id="login-email"
+                              name="email"
                               type="email"
                               placeholder="votre@email.com"
+                              validationType="email"
+                              showValidation={true}
                               value={email}
                               onChange={(e) => setEmail(e.target.value)}
                               className="pl-10"
@@ -417,6 +440,7 @@ const Auth: React.FC = () => {
                             <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                             <Input
                               id="login-password"
+                              name="password"
                               type="password"
                               placeholder="••••••••"
                               value={password}
@@ -440,7 +464,7 @@ const Auth: React.FC = () => {
                         >
                           {isResettingPassword ? 'Envoi en cours...' : 'Mot de passe oublié ?'}
                         </Button>
-                      </form>
+                      </SecureForm>
                     ) : (
                       <div className="space-y-4">
                         {!otpSent ? (
@@ -554,32 +578,45 @@ const Auth: React.FC = () => {
                       </RadioGroup>
                     </div>
 
-                    <form onSubmit={(e) => handleSubmit(e, true)} className="space-y-4">
+                    <SecureForm 
+                      onSubmit={(data) => {
+                        setActiveTab('register');
+                        return handleSubmit(data);
+                      }} 
+                      rateLimitKey="auth_register"
+                      className="space-y-4"
+                    >
                       {userType === 'particulier' ? (
                         <>
                           {/* Formulaire Particulier */}
                           <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-2">
                               <Label htmlFor="firstName">Nom</Label>
-                              <Input
-                                id="firstName"
-                                type="text"
-                                placeholder="Nom"
-                                value={firstName}
-                                onChange={(e) => setFirstName(e.target.value)}
-                                required
-                              />
+                            <SecureInput
+                              id="firstName"
+                              name="first_name"
+                              type="text"
+                              placeholder="Nom"
+                              validationType="name"
+                              showValidation={true}
+                              value={firstName}
+                              onChange={(e) => setFirstName(e.target.value)}
+                              required
+                            />
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor="lastName">Prénom</Label>
-                              <Input
-                                id="lastName"
-                                type="text"
-                                placeholder="Prénom"
-                                value={lastName}
-                                onChange={(e) => setLastName(e.target.value)}
-                                required
-                              />
+                            <SecureInput
+                              id="lastName"
+                              name="last_name"
+                              type="text"
+                              placeholder="Prénom"
+                              validationType="name"
+                              showValidation={true}
+                              value={lastName}
+                              onChange={(e) => setLastName(e.target.value)}
+                              required
+                            />
                             </div>
                           </div>
 
@@ -846,15 +883,18 @@ const Auth: React.FC = () => {
                         <Label htmlFor="register-email">Email</Label>
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                          <Input
-                            id="register-email"
-                            type="email"
-                            placeholder="votre@email.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="pl-10"
-                            required
-                          />
+                            <SecureInput
+                              id="register-email"
+                              name="email"
+                              type="email"
+                              placeholder="votre@email.com"
+                              validationType="email"
+                              showValidation={true}
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              className="pl-10"
+                              required
+                            />
                         </div>
                       </div>
                       
@@ -864,6 +904,7 @@ const Auth: React.FC = () => {
                           <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                           <Input
                             id="register-password"
+                            name="password"
                             type="password"
                             placeholder="••••••••"
                             value={password}
@@ -877,7 +918,7 @@ const Auth: React.FC = () => {
                       <Button type="submit" className="w-full" disabled={isLoading}>
                         {isLoading ? 'Création...' : 'Créer un compte'}
                       </Button>
-                    </form>
+                    </SecureForm>
                   </div>
                 </TabsContent>
               </Tabs>
