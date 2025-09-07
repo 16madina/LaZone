@@ -49,26 +49,39 @@ const PropertyMap = React.forwardRef<
   useEffect(() => {
     const fetchMapboxToken = async () => {
       try {
+        logger.debug('Starting Mapbox token fetch', { component: 'PropertyMap' });
+        
         // Use provided apiKey if available
         if (apiKey) {
+          logger.debug('Using provided API key', { component: 'PropertyMap' });
           setMapboxToken(apiKey);
           setIsLoading(false);
           return;
         }
 
         // Otherwise, fetch from Supabase Edge Function
+        logger.debug('Fetching token from Supabase Edge Function', { component: 'PropertyMap' });
         const { data, error } = await supabase.functions.invoke('get-mapbox-token');
         
-        if (error) throw error;
+        if (error) {
+          logger.error('Edge function error', new Error(error.message), { component: 'PropertyMap' });
+          throw new Error(`Edge function error: ${error.message}`);
+        }
         
         if (data?.mapboxToken) {
+          logger.debug('Token received successfully', { 
+            component: 'PropertyMap',
+            tokenLength: data.mapboxToken.length,
+            tokenPrefix: data.mapboxToken.substring(0, 10) + '...'
+          });
           setMapboxToken(data.mapboxToken);
         } else {
-          setError('Token Mapbox non disponible');
+          logger.error('No token in response data', new Error('Missing token in response'), { component: 'PropertyMap', data });
+          setError('Token Mapbox non disponible dans la réponse');
         }
       } catch (err) {
         logger.error('Error fetching Mapbox token', err as Error, { component: 'PropertyMap' });
-        setError('Erreur lors du chargement de la carte');
+        setError(`Erreur lors du chargement de la carte: ${(err as Error).message}`);
       } finally {
         setIsLoading(false);
       }

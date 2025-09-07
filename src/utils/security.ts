@@ -224,4 +224,9 @@ export const CSP_DIRECTIVES = {
   'media-src': "'self'",
   'object-src': "'none'",
   'frame-src': "'none'",
+  'worker-src': "'self' blob: https://*.mapbox.com https://api.mapbox.com",
+  'child-src': "'self' blob:",
+  'form-action': "'self'",
+  'upgrade-insecure-requests': '',
+  'block-all-mixed-content': '',
 };

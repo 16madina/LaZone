@@ -9,6 +9,9 @@ verify_jwt = true
 [functions.customer-portal]
 verify_jwt = true
 
+[functions.get-mapbox-token]
+verify_jwt = false
+
 [functions.handle-payment-success]
 verify_jwt = false
 
