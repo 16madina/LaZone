@@ -13,11 +13,11 @@ import { useLocation } from '@/contexts/LocationContext';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { supabase } from '@/integrations/supabase/client';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import CountryPhoneSelector from '@/components/CountryPhoneSelector';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SecureForm } from '@/components/security/SecureForm';
 import { SecureInput } from '@/components/security/SecureInput';
 import { SecurityMonitor } from '@/utils/security';
-import { SmartGeolocation } from '@/components/geolocation/SmartGeolocation';
+
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
@@ -68,13 +68,70 @@ const Auth: React.FC = () => {
   const [agencyPhone, setAgencyPhone] = useState('');
   const [responsibleMobile, setResponsibleMobile] = useState('');
 
-  // Callback pour SmartGeolocation
-  const handleLocationDetected = (location: { city?: string; country?: string }) => {
-    if (location.country) {
-      setSelectedCountry(location.country);
-    }
-    if (location.city) {
-      setSelectedCity(location.city);
+  // Auto-detect location on component mount
+  useEffect(() => {
+    detectUserLocationAutomatically();
+  }, []);
+
+  const detectUserLocationAutomatically = async () => {
+    if (!navigator.geolocation) return;
+
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          reject,
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000
+          }
+        );
+      });
+
+      const { latitude, longitude } = position.coords;
+      
+      // Géocodage inversé simplifié pour l'Afrique
+      const africanCities = [
+        { name: 'Abidjan', country: 'Côte d\'Ivoire', lat: 5.3364, lng: -4.0267 },
+        { name: 'Lagos', country: 'Nigeria', lat: 6.5244, lng: 3.3792 },
+        { name: 'Accra', country: 'Ghana', lat: 5.6037, lng: -0.1870 },
+        { name: 'Dakar', country: 'Sénégal', lat: 14.7167, lng: -17.4677 },
+        { name: 'Casablanca', country: 'Maroc', lat: 33.5731, lng: -7.5898 }
+      ];
+
+      // Trouver la ville la plus proche
+      let closestCity = africanCities[0];
+      let minDistance = Math.sqrt(Math.pow(latitude - closestCity.lat, 2) + Math.pow(longitude - closestCity.lng, 2));
+
+      africanCities.forEach(city => {
+        const distance = Math.sqrt(Math.pow(latitude - city.lat, 2) + Math.pow(longitude - city.lng, 2));
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestCity = city;
+        }
+      });
+
+      setSelectedCountry(closestCity.country);
+      setSelectedCity(closestCity.name);
+      
+      toast({
+        title: 'Position détectée',
+        description: `Localisation: ${closestCity.name}, ${closestCity.country}`
+      });
+
+    } catch (error) {
+      // Fallback silencieux - l'utilisateur peut saisir manuellement
+      if (error instanceof GeolocationPositionError && error.code === error.PERMISSION_DENIED) {
+        // Fallback par défaut pour l'Afrique de l'Ouest
+        setSelectedCountry('Ghana');
+        setSelectedCity('Accra');
+        
+        toast({
+          title: 'Position estimée',
+          description: 'Position approximative: Accra, Ghana. Modifiez si nécessaire.'
+        });
+      }
     }
   };
   
@@ -443,11 +500,13 @@ const Auth: React.FC = () => {
                           <Label htmlFor="login-password">Mot de passe</Label>
                           <div className="relative">
                             <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                            <Input
+                            <SecureInput
                               id="login-password"
                               name="password"
                               type="password"
-                              placeholder="••••••••"
+                              placeholder="Votre mot de passe"
+                              validationType="text"
+                              showValidation={true}
                               value={password}
                               onChange={(e) => setPassword(e.target.value)}
                               className="pl-10"
@@ -455,101 +514,128 @@ const Auth: React.FC = () => {
                             />
                           </div>
                         </div>
-
-                        <Button type="submit" className="w-full" disabled={isLoading}>
+                        
+                        <Button 
+                          type="submit" 
+                          className="w-full" 
+                          disabled={isLoading}
+                        >
                           {isLoading ? 'Connexion...' : 'Se connecter'}
                         </Button>
                         
-                        <Button 
-                          type="button" 
-                          variant="link" 
-                          className="w-full"
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
                           onClick={handleResetPassword}
                           disabled={isResettingPassword}
+                          className="w-full text-muted-foreground"
                         >
-                          {isResettingPassword ? 'Envoi en cours...' : 'Mot de passe oublié ?'}
+                          {isResettingPassword ? 'Envoi...' : 'Mot de passe oublié ?'}
                         </Button>
                       </SecureForm>
                     ) : (
                       <div className="space-y-4">
                         {!otpSent ? (
                           <>
-                            <CountryPhoneSelector
-                              countries={countries}
-                              selectedCountry={smsCountry}
-                              phoneNumber={smsPhone}
-                              onCountryChange={setSmsCountry}
-                              onPhoneChange={setSmsPhone}
-                              placeholder="XX XX XX XX"
-                              label="Numéro de téléphone"
-                            />
-                            
-                            <Button
-                              type="button"
-                              onClick={handleSendSMS}
-                              className="w-full"
-                              disabled={isLoading}
-                            >
-                              {isLoading ? 'Envoi...' : 'Recevoir le code par SMS'}
-                            </Button>
-                          </>
-                        ) : (
-                          <>
                             <div className="space-y-2">
-                              <Label htmlFor="otp-code">Code de vérification</Label>
-                              <p className="text-sm text-muted-foreground">
-                                Saisissez le code à 6 chiffres envoyé au {smsPhoneCode}{smsPhone}
-                              </p>
-                              <div className="flex justify-center">
-                                <InputOTP
-                                  maxLength={6}
-                                  value={otpCode}
-                                  onChange={(value) => setOtpCode(value)}
-                                >
-                                  <InputOTPGroup>
-                                    <InputOTPSlot index={0} />
-                                    <InputOTPSlot index={1} />
-                                    <InputOTPSlot index={2} />
-                                    <InputOTPSlot index={3} />
-                                    <InputOTPSlot index={4} />
-                                    <InputOTPSlot index={5} />
-                                  </InputOTPGroup>
-                                </InputOTP>
+                              <Label htmlFor="sms-phone">Téléphone</Label>
+                              <div className="space-y-2">
+                                <div className="space-y-2">
+                                  <Label>Pays</Label>
+                                  <Select value={smsCountry || ''} onValueChange={setSmsCountry}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Sélectionner un pays" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {countries.map((country) => (
+                                        <SelectItem key={country.name} value={country.name}>
+                                          {country.flag} {country.name} ({country.phoneCode})
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="relative">
+                                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                                  <Input
+                                    id="sms-phone"
+                                    type="tel"
+                                    placeholder="Numéro de téléphone"
+                                    value={smsPhone}
+                                    onChange={(e) => setSmsPhone(e.target.value)}
+                                    className="pl-10"
+                                  />
+                                </div>
                               </div>
                             </div>
                             
                             <Button
-                              type="button"
-                              onClick={handleVerifyOTP}
+                              onClick={handleSendSMS}
+                              disabled={isLoading || !smsPhone.trim()}
                               className="w-full"
+                            >
+                              {isLoading ? 'Envoi...' : 'Envoyer le code'}
+                            </Button>
+                          </>
+                        ) : (
+                          <div className="space-y-4">
+                            <div className="text-center">
+                              <p className="text-sm text-muted-foreground mb-2">
+                                Code envoyé au {smsFlag} {smsPhoneCode} {smsPhone}
+                              </p>
+                              <Label htmlFor="otp-code">Code de vérification</Label>
+                            </div>
+                            
+                            <div className="flex justify-center">
+                              <InputOTP
+                                value={otpCode}
+                                onChange={setOtpCode}
+                                maxLength={6}
+                              >
+                                <InputOTPGroup>
+                                  <InputOTPSlot index={0} />
+                                  <InputOTPSlot index={1} />
+                                  <InputOTPSlot index={2} />
+                                  <InputOTPSlot index={3} />
+                                  <InputOTPSlot index={4} />
+                                  <InputOTPSlot index={5} />
+                                </InputOTPGroup>
+                              </InputOTP>
+                            </div>
+                            
+                            <Button
+                              onClick={handleVerifyOTP}
                               disabled={isLoading || otpCode.length !== 6}
+                              className="w-full"
                             >
                               {isLoading ? 'Vérification...' : 'Vérifier le code'}
                             </Button>
                             
-                            <div className="flex items-center justify-between">
+                            <div className="flex justify-between text-sm">
                               <Button
-                                type="button"
-                                variant="ghost"
+                                variant="link"
+                                size="sm"
+                                onClick={handleResendSMS}
+                                disabled={isResending}
+                                className="p-0"
+                              >
+                                <RotateCcw className="w-3 h-3 mr-1" />
+                                {isResending ? 'Renvoi...' : 'Renvoyer'}
+                              </Button>
+                              <Button
+                                variant="link"
+                                size="sm"
                                 onClick={() => {
                                   setOtpSent(false);
                                   setOtpCode('');
                                 }}
+                                className="p-0"
                               >
-                                Changer de numéro
-                              </Button>
-                              
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                onClick={handleResendSMS}
-                                disabled={isResending}
-                              >
-                                <RotateCcw className="w-4 h-4 mr-2" />
-                                {isResending ? 'Envoi...' : 'Renvoyer'}
+                                Modifier le numéro
                               </Button>
                             </div>
-                          </>
+                          </div>
                         )}
                       </div>
                     )}
@@ -563,101 +649,123 @@ const Auth: React.FC = () => {
                       <Label>Type de compte</Label>
                       <RadioGroup 
                         value={userType} 
-                        onValueChange={(value) => setUserType(value as 'particulier' | 'agence')}
-                        className="grid grid-cols-2 gap-4"
+                        onValueChange={(value: 'particulier' | 'agence') => setUserType(value)}
+                        className="flex space-x-6"
                       >
-                        <div className="flex items-center space-x-2 p-3 border rounded-md">
+                        <div className="flex items-center space-x-2">
                           <RadioGroupItem value="particulier" id="particulier" />
-                          <div className="flex items-center space-x-2">
-                            <User className="w-4 h-4" />
-                            <Label htmlFor="particulier" className="text-sm">Particulier</Label>
-                          </div>
+                          <Label htmlFor="particulier" className="flex items-center">
+                            <User className="w-4 h-4 mr-2" />
+                            Particulier
+                          </Label>
                         </div>
-                        <div className="flex items-center space-x-2 p-3 border rounded-md">
+                        <div className="flex items-center space-x-2">
                           <RadioGroupItem value="agence" id="agence" />
-                          <div className="flex items-center space-x-2">
-                            <Building2 className="w-4 h-4" />
-                            <Label htmlFor="agence" className="text-sm">Agence</Label>
-                          </div>
+                          <Label htmlFor="agence" className="flex items-center">
+                            <Building2 className="w-4 h-4 mr-2" />
+                            Agence
+                          </Label>
                         </div>
                       </RadioGroup>
                     </div>
 
                     <SecureForm 
-                      onSubmit={(data) => {
-                        setActiveTab('register');
-                        return handleSubmit(data);
-                      }} 
+                      onSubmit={handleSubmit} 
                       rateLimitKey="auth_register"
                       className="space-y-4"
                     >
+                      <div className="space-y-2">
+                        <Label htmlFor="register-email">Email</Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                          <SecureInput
+                            id="register-email"
+                            name="email"
+                            type="email"
+                            placeholder="votre@email.com"
+                            validationType="email"
+                            showValidation={true}
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="pl-10"
+                            required
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="register-password">Mot de passe</Label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                          <SecureInput
+                            id="register-password"
+                            name="password"
+                            type="password"
+                            placeholder="Minimum 8 caractères"
+                            validationType="text"
+                            showValidation={true}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="pl-10"
+                            required
+                          />
+                        </div>
+                      </div>
+
                       {userType === 'particulier' ? (
-                        <>
-                          {/* Formulaire Particulier */}
+                        <div className="space-y-4">
+                          {/* Noms */}
                           <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-2">
-                              <Label htmlFor="firstName">Nom</Label>
-                            <SecureInput
-                              id="firstName"
-                              name="first_name"
-                              type="text"
-                              placeholder="Nom"
-                              validationType="name"
-                              showValidation={true}
-                              value={firstName}
-                              onChange={(e) => setFirstName(e.target.value)}
-                              required
-                            />
+                              <Label htmlFor="firstName">Prénom</Label>
+                              <SecureInput
+                                id="firstName"
+                                type="text"
+                                placeholder="Prénom"
+                                validationType="name"
+                                showValidation={true}
+                                value={firstName}
+                                onChange={(e) => setFirstName(e.target.value)}
+                                required
+                              />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="lastName">Prénom</Label>
-                            <SecureInput
-                              id="lastName"
-                              name="last_name"
-                              type="text"
-                              placeholder="Prénom"
-                              validationType="name"
-                              showValidation={true}
-                              value={lastName}
-                              onChange={(e) => setLastName(e.target.value)}
-                              required
-                            />
+                              <Label htmlFor="lastName">Nom</Label>
+                              <SecureInput
+                                id="lastName"
+                                type="text"
+                                placeholder="Nom de famille"
+                                validationType="name"
+                                showValidation={true}
+                                value={lastName}
+                                onChange={(e) => setLastName(e.target.value)}
+                                required
+                              />
                             </div>
                           </div>
 
-                          {/* Géolocalisation intelligente */}
-                          <div className="space-y-4">
-                            <Label>Localisation</Label>
-                            <SmartGeolocation 
-                              onLocationDetected={handleLocationDetected}
-                              showNearbyProperties={false}
-                              className="w-full"
-                            />
-                            
-                            {/* Affichage des valeurs détectées */}
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="space-y-2">
-                                <Label htmlFor="country">Pays</Label>
-                                <Input
-                                  id="country"
-                                  type="text"
-                                  value={flag ? `${flag} ${selectedCountry}` : selectedCountry || ''}
-                                  placeholder={selectedCountry ? "Pays détecté" : "Aucun pays détecté"}
-                                  readOnly
-                                  className="bg-muted pl-3"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="city">Ville</Label>
-                                <Input
-                                  id="city"
-                                  type="text"
-                                  value={selectedCity || ''}
-                                  placeholder={selectedCity ? "Ville détectée" : "Aucune ville détectée"}
-                                  readOnly
-                                  className="bg-muted"
-                                />
-                              </div>
+                          {/* Sélection manuelle du pays et de la ville */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                              <Label htmlFor="country">Pays</Label>
+                              <Input
+                                id="country"
+                                type="text"
+                                value={flag ? `${flag} ${selectedCountry}` : selectedCountry || ''}
+                                placeholder="Pays"
+                                onChange={(e) => setSelectedCountry(e.target.value.replace(/^[^\s]+ /, ''))}
+                                className="pl-3"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="city">Ville</Label>
+                              <Input
+                                id="city"
+                                type="text"
+                                value={selectedCity || ''}
+                                placeholder="Ville"
+                                onChange={(e) => setSelectedCity(e.target.value)}
+                              />
                             </div>
                           </div>
 
@@ -673,206 +781,170 @@ const Auth: React.FC = () => {
                             />
                           </div>
 
+                          {/* Téléphone */}
                           <div className="space-y-2">
                             <Label htmlFor="phone">Téléphone</Label>
-                            <div className="relative">
-                              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm z-10">
-                                {phoneCode}
-                              </span>
+                            <div className="flex gap-2">
+                              <div className="flex items-center px-3 py-2 border rounded-md bg-muted text-sm min-w-20">
+                                {flag} {phoneCode}
+                              </div>
                               <Input
                                 id="phone"
                                 type="tel"
-                                placeholder={`${phoneCode} XX XX XX XX`}
+                                placeholder="Numéro de téléphone"
                                 value={phone}
                                 onChange={(e) => setPhone(e.target.value)}
-                                className={phoneCode ? 'pl-16' : 'pl-3'}
-                                required
+                                className="flex-1"
                               />
                             </div>
                           </div>
 
-                          <div className="flex items-center space-x-3 p-3 border rounded-md">
+                          {/* Option démarcheur */}
+                          <div className="flex items-center space-x-2">
                             <Checkbox
                               id="canvasser"
                               checked={isCanvasser}
                               onCheckedChange={(checked) => setIsCanvasser(checked === true)}
                             />
-                            <Label htmlFor="canvasser" className="text-sm cursor-pointer">
-                              Êtes-vous démarcheur ?
+                            <Label htmlFor="canvasser" className="text-sm">
+                              Je souhaite devenir démarcheur pour gagner des commissions
                             </Label>
                           </div>
-                        </>
+                        </div>
                       ) : (
-                        <>
-                          {/* Formulaire Agence */}
+                        <div className="space-y-4">
+                          {/* Nom de l'agence */}
                           <div className="space-y-2">
                             <Label htmlFor="agencyName">Nom de l'agence</Label>
-                            <Input
+                            <SecureInput
                               id="agencyName"
                               type="text"
                               placeholder="Nom de votre agence"
+                              validationType="name"
+                              showValidation={true}
                               value={agencyName}
                               onChange={(e) => setAgencyName(e.target.value)}
                               required
                             />
                           </div>
 
-                          <div className="text-sm font-medium text-muted-foreground mb-2">Responsable</div>
+                          {/* Responsable */}
                           <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-2">
-                              <Label htmlFor="responsibleFirstName">Nom</Label>
-                              <Input
+                              <Label htmlFor="responsibleFirstName">Prénom du responsable</Label>
+                              <SecureInput
                                 id="responsibleFirstName"
                                 type="text"
-                                placeholder="Nom du responsable (optionnel)"
+                                placeholder="Prénom"
+                                validationType="name"
+                                showValidation={true}
                                 value={responsibleFirstName}
                                 onChange={(e) => setResponsibleFirstName(e.target.value)}
+                                required
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label htmlFor="responsibleLastName">Prénom</Label>
-                              <Input
+                              <Label htmlFor="responsibleLastName">Nom du responsable</Label>
+                              <SecureInput
                                 id="responsibleLastName"
                                 type="text"
-                                placeholder="Prénom du responsable (optionnel)"
+                                placeholder="Nom"
+                                validationType="name"
+                                showValidation={true}
                                 value={responsibleLastName}
                                 onChange={(e) => setResponsibleLastName(e.target.value)}
-                              />
-                            </div>
-                          </div>
-
-                          {/* Géolocalisation intelligente pour agence */}
-                          <div className="space-y-4">
-                            <Label>Localisation de l'agence</Label>
-                            <SmartGeolocation 
-                              onLocationDetected={handleLocationDetected}
-                              showNearbyProperties={false}
-                              className="w-full"
-                            />
-                            
-                            {/* Affichage des valeurs détectées */}
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="space-y-2">
-                                <Label htmlFor="agencyCountry">Pays</Label>
-                                <Input
-                                  id="agencyCountry"
-                                  type="text"
-                                  value={flag ? `${flag} ${selectedCountry}` : selectedCountry || ''}
-                                  placeholder={selectedCountry ? "Pays détecté" : "Aucun pays détecté"}
-                                  readOnly
-                                  className="bg-muted pl-3"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="agencyCity">Ville</Label>
-                                <Input
-                                  id="agencyCity"
-                                  type="text"
-                                  value={selectedCity || ''}
-                                  placeholder={selectedCity ? "Ville détectée" : "Aucune ville détectée"}
-                                  readOnly
-                                  className="bg-muted"
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="agencyNeighborhood">Quartier</Label>
-                            <Input
-                              id="agencyNeighborhood"
-                              type="text"
-                              placeholder="Quartier de l'agence (optionnel)"
-                              value={neighborhood}
-                              onChange={(e) => setNeighborhood(e.target.value)}
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="agencyPhone">Téléphone de l'agence</Label>
-                            <div className="relative">
-                              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm z-10">
-                                {phoneCode}
-                              </span>
-                              <Input
-                                id="agencyPhone"
-                                type="tel"
-                                placeholder={`${phoneCode} XX XX XX XX (optionnel)`}
-                                value={agencyPhone}
-                                onChange={(e) => setAgencyPhone(e.target.value)}
-                                className={phoneCode ? 'pl-16' : 'pl-3'}
-                              />
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="responsibleMobile">Téléphone cellulaire du responsable *</Label>
-                            <div className="relative">
-                              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm z-10">
-                                {phoneCode}
-                              </span>
-                              <Input
-                                id="responsibleMobile"
-                                type="tel"
-                                placeholder={`${phoneCode} XX XX XX XX`}
-                                value={responsibleMobile}
-                                onChange={(e) => setResponsibleMobile(e.target.value)}
-                                className={phoneCode ? 'pl-16' : 'pl-3'}
                                 required
                               />
                             </div>
                           </div>
-                        </>
-                      )}
 
-                      {/* Email commun */}
-                      <div className="space-y-2">
-                        <Label htmlFor="register-email">Email</Label>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                            <SecureInput
-                              id="register-email"
-                              name="email"
-                              type="email"
-                              placeholder="votre@email.com"
-                              validationType="email"
-                              showValidation={true}
-                              value={email}
-                              onChange={(e) => setEmail(e.target.value)}
-                              className="pl-10"
+                          {/* Sélection manuelle du pays et de la ville pour agence */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                              <Label htmlFor="agencyCountry">Pays</Label>
+                              <Input
+                                id="agencyCountry"
+                                type="text"
+                                value={flag ? `${flag} ${selectedCountry}` : selectedCountry || ''}
+                                placeholder="Pays de l'agence"
+                                onChange={(e) => setSelectedCountry(e.target.value.replace(/^[^\s]+ /, ''))}
+                                className="pl-3"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="agencyCity">Ville</Label>
+                              <Input
+                                id="agencyCity"
+                                type="text"
+                                value={selectedCity || ''}
+                                placeholder="Ville de l'agence"
+                                onChange={(e) => setSelectedCity(e.target.value)}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="agencyNeighborhood">Quartier de l'agence</Label>
+                            <Input
+                              id="agencyNeighborhood"
+                              type="text"
+                              placeholder="Quartier de l'agence"
+                              value={neighborhood}
+                              onChange={(e) => setNeighborhood(e.target.value)}
                               required
                             />
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="register-password">Mot de passe</Label>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                          <Input
-                            id="register-password"
-                            name="password"
-                            type="password"
-                            placeholder="••••••••"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="pl-10"
-                            required
-                          />
-                        </div>
-                      </div>
+                          </div>
 
-                      <Button type="submit" className="w-full" disabled={isLoading}>
-                        {isLoading ? 'Création...' : 'Créer un compte'}
+                          {/* Téléphones agence */}
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="agencyPhone">Téléphone de l'agence</Label>
+                              <div className="flex gap-2">
+                                <div className="flex items-center px-3 py-2 border rounded-md bg-muted text-sm min-w-20">
+                                  {flag} {phoneCode}
+                                </div>
+                                <Input
+                                  id="agencyPhone"
+                                  type="tel"
+                                  placeholder="Téléphone de l'agence"
+                                  value={agencyPhone}
+                                  onChange={(e) => setAgencyPhone(e.target.value)}
+                                  className="flex-1"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor="responsibleMobile">Mobile du responsable</Label>
+                              <div className="flex gap-2">
+                                <div className="flex items-center px-3 py-2 border rounded-md bg-muted text-sm min-w-20">
+                                  {flag} {phoneCode}
+                                </div>
+                                <Input
+                                  id="responsibleMobile"
+                                  type="tel"
+                                  placeholder="Mobile du responsable"
+                                  value={responsibleMobile}
+                                  onChange={(e) => setResponsibleMobile(e.target.value)}
+                                  className="flex-1"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <Button 
+                        type="submit" 
+                        className="w-full" 
+                        disabled={isLoading}
+                      >
+                        {isLoading ? 'Création du compte...' : 'Créer mon compte'}
                       </Button>
                     </SecureForm>
                   </div>
                 </TabsContent>
               </Tabs>
-
-              <div className="mt-6 text-center text-sm text-muted-foreground">
-                En continuant, vous acceptez nos conditions d'utilisation et notre politique de confidentialité.
-              </div>
             </CardContent>
           </Card>
         </div>
