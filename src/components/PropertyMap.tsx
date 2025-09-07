@@ -509,13 +509,31 @@ const PropertyMap = React.forwardRef<
         e.stopPropagation();
         e.preventDefault();
         
+        // Disable map interactions temporarily to prevent movement
+        if (map.current) {
+          map.current.dragPan.disable();
+          map.current.scrollZoom.disable();
+          map.current.doubleClickZoom.disable();
+        }
+        
         // Close any existing popups first
         const existingPopups = document.querySelectorAll('.mapboxgl-popup');
         existingPopups.forEach(popup => popup.remove());
         
-        // Select the property and show popup
+        // Select the property and show popup immediately
         onPropertySelect(property);
-        popup.addTo(map.current!);
+        
+        // Add popup to map with proper positioning
+        popup.setLngLat(property.location.coordinates).addTo(map.current!);
+        
+        // Re-enable map interactions after a short delay
+        setTimeout(() => {
+          if (map.current) {
+            map.current.dragPan.enable();
+            map.current.scrollZoom.enable();
+            map.current.doubleClickZoom.enable();
+          }
+        }, 100);
       });
 
       markers.current.push(marker);
