@@ -129,25 +129,89 @@ serve(async (req) => {
       throw new Error('Invalid OTP code');
     }
 
-    // Mark OTP as used by updating the record
+    // OTP verified successfully - now authenticate the user
+    
+    // 1. Find or create user profile with this phone number
+    let { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('phone', phone)
+      .single();
+
+    let userId = profile?.user_id;
+
+    if (!profile) {
+      console.log('Creating new user account for phone:', phone);
+      
+      // Create a user account using admin API
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+        phone: phone,
+        phone_confirm: true, // Skip phone verification since we just verified via OTP
+        user_metadata: {
+          phone_verified: true,
+          login_method: 'sms'
+        }
+      });
+
+      if (createError || !newUser.user) {
+        console.error('Failed to create user:', createError);
+        throw new Error('Failed to create user account');
+      }
+
+      userId = newUser.user.id;
+      
+      // Create profile record
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .insert({
+          user_id: userId,
+          phone: phone,
+          user_type: 'individual' // default type
+        });
+        
+      if (insertError) {
+        console.error('Failed to create profile:', insertError);
+      }
+    }
+
+    // 2. Generate access token for the user
+    const { data: sessionData, error: tokenError } = await supabase.auth.admin.generateLink({
+      type: 'magiclink',
+      email: `${phone.replace('+', '')}@sms.lazone.com`, // Temporary email for SMS users
+      options: {
+        redirectTo: `${req.headers.get('origin') || 'http://localhost:3000'}/`,
+        data: {
+          phone: phone,
+          login_method: 'sms'
+        }
+      }
+    });
+
+    if (tokenError || !sessionData) {
+      console.error('Failed to generate session:', tokenError);
+      throw new Error('Failed to generate authentication session');
+    }
+
+    // Mark OTP as used
     await supabase.rpc('log_security_event', {
-      p_user_id: null,
+      p_user_id: userId,
       p_action_type: 'otp_verify_success',
       p_resource_type: 'sms_otp',
       p_resource_id: phone,
       p_success: true,
-      p_error_message: 'OTP verified successfully'
+      p_error_message: 'OTP verified and user authenticated'
     });
-
-    // In a real implementation, you would:
-    // 1. Create or find user account by phone
-    // 2. Generate auth tokens
-    // 3. Return proper session data
     
     return new Response(JSON.stringify({
       success: true,
       message: 'OTP verified successfully',
-      // Add auth token generation here
+      user: {
+        id: userId,
+        phone: phone
+      },
+      access_token: sessionData.properties?.access_token,
+      refresh_token: sessionData.properties?.refresh_token,
+      session: sessionData
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

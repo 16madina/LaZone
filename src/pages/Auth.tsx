@@ -284,9 +284,20 @@ const Auth: React.FC = () => {
 
       if (error) throw error;
 
-      if (data?.success) {
+      if (data?.success && data?.access_token) {
+        // Set the session with the tokens returned by verify-otp
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token
+        });
+
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          throw new Error('Failed to establish session');
+        }
+
         // Log successful SMS login
-        SecurityMonitor.logAuthEvent('login_success', undefined, {
+        SecurityMonitor.logAuthEvent('login_success', data.user?.id, {
           loginMethod: 'sms',
           phone: smsPhone
         });
@@ -296,7 +307,10 @@ const Auth: React.FC = () => {
           description: 'Bienvenue sur LaZone !',
         });
         
-        navigate(nextUrl);
+        // Wait a bit for session to be established
+        setTimeout(() => {
+          navigate(nextUrl);
+        }, 500);
       } else {
         throw new Error(data?.error || 'Code de vérification incorrect');
       }
