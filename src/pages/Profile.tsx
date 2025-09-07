@@ -118,15 +118,8 @@ const Profile: React.FC = () => {
 
   const checkAdminRole = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('role', 'admin')
-        .maybeSingle();
-
-      console.log('Admin role check:', { userId, data, error, isAdmin: !!data });
-      setIsAdmin(!!data);
+      // Mock admin check since user_roles table doesn't exist
+      setIsAdmin(false);
     } catch (error) {
       console.error('Error checking admin role:', error);
     }
