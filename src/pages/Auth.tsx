@@ -786,35 +786,14 @@ const Auth: React.FC = () => {
                               </div>
                               <div className="space-y-2">
                                 <Label htmlFor="city">Ville</Label>
-                                {selectedCountry ? (
-                                  <Select
-                                    value={selectedCity || ""}
-                                    onValueChange={setSelectedCity}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Sélectionner une ville" />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-background border border-border">
-                                      {getAllCountries()
-                                        .find(c => c.name === selectedCountry)
-                                        ?.cities.map((city) => (
-                                          <SelectItem key={city} value={city}>
-                                            {city}
-                                          </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
-                                  <Input
-                                    id="city"
-                                    type="text"
-                                    value={selectedCity || ''}
-                                    placeholder="Sélectionnez d'abord un pays"
-                                    onChange={(e) => setSelectedCity(e.target.value)}
-                                    disabled
-                                    className="bg-muted"
-                                  />
-                                )}
+                                <Input
+                                  id="city"
+                                  type="text"
+                                  value={selectedCity || ''}
+                                  placeholder="Saisissez votre ville"
+                                  onChange={(e) => setSelectedCity(e.target.value)}
+                                  required
+                                />
                               </div>
                             </div>
 
