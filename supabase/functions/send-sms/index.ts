@@ -140,7 +140,8 @@ serve(async (req) => {
       p_action_type: 'sms_sent',
       p_resource_type: 'sms',
       p_resource_id: to,
-      p_success: true
+      p_success: true,
+      p_error_message: null
     });
 
     return new Response(JSON.stringify({ 
