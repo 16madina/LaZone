@@ -218,9 +218,9 @@ export const CSP_DIRECTIVES = {
   'default-src': "'self'",
   'script-src': "'self' 'unsafe-inline'", // Note: unsafe-inline needed for Vite in dev
   'style-src': "'self' 'unsafe-inline'",
-  'img-src': "'self' data: https:",
+  'img-src': "'self' data: https: https://*.mapbox.com",
   'font-src': "'self'",
-  'connect-src': "'self' https://nnqwkmkbvklbezennlfy.supabase.co",
+  'connect-src': "'self' https://nnqwkmkbvklbezennlfy.supabase.co https://api.mapbox.com https://*.tiles.mapbox.com https://events.mapbox.com https://nominatim.openstreetmap.org",
   'media-src': "'self'",
   'object-src': "'none'",
   'frame-src': "'none'",
