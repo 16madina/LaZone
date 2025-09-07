@@ -7,10 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Mail, Lock, User, Building2, Phone, RotateCcw, MapPin, Navigation } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, User, Building2, Phone, RotateCcw, MapPin, Navigation, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from '@/contexts/LocationContext';
 import { useGeolocation } from '@/hooks/useGeolocation';
+import { getAllCountries, getAfricanCountries, isAfricanCountry } from '@/data/worldwideCountries';
 import { supabase } from '@/integrations/supabase/client';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -30,7 +31,8 @@ const Auth: React.FC = () => {
     setSelectedCity,
     isLocationDetected,
     detectedCountry,
-    detectedCity
+    detectedCity,
+    requestLocation
   } = useLocation();
   const { countries } = useGeolocation();
   
@@ -38,6 +40,7 @@ const Auth: React.FC = () => {
   const nextUrl = searchParams.get('next') || '/';
   
   const [isLoading, setIsLoading] = useState(false);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState<'particulier' | 'agence'>('particulier');
@@ -68,70 +71,36 @@ const Auth: React.FC = () => {
   const [agencyPhone, setAgencyPhone] = useState('');
   const [responsibleMobile, setResponsibleMobile] = useState('');
 
-  // Auto-detect location on component mount
+  // Auto-detect location on component mount if not already detected
   useEffect(() => {
-    detectUserLocationAutomatically();
+    if (!selectedCountry && !isLocationDetected) {
+      handleAutoDetectLocation();
+    }
   }, []);
 
-  const detectUserLocationAutomatically = async () => {
-    if (!navigator.geolocation) return;
-
+  const handleAutoDetectLocation = async () => {
+    setIsDetectingLocation(true);
     try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(
-          resolve,
-          reject,
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 300000
-          }
-        );
-      });
-
-      const { latitude, longitude } = position.coords;
-      
-      // Géocodage inversé simplifié pour l'Afrique
-      const africanCities = [
-        { name: 'Abidjan', country: 'Côte d\'Ivoire', lat: 5.3364, lng: -4.0267 },
-        { name: 'Lagos', country: 'Nigeria', lat: 6.5244, lng: 3.3792 },
-        { name: 'Accra', country: 'Ghana', lat: 5.6037, lng: -0.1870 },
-        { name: 'Dakar', country: 'Sénégal', lat: 14.7167, lng: -17.4677 },
-        { name: 'Casablanca', country: 'Maroc', lat: 33.5731, lng: -7.5898 }
-      ];
-
-      // Trouver la ville la plus proche
-      let closestCity = africanCities[0];
-      let minDistance = Math.sqrt(Math.pow(latitude - closestCity.lat, 2) + Math.pow(longitude - closestCity.lng, 2));
-
-      africanCities.forEach(city => {
-        const distance = Math.sqrt(Math.pow(latitude - city.lat, 2) + Math.pow(longitude - city.lng, 2));
-        if (distance < minDistance) {
-          minDistance = distance;
-          closestCity = city;
-        }
-      });
-
-      setSelectedCountry(closestCity.country);
-      setSelectedCity(closestCity.name);
-      
-      toast({
-        title: 'Position détectée',
-        description: `Localisation: ${closestCity.name}, ${closestCity.country}`
-      });
-
+      await requestLocation();
     } catch (error) {
-      // Fallback silencieux - l'utilisateur peut saisir manuellement
-      if (error instanceof GeolocationPositionError && error.code === error.PERMISSION_DENIED) {
-        // Fallback par défaut pour l'Afrique de l'Ouest
-        setSelectedCountry('Ghana');
-        setSelectedCity('Accra');
-        
-        toast({
-          title: 'Position estimée',
-          description: 'Position approximative: Accra, Ghana. Modifiez si nécessaire.'
-        });
-      }
+      // Silently handle errors - LocationContext already shows error toasts
+    } finally {
+      setIsDetectingLocation(false);
+    }
+  };
+
+  const handleManualDetectLocation = async () => {
+    setIsDetectingLocation(true);
+    try {
+      await requestLocation();
+      toast({
+        title: 'Position mise à jour',
+        description: 'Votre localisation a été mise à jour avec succès.'
+      });
+    } catch (error) {
+      // LocationContext already handles error toasts
+    } finally {
+      setIsDetectingLocation(false);
     }
   };
   
@@ -744,29 +713,116 @@ const Auth: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Sélection manuelle du pays et de la ville */}
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                              <Label htmlFor="country">Pays</Label>
-                              <Input
-                                id="country"
-                                type="text"
-                                value={flag ? `${flag} ${selectedCountry}` : selectedCountry || ''}
-                                placeholder="Pays"
-                                onChange={(e) => setSelectedCountry(e.target.value.replace(/^[^\s]+ /, ''))}
-                                className="pl-3"
-                              />
+                          {/* Géolocalisation intelligente */}
+                          <div className="space-y-3 p-4 bg-muted/30 rounded-lg border-2 border-dashed border-muted-foreground/20">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-primary" />
+                                <span className="text-sm font-medium">Localisation</span>
+                                {isLocationDetected && (
+                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                                    ✓ Détectée
+                                  </span>
+                                )}
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={handleManualDetectLocation}
+                                disabled={isDetectingLocation}
+                                className="flex items-center gap-1"
+                              >
+                                {isDetectingLocation ? (
+                                  <>
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                    Détection...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Navigation className="w-3 h-3" />
+                                    Détecter
+                                  </>
+                                )}
+                              </Button>
                             </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="city">Ville</Label>
-                              <Input
-                                id="city"
-                                type="text"
-                                value={selectedCity || ''}
-                                placeholder="Ville"
-                                onChange={(e) => setSelectedCity(e.target.value)}
-                              />
+
+                            {/* Sélection du pays et de la ville */}
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-2">
+                                <Label htmlFor="country">Pays</Label>
+                                <Select
+                                  value={selectedCountry || ""}
+                                  onValueChange={setSelectedCountry}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Sélectionner un pays" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-background border border-border">
+                                    <div className="text-xs text-muted-foreground px-2 py-1 font-medium border-b">
+                                      Pays africains (recommandés)
+                                    </div>
+                                    {getAfricanCountries().map((country) => (
+                                      <SelectItem key={country.code} value={country.name}>
+                                        <div className="flex items-center gap-2">
+                                          <span>{country.flag}</span>
+                                          <span>{country.name}</span>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                    <div className="text-xs text-muted-foreground px-2 py-1 font-medium border-b border-t">
+                                      Autres pays
+                                    </div>
+                                    {getAllCountries().filter(c => !c.isAfrican).map((country) => (
+                                      <SelectItem key={country.code} value={country.name}>
+                                        <div className="flex items-center gap-2">
+                                          <span>{country.flag}</span>
+                                          <span>{country.name}</span>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="city">Ville</Label>
+                                {selectedCountry ? (
+                                  <Select
+                                    value={selectedCity || ""}
+                                    onValueChange={setSelectedCity}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Sélectionner une ville" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-background border border-border">
+                                      {getAllCountries()
+                                        .find(c => c.name === selectedCountry)
+                                        ?.cities.map((city) => (
+                                          <SelectItem key={city} value={city}>
+                                            {city}
+                                          </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                  </Select>
+                                ) : (
+                                  <Input
+                                    id="city"
+                                    type="text"
+                                    value={selectedCity || ''}
+                                    placeholder="Sélectionnez d'abord un pays"
+                                    onChange={(e) => setSelectedCity(e.target.value)}
+                                    disabled
+                                    className="bg-muted"
+                                  />
+                                )}
+                              </div>
                             </div>
+
+                            {!isAfricanCountry(selectedCountry || '') && selectedCountry && (
+                              <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded-md">
+                                ⚠️ Note : Seuls les utilisateurs basés en Afrique peuvent créer des annonces.
+                              </div>
+                            )}
                           </div>
 
                           <div className="space-y-2">
@@ -858,29 +914,117 @@ const Auth: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Sélection manuelle du pays et de la ville pour agence */}
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                              <Label htmlFor="agencyCountry">Pays</Label>
-                              <Input
-                                id="agencyCountry"
-                                type="text"
-                                value={flag ? `${flag} ${selectedCountry}` : selectedCountry || ''}
-                                placeholder="Pays de l'agence"
-                                onChange={(e) => setSelectedCountry(e.target.value.replace(/^[^\s]+ /, ''))}
-                                className="pl-3"
-                              />
+                          {/* Géolocalisation intelligente pour agence */}
+                          <div className="space-y-3 p-4 bg-muted/30 rounded-lg border-2 border-dashed border-muted-foreground/20">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Building2 className="w-4 h-4 text-primary" />
+                                <span className="text-sm font-medium">Localisation de l'agence</span>
+                                {isLocationDetected && (
+                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                                    ✓ Détectée
+                                  </span>
+                                )}
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={handleManualDetectLocation}
+                                disabled={isDetectingLocation}
+                                className="flex items-center gap-1"
+                              >
+                                {isDetectingLocation ? (
+                                  <>
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                    Détection...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Navigation className="w-3 h-3" />
+                                    Détecter
+                                  </>
+                                )}
+                              </Button>
                             </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="agencyCity">Ville</Label>
-                              <Input
-                                id="agencyCity"
-                                type="text"
-                                value={selectedCity || ''}
-                                placeholder="Ville de l'agence"
-                                onChange={(e) => setSelectedCity(e.target.value)}
-                              />
+
+                            {/* Sélection du pays et de la ville pour agence */}
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-2">
+                                <Label htmlFor="agencyCountry">Pays de l'agence</Label>
+                                <Select
+                                  value={selectedCountry || ""}
+                                  onValueChange={setSelectedCountry}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Sélectionner un pays" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-background border border-border">
+                                    <div className="text-xs text-muted-foreground px-2 py-1 font-medium border-b">
+                                      Pays africains (recommandés)
+                                    </div>
+                                    {getAfricanCountries().map((country) => (
+                                      <SelectItem key={country.code} value={country.name}>
+                                        <div className="flex items-center gap-2">
+                                          <span>{country.flag}</span>
+                                          <span>{country.name}</span>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                    <div className="text-xs text-muted-foreground px-2 py-1 font-medium border-b border-t">
+                                      Autres pays
+                                    </div>
+                                    {getAllCountries().filter(c => !c.isAfrican).map((country) => (
+                                      <SelectItem key={country.code} value={country.name}>
+                                        <div className="flex items-center gap-2">
+                                          <span>{country.flag}</span>
+                                          <span>{country.name}</span>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="agencyCity">Ville de l'agence</Label>
+                                {selectedCountry ? (
+                                  <Select
+                                    value={selectedCity || ""}
+                                    onValueChange={setSelectedCity}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Sélectionner une ville" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-background border border-border">
+                                      {getAllCountries()
+                                        .find(c => c.name === selectedCountry)
+                                        ?.cities.map((city) => (
+                                          <SelectItem key={city} value={city}>
+                                            {city}
+                                          </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                  </Select>
+                                ) : (
+                                  <Input
+                                    id="agencyCity"
+                                    type="text"
+                                    value={selectedCity || ''}
+                                    placeholder="Sélectionnez d'abord un pays"
+                                    onChange={(e) => setSelectedCity(e.target.value)}
+                                    disabled
+                                    className="bg-muted"
+                                  />
+                                )}
+                              </div>
                             </div>
+
+                            {/* Message spécial pour les agences non-africaines */}
+                            {!isAfricanCountry(selectedCountry || '') && selectedCountry && (
+                              <div className="text-xs text-red-600 bg-red-50 p-3 rounded-md border border-red-200">
+                                ❌ Important : Votre agence doit être basée en Afrique pour pouvoir créer un compte et publier des annonces.
+                              </div>
+                            )}
                           </div>
 
                           <div className="space-y-2">
