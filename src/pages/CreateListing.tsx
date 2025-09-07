@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ImagePreview from "@/components/ImagePreview";
+import PreviewImage from "@/components/PreviewImage";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLocation } from "@/contexts/LocationContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1285,8 +1286,8 @@ export default function CreateListing() {
               <Card className="overflow-hidden">
                 {formData.images.length > 0 && (
                   <div className="aspect-[16/10] overflow-hidden">
-                    <img
-                      src={URL.createObjectURL(formData.images[0])}
+                    <PreviewImage
+                      file={formData.images[0]}
                       alt="Preview"
                       className="w-full h-full object-cover"
                     />
