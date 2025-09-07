@@ -24,17 +24,21 @@ export const getAgentInfo = async (userId: string): Promise<AgentInfo> => {
   if (!userId) return defaultAgent;
 
   try {
+    console.log('🔍 Fetching agent info for userId:', userId);
     // Use secure function to get safe profile data
     const { data, error } = await supabase.rpc('get_safe_listing_profile', {
       profile_user_id: userId
     });
     
+    console.log('📊 Agent info response:', { data, error });
+    
     if (error || !data || data.length === 0) {
-      console.log('Profile not found or error:', error);
+      console.log('⚠️ Profile not found or error:', error);
       return defaultAgent;
     }
 
     const profile = data[0]; // Function returns array, get first result
+    console.log('✅ Agent profile found:', profile.display_name, 'Type:', profile.user_type);
 
     return {
       name: profile.display_name || 'Propriétaire',
@@ -44,6 +48,7 @@ export const getAgentInfo = async (userId: string): Promise<AgentInfo> => {
       agencyName: profile.user_type === 'agence' ? profile.display_name : undefined
     };
   } catch (error) {
+    console.error('❌ Error in getAgentInfo:', error);
     logger.error('Error fetching agent info', error as Error, { 
       component: 'agent-utils',
       userId 
