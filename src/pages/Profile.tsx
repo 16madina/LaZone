@@ -41,7 +41,7 @@ import { useFavoritesContext } from '@/contexts/FavoritesContext';
 
 interface Profile {
   id: string;
-  user_type: 'particulier' | 'agence';
+  user_type?: 'particulier' | 'agence';
   first_name?: string;
   last_name?: string;
   agency_name?: string;
@@ -55,12 +55,18 @@ interface Profile {
   responsible_mobile?: string;
   is_canvasser?: boolean;
   avatar_url?: string;
+  display_name?: string;
+  bio?: string;
+  account_status?: string;
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface Listing {
   id: string;
   purpose: 'rent' | 'sale';
-  property_type: 'apartment' | 'house' | 'land';
+  property_type: 'apartment' | 'house' | 'land' | 'commercial';
   title: string;
   description?: string;
   price: number;
@@ -69,12 +75,15 @@ interface Listing {
   bathrooms?: number;
   area: number;
   land_area?: number;
-  address: string;
+  address?: string;
   city: string;
-  neighborhood: string;
+  neighborhood?: string;
   country?: string;
   amenities: string[];
   images: string[];
+  video_url?: string;
+  land_documents?: string[];
+  additional_info?: string;
   status: 'active' | 'inactive' | 'sold' | 'rented';
   created_at: string;
 }

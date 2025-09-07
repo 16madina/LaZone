@@ -25,27 +25,33 @@ export const getAgentInfo = async (userId: string): Promise<AgentInfo> => {
 
   try {
     console.log('🔍 Fetching agent info for userId:', userId);
-    // Use secure function to get safe profile data
-    const { data, error } = await supabase.rpc('get_safe_listing_profile', {
-      profile_user_id: userId
-    });
+    // Query profiles table directly
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('display_name, avatar_url, user_type, first_name, last_name, agency_name')
+      .eq('user_id', userId)
+      .maybeSingle();
     
-    console.log('📊 Agent info response:', { data, error });
+    console.log('📊 Agent info response:', { profile, error });
     
-    if (error || !data || data.length === 0) {
+    if (error || !profile) {
       console.log('⚠️ Profile not found or error:', error);
       return defaultAgent;
     }
 
-    const profile = data[0]; // Function returns array, get first result
-    console.log('✅ Agent profile found:', profile.display_name, 'Type:', profile.user_type);
+    const displayName = profile.display_name || 
+      (profile.first_name && profile.last_name ? `${profile.first_name} ${profile.last_name}` : '') ||
+      profile.agency_name ||
+      'Propriétaire';
+
+    console.log('✅ Agent profile found:', displayName, 'Type:', profile.user_type);
 
     return {
-      name: profile.display_name || 'Propriétaire',
+      name: displayName,
       avatar: profile.avatar_url || '/placeholder.svg',
-      isVerified: profile.agent_verified || false,
+      isVerified: false, // We don't have agent_verified field
       type: (profile.user_type as 'particulier' | 'agence' | 'démarcheur') || 'particulier',
-      agencyName: profile.user_type === 'agence' ? profile.display_name : undefined
+      agencyName: profile.user_type === 'agence' ? profile.agency_name : undefined
     };
   } catch (error) {
     console.error('❌ Error in getAgentInfo:', error);

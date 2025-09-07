@@ -60,6 +60,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (!error && data) {
         setProfile(data);
+      } else if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching profile:', error);
       }
     } catch (error) {
       logger.error('Error fetching user profile', error as Error, { 

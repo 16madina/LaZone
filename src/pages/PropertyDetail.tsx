@@ -79,7 +79,7 @@ export default function PropertyDetail() {
             landArea: data.land_area,
             amenities: data.amenities || [],
             landDocuments: data.land_documents || [],
-            additionalInfo: data.additional_info,
+            additionalInfo: data.additional_info ? String(data.additional_info) : undefined,
             isVerified: false,
             isNew: isNewListing(data.created_at),
             isFeatured: false,

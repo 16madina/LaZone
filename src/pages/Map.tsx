@@ -134,7 +134,7 @@ const Map: React.FC = () => {
           landArea: listing.land_area ? Number(listing.land_area) : undefined,
           amenities: listing.amenities || [],
           landDocuments: listing.land_documents || [],
-          additionalInfo: listing.additional_info,
+          additionalInfo: listing.additional_info ? String(listing.additional_info) : undefined,
           isVerified: false,
           isNew: new Date(listing.created_at).getTime() > Date.now() - (7 * 24 * 60 * 60 * 1000),
           isFeatured: false,
