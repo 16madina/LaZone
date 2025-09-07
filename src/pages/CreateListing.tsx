@@ -642,9 +642,15 @@ export default function CreateListing() {
                       });
                     }}
                     options={selectedCountry ? searchCitiesByCountry(selectedCountry, '') : []}
-                    placeholder="Ex: Abidjan, Côte d'Ivoire"
+                    placeholder="Ex: Abidjan"
                     searchPlaceholder="Rechercher une ville..."
                     emptyText="Aucune ville trouvée"
+                    allowCustomInput={true}
+                    onAddCustomValue={(newCity) => {
+                      // L'utilisateur ajoute une nouvelle ville
+                      console.log("Nouvelle ville ajoutée:", newCity);
+                    }}
+                    customAddText="Ajouter la ville"
                   />
                   {errors.city && <p className="text-sm text-destructive">{errors.city}</p>}
                 </div>
@@ -654,20 +660,20 @@ export default function CreateListing() {
                   <Autocomplete
                     value={formData.neighborhood}
                     onValueChange={(value) => updateFormData({ neighborhood: value })}
-                    options={formData.city 
-                      ? (() => {
-                          // Extraire le nom de la ville et du pays
-                          const cityParts = formData.city.split(', ');
-                          const cityName = cityParts[0];
-                          const countryName = cityParts[1] || selectedCountry;
-                          return countryName ? searchNeighborhoods(countryName, cityName, '') : [];
-                        })()
+                    options={formData.city && selectedCountry
+                      ? searchNeighborhoods(selectedCountry, formData.city, '')
                       : []
                     }
                     placeholder="Ex: Cocody"
                     searchPlaceholder="Rechercher un quartier..."
                     emptyText="Sélectionnez d'abord une ville"
                     disabled={!formData.city}
+                    allowCustomInput={true}
+                    onAddCustomValue={(newNeighborhood) => {
+                      // L'utilisateur ajoute un nouveau quartier
+                      console.log("Nouveau quartier ajouté:", newNeighborhood);
+                    }}
+                    customAddText="Ajouter le quartier"
                   />
                   {errors.neighborhood && <p className="text-sm text-destructive">{errors.neighborhood}</p>}
                 </div>
