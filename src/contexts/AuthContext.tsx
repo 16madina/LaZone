@@ -4,10 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
 
 interface UserProfile {
-  user_type: string;
-  first_name?: string;
-  last_name?: string;
-  agency_name?: string;
+  display_name?: string;
+  phone?: string;
+  bio?: string;
 }
 
 interface AuthContextType {
@@ -50,7 +49,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_type, first_name, last_name, agency_name')
+        .select('display_name, phone, bio')
         .eq('user_id', userId)
         .single();
 
