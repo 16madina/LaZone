@@ -92,7 +92,13 @@ serve(async (req) => {
     }
 
     const otpRecord = otpRecords[0];
-    const otpData = JSON.parse(otpRecord.error_message);
+    let otpData;
+    try {
+      otpData = JSON.parse(otpRecord.error_message);
+    } catch (parseError) {
+      console.error('Failed to parse OTP data:', parseError);
+      throw new Error('Invalid OTP record');
+    }
     
     // Check if OTP is expired
     if (new Date(otpData.expires_at) < new Date()) {

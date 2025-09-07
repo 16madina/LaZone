@@ -54,13 +54,13 @@ serve(async (req) => {
       throw new Error('Invalid phone number format');
     }
 
-    // Rate limiting check (max 3 SMS per phone per hour) - simplified version
+    // Rate limiting check (max 3 SMS per phone per hour)
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     const { data: recentSMS, error: countError } = await supabase
-      .from('analytics_events')
+      .from('security_audit_log')
       .select('id')
-      .eq('event_type', 'sms_sent')
-      .eq('event_data->phone', to)
+      .eq('action_type', 'sms_sent')
+      .eq('resource_id', to)
       .gte('created_at', oneHourAgo.toISOString())
       .limit(3);
 
@@ -87,22 +87,25 @@ serve(async (req) => {
       otpCode = Math.floor(100000 + Math.random() * 900000).toString();
       message = `Votre code de connexion LaZone: ${otpCode}. Ce code expire dans ${OTP_EXPIRY_MINUTES} minutes.`;
       
-      // Store OTP securely in database using analytics_events
+      // Store OTP securely in security_audit_log
       const expiryTime = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
-      const { error: otpError } = await supabase
-        .from('analytics_events')
-        .insert({
-          user_id: userId,
-          event_type: 'otp_generated',
-          event_data: { 
-            phone: to,
-            expires_at: expiryTime.toISOString()
-          }
-        });
+      const otpHash = btoa(otpCode); // Simple base64 encoding for demo
+      
+      const { error: otpError } = await supabase.rpc('log_security_event', {
+        p_user_id: userId,
+        p_action_type: 'otp_generated',
+        p_resource_type: 'sms_otp',
+        p_resource_id: to,
+        p_success: true,
+        p_error_message: JSON.stringify({
+          otp_hash: otpHash,
+          expires_at: expiryTime.toISOString()
+        })
+      });
 
       if (otpError) {
         console.error('Failed to store OTP:', otpError);
-        // Continue anyway - SMS sending is more important
+        throw new Error('Failed to generate OTP');
       }
     }
 
@@ -132,13 +135,13 @@ serve(async (req) => {
     const result = await response.json();
     
     // Log successful SMS send
-    await supabase
-      .from('analytics_events')
-      .insert({
-        user_id: userId,
-        event_type: 'sms_sent',
-        event_data: { phone: to, success: true }
-      });
+    await supabase.rpc('log_security_event', {
+      p_user_id: userId,
+      p_action_type: 'sms_sent',
+      p_resource_type: 'sms',
+      p_resource_id: to,
+      p_success: true
+    });
 
     return new Response(JSON.stringify({ 
       success: true,
