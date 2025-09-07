@@ -218,50 +218,43 @@ const Auth: React.FC = () => {
     }
   };
 
-  const handleSendSMS = async () => {
-    if (!smsPhone.trim()) {
-      toast({
-        title: 'Erreur',
-        description: 'Veuillez saisir votre numéro de téléphone.',
-        variant: 'destructive',
-      });
-      return;
-    }
+    const handleSendSMS = async () => {
+      if (!smsPhone.trim()) {
+        toast({
+          title: 'Erreur',
+          description: 'Veuillez saisir votre numéro de téléphone.',
+          variant: 'destructive',
+        });
+        return;
+      }
 
-    setIsLoading(true);
-    try {
-      // Generate 6-digit code
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      
-      // Store code temporarily (in a real app, this would be stored securely on the server)
-      sessionStorage.setItem('sms_code', code);
-      sessionStorage.setItem('sms_phone', smsPhone);
-      
-      // Send SMS via edge function
-      const { data, error } = await supabase.functions.invoke('send-sms', {
-        body: {
-          to: `${smsPhoneCode}${smsPhone.replace(/\s/g, '')}`, // Enlever les espaces
-          message: `Votre code de connexion LaZone: ${code}. Ce code expire dans 5 minutes.`
-        }
-      });
+      setIsLoading(true);
+      try {
+        // Send SMS via secure edge function
+        const { data, error } = await supabase.functions.invoke('send-sms', {
+          body: {
+            to: `${smsPhoneCode}${smsPhone.replace(/\s/g, '')}`, // Remove spaces
+            type: 'otp'
+          }
+        });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      setOtpSent(true);
-      toast({
-        title: 'Code envoyé',
-        description: 'Un code à 6 chiffres vous a été envoyé par SMS.',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible d\'envoyer le SMS. Veuillez réessayer.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        setOtpSent(true);
+        toast({
+          title: 'Code envoyé',
+          description: 'Un code à 6 chiffres vous a été envoyé par SMS.',
+        });
+      } catch (error: any) {
+        toast({
+          title: 'Erreur',
+          description: error.message || 'Impossible d\'envoyer le SMS. Veuillez réessayer.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
   const handleResendSMS = async () => {
     setIsResending(true);
@@ -279,36 +272,45 @@ const Auth: React.FC = () => {
       return;
     }
 
-    const storedCode = sessionStorage.getItem('sms_code');
-    const storedPhone = sessionStorage.getItem('sms_phone');
-
-    if (otpCode !== storedCode || smsPhone !== storedPhone) {
-      toast({
-        title: 'Code incorrect',
-        description: 'Le code saisi est incorrect. Veuillez réessayer.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setIsLoading(true);
     try {
-      // In a real app, you would verify the phone number with your user database
-      // For now, we'll create a magic link or handle the login differently
-      toast({
-        title: 'Connexion réussie',
-        description: 'Bienvenue sur LaZone !',
+      // Use secure server-side OTP verification
+      const { data, error } = await supabase.functions.invoke('verify-otp', {
+        body: {
+          phone: `${smsPhoneCode}${smsPhone.replace(/\s/g, '')}`,
+          code: otpCode
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        // Log successful SMS login
+        SecurityMonitor.logAuthEvent('login_success', undefined, {
+          loginMethod: 'sms',
+          phone: smsPhone
+        });
+
+        toast({
+          title: 'Connexion réussie',
+          description: 'Bienvenue sur LaZone !',
+        });
+        
+        navigate(nextUrl);
+      } else {
+        throw new Error(data?.error || 'Code de vérification incorrect');
+      }
+    } catch (error: any) {
+      // Log failed SMS login attempt
+      SecurityMonitor.logAuthEvent('login_failure', undefined, {
+        loginMethod: 'sms',
+        phone: smsPhone,
+        error: error.message
       });
       
-      // Clear stored code
-      sessionStorage.removeItem('sms_code');
-      sessionStorage.removeItem('sms_phone');
-      
-      navigate(nextUrl);
-    } catch (error: any) {
       toast({
-        title: 'Erreur',
-        description: 'Une erreur est survenue lors de la connexion.',
+        title: 'Code incorrect',
+        description: error.message || 'Le code saisi est incorrect. Veuillez réessayer.',
         variant: 'destructive',
       });
     } finally {
