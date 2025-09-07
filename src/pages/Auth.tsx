@@ -78,10 +78,7 @@ const Auth: React.FC = () => {
     setIsDetectingLocation(true);
     try {
       await requestLocation();
-      toast({
-        title: "Position détectée !",
-        description: `${detectedCity || 'Ville'}, ${detectedCountry || 'Pays'}`
-      });
+      // Toast is already shown in LocationContext with correct values
     } catch (error) {
       // Error is already handled in the context
     } finally {
