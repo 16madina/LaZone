@@ -163,6 +163,30 @@ const Map: React.FC = () => {
     };
 
     loadProperties();
+    
+    // Configurer les mises à jour en temps réel pour la carte
+    const channel = supabase
+      .channel('map-listings-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Écouter tous les événements (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'listings'
+        },
+        (payload) => {
+          console.log('🗺️ Changement en temps réel détecté sur la carte:', payload);
+          // Recharger les propriétés quand il y a un changement
+          loadProperties();
+        }
+      )
+      .subscribe();
+
+    // Nettoyer la subscription au démontage
+    return () => {
+      console.log('🧹 Nettoyage de la subscription realtime carte');
+      supabase.removeChannel(channel);
+    };
   }, [toast]);
 
   // Filter properties by selected country and search mode

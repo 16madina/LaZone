@@ -419,8 +419,8 @@ export default function CreateListing() {
       if (error) throw error;
 
       toast({
-        title: 'Annonce publiée avec succès !',
-        description: 'Votre annonce sera visible sous 24h après vérification.',
+        title: "✅ Nouvelle annonce ajoutée !",
+        description: "Votre annonce est maintenant visible sur LaZone.",
       });
       
       // Redirect to profile page

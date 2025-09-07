@@ -50,6 +50,30 @@ const Index = () => {
   // Fetch listings from Supabase
   useEffect(() => {
     fetchListings();
+    
+    // Configurer les mises à jour en temps réel
+    const channel = supabase
+      .channel('listings-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Écouter tous les événements (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'listings'
+        },
+        (payload) => {
+          console.log('📡 Changement en temps réel détecté:', payload);
+          // Recharger les listings quand il y a un changement
+          fetchListings();
+        }
+      )
+      .subscribe();
+
+    // Nettoyer la subscription au démontage
+    return () => {
+      console.log('🧹 Nettoyage de la subscription realtime');
+      supabase.removeChannel(channel);
+    };
   }, [selectedCountry, searchMode]);
 
   // Update price range when search mode changes
