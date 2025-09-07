@@ -376,6 +376,31 @@ export const searchNeighborhoods = (countryName: string, cityName: string, query
     });
 };
 
+// Fonction pour rechercher les villes d'un pays spécifique
+export const searchCitiesByCountry = (countryName: string, query: string = ''): string[] => {
+  const country = AFRICAN_CITIES_DATA.find(c => c.name === countryName);
+  if (!country) return [];
+  
+  const normalizedQuery = query.toLowerCase().trim();
+  
+  let cities = country.cities.map(c => c.name);
+  
+  if (normalizedQuery) {
+    cities = cities.filter(name => name.toLowerCase().includes(normalizedQuery));
+  }
+  
+  // Trier par pertinence puis alphabétiquement
+  return cities.sort((a, b) => {
+    if (normalizedQuery) {
+      const aStarts = a.toLowerCase().startsWith(normalizedQuery);
+      const bStarts = b.toLowerCase().startsWith(normalizedQuery);
+      if (aStarts && !bStarts) return -1;
+      if (!aStarts && bStarts) return 1;
+    }
+    return a.localeCompare(b);
+  });
+};
+
 // Fonction pour rechercher toutes les villes de tous les pays africains
 export const searchAllCities = (query: string = ''): Array<{name: string, country: string}> => {
   const results: Array<{name: string, country: string}> = [];
