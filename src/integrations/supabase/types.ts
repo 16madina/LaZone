@@ -114,6 +114,7 @@ export type Database = {
           bathrooms: number | null
           bedrooms: number | null
           city: string
+          country: string | null
           created_at: string
           currency: string
           description: string | null
@@ -141,6 +142,7 @@ export type Database = {
           bathrooms?: number | null
           bedrooms?: number | null
           city: string
+          country?: string | null
           created_at?: string
           currency?: string
           description?: string | null
@@ -168,6 +170,7 @@ export type Database = {
           bathrooms?: number | null
           bedrooms?: number | null
           city?: string
+          country?: string | null
           created_at?: string
           currency?: string
           description?: string | null
