@@ -76,8 +76,39 @@ export type Database = {
           },
         ]
       }
+      favorites: {
+        Row: {
+          created_at: string
+          id: string
+          listing_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          listing_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          listing_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listings: {
         Row: {
+          additional_info: Json | null
+          address: string | null
           amenities: string[] | null
           area: number | null
           bathrooms: number | null
@@ -89,6 +120,7 @@ export type Database = {
           id: string
           images: string[] | null
           land_area: number | null
+          land_documents: string[] | null
           latitude: number | null
           longitude: number | null
           neighborhood: string | null
@@ -99,8 +131,11 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string
+          video_url: string | null
         }
         Insert: {
+          additional_info?: Json | null
+          address?: string | null
           amenities?: string[] | null
           area?: number | null
           bathrooms?: number | null
@@ -112,6 +147,7 @@ export type Database = {
           id?: string
           images?: string[] | null
           land_area?: number | null
+          land_documents?: string[] | null
           latitude?: number | null
           longitude?: number | null
           neighborhood?: string | null
@@ -122,8 +158,11 @@ export type Database = {
           title: string
           updated_at?: string
           user_id: string
+          video_url?: string | null
         }
         Update: {
+          additional_info?: Json | null
+          address?: string | null
           amenities?: string[] | null
           area?: number | null
           bathrooms?: number | null
@@ -135,6 +174,7 @@ export type Database = {
           id?: string
           images?: string[] | null
           land_area?: number | null
+          land_documents?: string[] | null
           latitude?: number | null
           longitude?: number | null
           neighborhood?: string | null
@@ -145,6 +185,7 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+          video_url?: string | null
         }
         Relationships: []
       }
@@ -212,34 +253,82 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_status: string | null
+          agency_name: string | null
           avatar_url: string | null
           bio: string | null
           created_at: string
           display_name: string | null
+          first_name: string | null
           id: string
+          last_name: string | null
           phone: string | null
           updated_at: string
           user_id: string
+          user_type: string | null
         }
         Insert: {
+          account_status?: string | null
+          agency_name?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
           display_name?: string | null
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           phone?: string | null
           updated_at?: string
           user_id: string
+          user_type?: string | null
         }
         Update: {
+          account_status?: string | null
+          agency_name?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
           display_name?: string | null
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           phone?: string | null
           updated_at?: string
           user_id?: string
+          user_type?: string | null
+        }
+        Relationships: []
+      }
+      security_audit_log: {
+        Row: {
+          action_type: string
+          created_at: string
+          error_message: string | null
+          id: string
+          resource_id: string | null
+          resource_type: string
+          success: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          resource_id?: string | null
+          resource_type: string
+          success?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          resource_id?: string | null
+          resource_type?: string
+          success?: boolean | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -248,7 +337,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      log_security_event: {
+        Args: {
+          p_action_type: string
+          p_error_message?: string
+          p_resource_id?: string
+          p_resource_type: string
+          p_success?: boolean
+          p_user_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
