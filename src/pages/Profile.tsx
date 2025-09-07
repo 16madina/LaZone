@@ -240,13 +240,35 @@ const Profile: React.FC = () => {
   };
 
   const getDisplayName = () => {
-    if (!profile) return user?.email || 'Utilisateur';
+    // D'abord essayer les métadonnées utilisateur, puis le profil
+    const firstName = user?.user_metadata?.first_name || profile?.first_name || '';
+    const lastName = user?.user_metadata?.last_name || profile?.last_name || '';
     
-    if (profile.user_type === 'agence') {
-      return profile.agency_name || 'Agence';
+    if (profile?.user_type === 'agence' || user?.user_metadata?.user_type === 'agence') {
+      return profile?.agency_name || user?.user_metadata?.agency_name || 'Agence';
     } else {
-      return `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || user?.email || 'Utilisateur';
+      const fullName = `${firstName} ${lastName}`.trim();
+      return fullName || user?.email || 'Utilisateur';
     }
+  };
+
+  const getUserType = () => {
+    const userType = user?.user_metadata?.user_type || profile?.user_type || 'particulier';
+    const isCanvasser = user?.user_metadata?.is_canvasser || profile?.is_canvasser || false;
+    
+    if (userType === 'agence') return 'Agence';
+    if (isCanvasser) return 'Démarcheur';
+    return 'Utilisateur';
+  };
+
+  const getMemberSince = () => {
+    const date = new Date(user?.created_at);
+    const options: Intl.DateTimeFormatOptions = { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    };
+    return date.toLocaleDateString('fr-FR', options);
   };
 
   const getContactInfo = () => {
@@ -461,37 +483,27 @@ const Profile: React.FC = () => {
               </div>
               
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h2 className="text-lg font-semibold">{getDisplayName()}</h2>
-                  {profile?.is_canvasser && profile.user_type === 'particulier' && (
-                    <Badge variant="secondary" className="text-blue-600 border-blue-200 bg-blue-50">
-                      Démarcheur
-                    </Badge>
-                  )}
-                </div>
-                
-                <div className="space-y-1 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Mail className="w-3 h-3" />
-                    <span>{user.email}</span>
+                <div className="space-y-2">
+                  <h2 className="text-xl font-bold text-foreground">{getDisplayName()}</h2>
+                  
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <Mail className="w-4 h-4" />
+                    <span className="text-sm">{user.email}</span>
                   </div>
-                  {phone && (
-                    <div className="flex items-center gap-1">
-                      <Phone className="w-3 h-3" />
-                      <span>{phone}</span>
-                    </div>
-                  )}
-                  {location && (
-                    <div className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      <span>{location}</span>
-                    </div>
-                  )}
+                  
+                  <p className="text-sm text-muted-foreground">
+                    Membre depuis le {getMemberSince()}
+                  </p>
+                  
+                  <div className="mt-3">
+                    <Badge 
+                      variant="secondary" 
+                      className="text-primary border-primary/20 bg-primary/10 font-medium"
+                    >
+                      {getUserType()}
+                    </Badge>
+                  </div>
                 </div>
-                
-                <p className="text-xs text-muted-foreground mt-2">
-                  Membre depuis {new Date(user.created_at).getFullYear()}
-                </p>
               </div>
             </div>
           </CardContent>
