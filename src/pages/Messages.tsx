@@ -26,6 +26,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { formatPrice } from '@/utils/currency';
+import { VisitRequests } from '@/components/messages/VisitRequests';
+import { NotificationCenter } from '@/components/messages/NotificationCenter';
 
 interface Conversation {
   id: string;
@@ -601,11 +603,17 @@ export default function Messages() {
               </TabsTrigger>
               <TabsTrigger value="visits" className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                Demandes (Bientôt)
+                Demandes
+                <Badge variant="destructive" className="ml-1 text-xs">
+                  4
+                </Badge>
               </TabsTrigger>
               <TabsTrigger value="notifications" className="flex items-center gap-2">
                 <Bell className="w-4 h-4" />
-                Notifications (Bientôt)
+                Notifications
+                <Badge variant="destructive" className="ml-1 text-xs">
+                  2
+                </Badge>
               </TabsTrigger>
             </TabsList>
 
@@ -900,31 +908,11 @@ export default function Messages() {
             </TabsContent>
 
             <TabsContent value="visits" className="space-y-4">
-              <div className="bg-gradient-card rounded-lg border shadow-sm">
-                <div className="p-6">
-                  <div className="flex flex-col items-center justify-center h-32 text-center">
-                    <Calendar className="w-12 h-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium mb-2">Fonctionnalité à venir</h3>
-                    <p className="text-muted-foreground">
-                      Les demandes de visite seront bientôt disponibles
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <VisitRequests />
             </TabsContent>
 
             <TabsContent value="notifications" className="space-y-4">
-              <div className="bg-gradient-card rounded-lg border shadow-sm">
-                <div className="p-6">
-                  <div className="flex flex-col items-center justify-center h-32 text-center">
-                    <Bell className="w-12 h-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium mb-2">Fonctionnalité à venir</h3>
-                    <p className="text-muted-foreground">
-                      Les notifications seront bientôt disponibles
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <NotificationCenter />
             </TabsContent>
           </Tabs>
         </div>
