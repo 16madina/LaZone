@@ -91,8 +91,9 @@ serve(async (req) => {
       const expiryTime = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
       const otpHash = btoa(otpCode); // Simple base64 encoding for demo
       
+      console.log('Storing OTP for phone:', to, 'userId:', userId);
       const { error: otpError } = await supabase.rpc('log_security_event', {
-        p_user_id: userId,
+        p_user_id: userId || null,
         p_action_type: 'otp_generated',
         p_resource_type: 'sms_otp',
         p_resource_id: to,
@@ -104,7 +105,13 @@ serve(async (req) => {
       });
 
       if (otpError) {
-        console.error('Failed to store OTP:', otpError);
+        console.error('Failed to store OTP - Full error:', JSON.stringify(otpError));
+        console.error('OTP storage parameters:', {
+          userId: userId || null,
+          action_type: 'otp_generated',
+          resource_type: 'sms_otp',
+          resource_id: to
+        });
         throw new Error('Failed to generate OTP');
       }
     }
@@ -136,7 +143,7 @@ serve(async (req) => {
     
     // Log successful SMS send
     await supabase.rpc('log_security_event', {
-      p_user_id: userId,
+      p_user_id: userId || null,
       p_action_type: 'sms_sent',
       p_resource_type: 'sms',
       p_resource_id: to,
