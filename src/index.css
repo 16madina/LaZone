@@ -158,7 +158,7 @@
     @apply bg-background text-foreground font-sans antialiased;
   }
 
-  /* iOS Safe Area Support */
+  /* iOS Safe Area Support - Enhanced */
   @supports (padding: max(0px)) {
     body {
       padding-left: max(0px, env(safe-area-inset-left));
@@ -166,11 +166,22 @@
     }
     
     .safe-area-top {
-      padding-top: max(0px, env(safe-area-inset-top));
+      padding-top: max(1rem, env(safe-area-inset-top));
     }
     
     .safe-area-bottom {
-      padding-bottom: max(0px, env(safe-area-inset-bottom));
+      padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    }
+
+    /* Utility classes for specific components */
+    .header-safe {
+      padding-top: max(0.5rem, env(safe-area-inset-top));
+    }
+
+    .sidebar-safe {
+      padding-top: max(0px, env(safe-area-inset-top));
+      padding-left: max(0px, env(safe-area-inset-left));
+      padding-right: max(0px, env(safe-area-inset-right));
     }
   }
 
