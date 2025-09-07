@@ -161,6 +161,13 @@ export type Database = {
             referencedRelation: "listings"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "favorites_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "safe_listings_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       listings: {
@@ -576,6 +583,13 @@ export type Database = {
             referencedRelation: "listings"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reviews_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "safe_listings_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       security_audit_log: {
@@ -676,12 +690,125 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      safe_listings_view: {
+        Row: {
+          address: string | null
+          agent_profile: Json | null
+          amenities: string[] | null
+          area: number | null
+          bathrooms: number | null
+          bedrooms: number | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          currency: string | null
+          description: string | null
+          id: string | null
+          images: string[] | null
+          land_area: number | null
+          latitude: number | null
+          longitude: number | null
+          neighborhood: string | null
+          price: number | null
+          property_type: string | null
+          purpose: string | null
+          status: string | null
+          title: string | null
+          updated_at: string | null
+          video_url: string | null
+          virtual_tour_url: string | null
+        }
+        Insert: {
+          address?: string | null
+          agent_profile?: never
+          amenities?: string[] | null
+          area?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          id?: string | null
+          images?: string[] | null
+          land_area?: number | null
+          latitude?: number | null
+          longitude?: number | null
+          neighborhood?: string | null
+          price?: number | null
+          property_type?: string | null
+          purpose?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+          video_url?: string | null
+          virtual_tour_url?: string | null
+        }
+        Update: {
+          address?: string | null
+          agent_profile?: never
+          amenities?: string[] | null
+          area?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          id?: string | null
+          images?: string[] | null
+          land_area?: number | null
+          latitude?: number | null
+          longitude?: number | null
+          neighborhood?: string | null
+          price?: number | null
+          property_type?: string | null
+          purpose?: string | null
+          status?: string | null
+          title?: string | null
+          updated_at?: string | null
+          video_url?: string | null
+          virtual_tour_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       can_create_listing: {
         Args: { user_id_param: string }
         Returns: boolean
+      }
+      get_public_listings: {
+        Args: { limit_count?: number; offset_count?: number }
+        Returns: {
+          address: string
+          agent_avatar: string
+          agent_name: string
+          agent_rating: number
+          agent_type: string
+          agent_verified: boolean
+          amenities: string[]
+          area: number
+          bathrooms: number
+          bedrooms: number
+          city: string
+          country: string
+          created_at: string
+          currency: string
+          description: string
+          id: string
+          images: string[]
+          latitude: number
+          longitude: number
+          neighborhood: string
+          price: number
+          property_type: string
+          purpose: string
+          status: string
+          title: string
+        }[]
       }
       get_safe_agent_profile: {
         Args: { profile_user_id: string }
