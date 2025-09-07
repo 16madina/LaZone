@@ -24,7 +24,7 @@ import { useSubscription } from "@/contexts/SubscriptionContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Autocomplete } from "@/components/ui/autocomplete";
-import { searchCities, searchNeighborhoods } from "@/data/africanCities";
+import { searchCities, searchNeighborhoods, searchAllCities } from "@/data/africanCities";
 import { getCityCoordinates } from "@/utils/geocoding";
 
 interface ListingData {
@@ -382,8 +382,20 @@ export default function CreateListing() {
       }
 
       // Géocodage automatique pour obtenir les coordonnées GPS
-      console.log('🌍 Géocodage automatique pour:', formData.city, selectedCountry);
-      const coordinates = getCityCoordinates(formData.city, selectedCountry || undefined);
+      console.log('🌍 Géocodage automatique pour:', formData.city);
+      
+      // Extraire le nom de la ville et du pays du format "Ville, Pays"
+      let cityName = formData.city;
+      let countryName = selectedCountry;
+      
+      if (formData.city.includes(', ')) {
+        const parts = formData.city.split(', ');
+        cityName = parts[0];
+        countryName = parts[1];
+      }
+      
+      console.log('📍 Recherche coordonnées pour:', cityName, 'dans', countryName);
+      const coordinates = getCityCoordinates(cityName, countryName || undefined);
       console.log('📍 Coordonnées trouvées:', coordinates);
 
       // Create the listing in database
@@ -402,9 +414,9 @@ export default function CreateListing() {
           area: parseFloat(formData.area) || 1,
           land_area: formData.landArea ? parseFloat(formData.landArea) : null,
           address: formData.address,
-          city: formData.city,
+          city: formData.city.includes(', ') ? formData.city.split(', ')[0] : formData.city,
           neighborhood: formData.neighborhood,
-          country: selectedCountry,
+          country: formData.city.includes(', ') ? formData.city.split(', ')[1] : selectedCountry,
           latitude: coordinates?.lat || null,
           longitude: coordinates?.lng || null,
           amenities: formData.amenities,
@@ -629,8 +641,8 @@ export default function CreateListing() {
                         neighborhood: '' // Reset neighborhood when city changes
                       });
                     }}
-                    options={selectedCountry ? searchCities(selectedCountry, '') : []}
-                    placeholder="Ex: Abidjan"
+                    options={searchAllCities('').map(city => `${city.name}, ${city.country}`)}
+                    placeholder="Ex: Abidjan, Côte d'Ivoire"
                     searchPlaceholder="Rechercher une ville..."
                     emptyText="Aucune ville trouvée"
                   />
@@ -642,8 +654,14 @@ export default function CreateListing() {
                   <Autocomplete
                     value={formData.neighborhood}
                     onValueChange={(value) => updateFormData({ neighborhood: value })}
-                    options={selectedCountry && formData.city 
-                      ? searchNeighborhoods(selectedCountry, formData.city, '') 
+                    options={formData.city 
+                      ? (() => {
+                          // Extraire le nom de la ville et du pays
+                          const cityParts = formData.city.split(', ');
+                          const cityName = cityParts[0];
+                          const countryName = cityParts[1] || selectedCountry;
+                          return countryName ? searchNeighborhoods(countryName, cityName, '') : [];
+                        })()
                       : []
                     }
                     placeholder="Ex: Cocody"
