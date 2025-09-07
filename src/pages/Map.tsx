@@ -15,10 +15,13 @@ import { comprehensiveMockProperties, propertiesByCountry } from '@/data/compreh
 import { AFRICAN_CITIES_DATA, searchCities, searchNeighborhoods } from '@/data/africanCities';
 import { SlidersHorizontal, ArrowUpDown, List, Search, ArrowLeft, Menu } from 'lucide-react';
 import { MapSidebar } from '@/components/MapSidebar';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const Map: React.FC = () => {
   const navigate = useNavigate();
   const { selectedCountry, coordinates } = useLocation();
+  const { toast } = useToast();
   const [searchMode] = useState<'rent' | 'buy'>('rent');
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -31,6 +34,8 @@ const Map: React.FC = () => {
   const [searchSuggestions, setSearchSuggestions] = useState<Array<{type: 'city' | 'neighborhood', name: string, country: string, city?: string}>>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showMapSidebar, setShowMapSidebar] = useState(false);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [isLoadingProperties, setIsLoadingProperties] = useState(true);
 
   // Extract and persist Mapbox token
   useEffect(() => {
@@ -85,16 +90,101 @@ const Map: React.FC = () => {
     amenities: []
   });
 
-  // Get properties for the selected country, fallback to all if no country selected
-  const countryProperties = selectedCountry && propertiesByCountry[selectedCountry] 
-    ? propertiesByCountry[selectedCountry] 
-    : comprehensiveMockProperties;
+  // Load real properties from Supabase
+  useEffect(() => {
+    const loadProperties = async () => {
+      try {
+        setIsLoadingProperties(true);
+        
+        const { data: listings, error } = await supabase
+          .from('listings')
+          .select('*')
+          .eq('status', 'active')
+          .not('latitude', 'is', null)
+          .not('longitude', 'is', null);
 
-  // Filter and sort properties (map 'buy' to 'sale' for data compatibility)
-  const filteredProperties = filterProperties(
-    countryProperties.filter(p => p.purpose === (searchMode === 'buy' ? 'sale' : searchMode)),
-    filters
+        if (error) {
+          console.error('Error loading properties:', error);
+          toast({
+            title: "Erreur",
+            description: "Impossible de charger les propriétés",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Transform Supabase data to Property format
+        const transformedProperties: Property[] = listings.map(listing => ({
+          id: listing.id,
+          title: listing.title,
+          price: Number(listing.price),
+          currency: listing.currency,
+          location: {
+            city: listing.city,
+            neighborhood: listing.neighborhood,
+            coordinates: [Number(listing.longitude), Number(listing.latitude)]
+          },
+          images: listing.images || [],
+          videoUrl: listing.video_url,
+          type: listing.property_type as 'apartment' | 'house' | 'land' | 'commercial',
+          purpose: listing.purpose as 'rent' | 'sale' | 'commercial',
+          bedrooms: listing.bedrooms || 0,
+          bathrooms: listing.bathrooms || 0,
+          area: Number(listing.area),
+          landArea: listing.land_area ? Number(listing.land_area) : undefined,
+          amenities: listing.amenities || [],
+          landDocuments: listing.land_documents || [],
+          additionalInfo: listing.additional_info,
+          isVerified: false,
+          isNew: new Date(listing.created_at).getTime() > Date.now() - (7 * 24 * 60 * 60 * 1000),
+          isFeatured: false,
+          agent: {
+            name: 'Propriétaire',
+            avatar: '/placeholder.svg',
+            isVerified: false,
+            type: 'particulier'
+          },
+          createdAt: listing.created_at,
+        }));
+
+        console.log('🏠 Loaded properties from Supabase:', transformedProperties.length);
+        setProperties(transformedProperties);
+        
+      } catch (error) {
+        console.error('Error loading properties:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les propriétés",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingProperties(false);
+      }
+    };
+
+    loadProperties();
+  }, [toast]);
+
+  // Filter properties by selected country and search mode
+  const countryFilteredProperties = selectedCountry 
+    ? properties.filter(p => {
+        // For simplicity, we'll filter by city since we don't have country in the Property type
+        // You can extend this logic based on your country-city mapping
+        const ivorianCities = ['Abidjan', 'Bouaké', 'Daloa', 'Yamoussoukro', 'San-Pédro', 'Korhogo', 'Man', 'Divo', 'Gagnoa', 'Abengourou'];
+        if (selectedCountry === 'Côte d\'Ivoire') {
+          return ivorianCities.includes(p.location.city);
+        }
+        return true; // For other countries, show all for now
+      })
+    : properties;
+
+  // Filter by purpose (rent/buy)
+  const purposeFilteredProperties = countryFilteredProperties.filter(
+    p => p.purpose === (searchMode === 'buy' ? 'sale' : searchMode)
   );
+
+  // Apply additional filters
+  const filteredProperties = filterProperties(purposeFilteredProperties, filters);
 
   // Sort properties
   const sortedProperties = [...filteredProperties].sort((a, b) => {
