@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Autocomplete } from "@/components/ui/autocomplete";
 import { searchCities, searchNeighborhoods } from "@/data/africanCities";
+import { getCityCoordinates } from "@/utils/geocoding";
 
 interface ListingData {
   purpose: 'rent' | 'sale';
@@ -380,6 +381,11 @@ export default function CreateListing() {
         imageUrls = ['/placeholder.svg'];
       }
 
+      // Géocodage automatique pour obtenir les coordonnées GPS
+      console.log('🌍 Géocodage automatique pour:', formData.city, selectedCountry);
+      const coordinates = getCityCoordinates(formData.city, selectedCountry || undefined);
+      console.log('📍 Coordonnées trouvées:', coordinates);
+
       // Create the listing in database
       const { error } = await supabase
         .from('listings')
@@ -399,6 +405,8 @@ export default function CreateListing() {
           city: formData.city,
           neighborhood: formData.neighborhood,
           country: selectedCountry,
+          latitude: coordinates?.lat || null,
+          longitude: coordinates?.lng || null,
           amenities: formData.amenities,
           images: imageUrls,
           video_url: videoUrl,

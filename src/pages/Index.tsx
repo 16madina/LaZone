@@ -131,7 +131,9 @@ const Index = () => {
             location: {
               city: listing.city,
               neighborhood: listing.neighborhood,
-              coordinates: [listing.longitude || 0, listing.latitude || 0] as [number, number]
+              coordinates: (listing.longitude && listing.latitude) ? 
+                [listing.longitude, listing.latitude] as [number, number] :
+                [0, 0] as [number, number] // Will be filtered out later if invalid
             },
             images: listing.images || ['/placeholder.svg'],
             type: listing.property_type as 'apartment' | 'house' | 'land' | 'commercial',

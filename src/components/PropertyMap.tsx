@@ -283,8 +283,17 @@ const PropertyMap = React.forwardRef<
     markers.current.forEach(marker => marker.remove());
     markers.current = [];
 
-    // Add markers for each property
+    // Add markers for each property that has valid coordinates
     properties.forEach(property => {
+      // Skip properties without valid coordinates (0,0 means invalid)
+      const [lng, lat] = property.location.coordinates;
+      if (!lng || !lat || (lng === 0 && lat === 0)) {
+        console.log('🚫 Skipping property without coordinates:', property.title, property.location.coordinates);
+        return;
+      }
+
+      console.log('📍 Adding marker for:', property.title, 'at', property.location.coordinates);
+      
       // Create custom marker with price
       const el = document.createElement('div');
       el.className = 'property-marker';
