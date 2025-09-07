@@ -491,19 +491,18 @@ const PropertyMap = React.forwardRef<
 
       marker.setPopup(popup);
 
-      // Click event - show popup
+      // Click event - show popup only (no map movement)
       el.addEventListener('click', (e) => {
         e.stopPropagation();
+        e.preventDefault();
+        
+        // Close any existing popups first
+        const existingPopups = document.querySelectorAll('.mapboxgl-popup');
+        existingPopups.forEach(popup => popup.remove());
+        
+        // Select the property and show popup
         onPropertySelect(property);
-        
-        // Open the popup immediately
         popup.addTo(map.current!);
-        
-        map.current?.flyTo({
-          center: property.location.coordinates,
-          zoom: 14,
-          duration: 1000
-        });
       });
 
       markers.current.push(marker);
