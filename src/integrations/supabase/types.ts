@@ -692,8 +692,6 @@ export type Database = {
     Views: {
       safe_listings_view: {
         Row: {
-          address: string | null
-          agent_profile: Json | null
           amenities: string[] | null
           area: number | null
           bathrooms: number | null
@@ -719,8 +717,6 @@ export type Database = {
           virtual_tour_url: string | null
         }
         Insert: {
-          address?: string | null
-          agent_profile?: never
           amenities?: string[] | null
           area?: number | null
           bathrooms?: number | null
@@ -733,8 +729,8 @@ export type Database = {
           id?: string | null
           images?: string[] | null
           land_area?: number | null
-          latitude?: number | null
-          longitude?: number | null
+          latitude?: never
+          longitude?: never
           neighborhood?: string | null
           price?: number | null
           property_type?: string | null
@@ -746,8 +742,6 @@ export type Database = {
           virtual_tour_url?: string | null
         }
         Update: {
-          address?: string | null
-          agent_profile?: never
           amenities?: string[] | null
           area?: number | null
           bathrooms?: number | null
@@ -760,8 +754,8 @@ export type Database = {
           id?: string | null
           images?: string[] | null
           land_area?: number | null
-          latitude?: number | null
-          longitude?: number | null
+          latitude?: never
+          longitude?: never
           neighborhood?: string | null
           price?: number | null
           property_type?: string | null
@@ -783,9 +777,8 @@ export type Database = {
       get_public_listings: {
         Args: { limit_count?: number; offset_count?: number }
         Returns: {
-          address: string
           agent_avatar: string
-          agent_name: string
+          agent_display_name: string
           agent_rating: number
           agent_type: string
           agent_verified: boolean
@@ -800,8 +793,6 @@ export type Database = {
           description: string
           id: string
           images: string[]
-          latitude: number
-          longitude: number
           neighborhood: string
           price: number
           property_type: string
@@ -832,13 +823,12 @@ export type Database = {
       get_safe_listing_profile: {
         Args: { profile_user_id: string }
         Returns: {
-          agency_name: string
           agent_rating: number
           agent_verified: boolean
           avatar_url: string
           city: string
           country: string
-          first_name: string
+          display_name: string
           id: string
           total_reviews: number
           user_id: string
