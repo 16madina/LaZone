@@ -34,9 +34,12 @@ const Index = () => {
   // Initialize searchMode based on URL parameter
   const getInitialSearchMode = (): 'rent' | 'buy' | 'commercial' => {
     const tabParam = searchParams.get('tab');
+    console.log('🔧 URL tab parameter:', tabParam);
     if (tabParam === 'buy' || tabParam === 'rent' || tabParam === 'commercial') {
+      console.log('🔧 Setting searchMode to:', tabParam);
       return tabParam;
     }
+    console.log('🔧 No valid tab parameter, defaulting to rent');
     return 'rent'; // default
   };
   
@@ -111,7 +114,7 @@ const Index = () => {
       } else {
         const purpose = searchMode === 'buy' ? 'sale' : searchMode;
         query = query.eq('purpose', purpose);
-        console.log('🏠 Filtering for purpose:', purpose);
+        console.log('🏠 Filtering for purpose:', purpose, 'from searchMode:', searchMode);
       }
 
       // Filtrage par pays avec inclusion des annonces sans pays spécifié
@@ -122,6 +125,8 @@ const Index = () => {
       
       console.log('📊 About to query Supabase...');
       const { data, error } = await query.order('created_at', { ascending: false });
+      console.log('📨 Supabase query completed, found', data?.length || 0, 'listings');
+      console.log('📋 First few listings:', data?.slice(0, 3));
       console.log('📨 Supabase query completed');
       
       if (error) {
