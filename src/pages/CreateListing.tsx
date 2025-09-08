@@ -437,8 +437,8 @@ export default function CreateListing() {
         description: "Votre annonce est maintenant visible sur LaZone.",
       });
       
-      // Redirect to profile page
-      navigate('/profile');
+      // Redirect to home page to see the new listing
+      navigate('/');
     } catch (error: any) {
       console.error('Error creating listing:', error);
       toast({
