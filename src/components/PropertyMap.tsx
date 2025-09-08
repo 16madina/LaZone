@@ -214,6 +214,16 @@ const PropertyMap = React.forwardRef<
       mapboxgl.accessToken = mapboxToken;
       
       try {
+        // Validate token first
+        if (!mapboxToken || typeof mapboxToken !== 'string' || mapboxToken.length < 10) {
+          throw new Error('Token Mapbox invalide ou manquant');
+        }
+
+        // Check if token starts with pk.
+        if (!mapboxToken.startsWith('pk.')) {
+          throw new Error('Token Mapbox invalide - doit commencer par pk.');
+        }
+
         map.current = new mapboxgl.Map({
           container: mapContainer.current,
           style: 'mapbox://styles/mapbox/light-v11',
@@ -239,6 +249,7 @@ const PropertyMap = React.forwardRef<
         map.current.on('load', () => {
           logger.info('Map loaded successfully', { component: 'PropertyMap' });
           setMapLoaded(true);
+          setError(null); // Clear any previous errors
           
           // Center map on user location if available (only if in Africa)
           if (userLocation && map.current) {
@@ -261,8 +272,9 @@ const PropertyMap = React.forwardRef<
         });
 
         map.current.on('error', (e) => {
-          logger.error('Map error', new Error(e.error?.message || 'Unknown map error'), { component: 'PropertyMap' });
-          setError('Erreur lors du chargement de la carte');
+          const errorMessage = e.error?.message || 'Erreur inconnue de la carte';
+          logger.error('Map error', new Error(errorMessage), { component: 'PropertyMap', fullError: e });
+          setError(`Erreur Mapbox: ${errorMessage}`);
         });
 
         // Listen for map movements
@@ -273,8 +285,12 @@ const PropertyMap = React.forwardRef<
         });
 
       } catch (error) {
-        logger.error('Error initializing map', error as Error, { component: 'PropertyMap' });
-        setError('Erreur lors de l\'initialisation de la carte');
+        const errorMessage = (error as Error).message;
+        logger.error('Error initializing map', error as Error, { 
+          component: 'PropertyMap', 
+          token: mapboxToken ? `${mapboxToken.substring(0, 10)}...` : 'undefined'
+        });
+        setError(`Erreur d'initialisation: ${errorMessage}`);
       }
     };
 
