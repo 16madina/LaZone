@@ -234,7 +234,8 @@ const PropertyMap = React.forwardRef<
 
         logger.debug('Creating Mapbox instance', { component: 'PropertyMap' });
 
-        map.current = new mapboxgl.Map({
+        // Force HTTPS for all Mapbox requests to avoid "insecure operation" error
+        const mapOptions: mapboxgl.MapboxOptions = {
           container: mapContainer.current,
           style: 'mapbox://styles/mapbox/light-v11',
           center: [17.7, 7.2], // Centre de l'Afrique (République centrafricaine/Tchad)
@@ -246,8 +247,19 @@ const PropertyMap = React.forwardRef<
             [55, 38]    // Nord-est de l'Afrique (Mer Rouge + Méditerranée)
           ],
           minZoom: 2, // Zoom minimum pour garder l'Afrique visible
-          maxZoom: 18 // Zoom maximum pour les détails urbains
-        });
+          maxZoom: 18, // Zoom maximum pour les détails urbains
+          transformRequest: (url, resourceType) => {
+            // Force HTTPS for all Mapbox requests to avoid insecure operation error
+            if (url.includes('mapbox.com') && url.startsWith('http://')) {
+              return {
+                url: url.replace('http://', 'https://'),
+              };
+            }
+            return { url };
+          }
+        };
+
+        map.current = new mapboxgl.Map(mapOptions);
 
         logger.debug('Adding navigation control', { component: 'PropertyMap' });
 
