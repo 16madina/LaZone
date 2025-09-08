@@ -332,16 +332,17 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* DEBUG: Temporary Map Test Button */}
-      <div className="fixed top-4 right-4 z-50">
-        <Button 
+      <div className="fixed top-4 right-4 z-[9999]">
+        <button 
           onClick={() => {
             console.log('🚀 Navigating to map page...');
             navigate('/map');
           }}
-          className="bg-red-500 hover:bg-red-600 text-white"
+          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md font-medium shadow-lg border-2 border-white"
+          style={{ backgroundColor: '#ef4444', color: 'white' }}
         >
-          🗺️ Test Map Page
-        </Button>
+          🗺️ CARTE TEST
+        </button>
       </div>
       
       <Header />
