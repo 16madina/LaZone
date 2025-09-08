@@ -234,7 +234,7 @@ const PropertyMap = React.forwardRef<
 
         logger.debug('Creating Mapbox instance', { component: 'PropertyMap' });
 
-        // Configuration simple et propre de la carte
+        // Configuration simple et propre de la carte avec options de sécurité
         map.current = new mapboxgl.Map({
           container: mapContainer.current,
           style: 'mapbox://styles/mapbox/light-v11',
@@ -242,7 +242,22 @@ const PropertyMap = React.forwardRef<
           zoom: 3,
           maxBounds: [[-25, -40], [55, 38]], // Limites de l'Afrique
           minZoom: 2,
-          maxZoom: 18
+          maxZoom: 18,
+          // Options de sécurité explicites
+          antialias: false,
+          attributionControl: true,
+          logoPosition: 'bottom-left',
+          refreshExpiredTiles: true,
+          trackResize: true,
+          transformRequest: (url, resourceType) => {
+            // Ensure all requests use https
+            if (url.startsWith('http://')) {
+              return {
+                url: url.replace('http://', 'https://'),
+              };
+            }
+            return { url };
+          }
         });
 
         logger.debug('Adding navigation control', { component: 'PropertyMap' });
@@ -291,8 +306,24 @@ const PropertyMap = React.forwardRef<
             component: 'PropertyMap', 
             errorType: (e.error as any)?.type,
             errorStatus: (e.error as any)?.status,
-            fullError: e
+            fullError: e,
+            errorDetails: {
+              source: (e as any).sourceId || 'unknown',
+              layer: (e as any).layerId || 'unknown',
+              tile: (e as any).tile || 'unknown'
+            }
           });
+          
+          // Log more specific error info for debugging
+          console.error('🗺️ Mapbox Error Details:', {
+            message: errorMessage,
+            type: (e.error as any)?.type,
+            status: (e.error as any)?.status,
+            source: (e as any).sourceId,
+            layer: (e as any).layerId,
+            fullEvent: e
+          });
+          
           setError(`Erreur Mapbox: ${errorMessage}`);
           setMapLoaded(false);
         });
