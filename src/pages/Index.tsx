@@ -54,7 +54,7 @@ const Index = () => {
     priceRange: [0, searchMode === 'rent' ? 2000000 : searchMode === 'buy' ? 50000000 : 5000000],
     bedrooms: 'any',
     bathrooms: 'any',
-    areaRange: [20, 1000],
+    areaRange: [1, 1000],
     amenities: []
   });
 

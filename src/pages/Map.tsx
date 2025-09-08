@@ -86,7 +86,7 @@ const Map: React.FC = () => {
     priceRange: [0, 2000000],
     bedrooms: 'any',
     bathrooms: 'any',
-    areaRange: [20, 1000],
+    areaRange: [1, 1000],
     amenities: []
   });
 
