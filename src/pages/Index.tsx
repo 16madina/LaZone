@@ -4,6 +4,7 @@ import PropertyFilters, { FilterState } from "@/components/PropertyFilters";
 import PropertyCard, { Property } from "@/components/PropertyCard";
 import PropertyMap from "@/components/PropertyMap";
 import WelcomeStats from "@/components/WelcomeStats";
+import MapboxTokenModal from "@/components/MapboxTokenModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -462,6 +463,7 @@ const Index = () => {
               className="pl-10 pr-4 py-3 bg-background/60 backdrop-blur-sm border-border/60 focus:border-primary/60 focus:ring-1 focus:ring-primary/20 rounded-xl"
             />
           </div>
+          <MapboxTokenModal onTokenUpdate={() => window.location.reload()} />
           <Button
             variant="outline"
             size="sm"
