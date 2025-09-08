@@ -33,6 +33,10 @@ const PropertyMap = React.forwardRef<
   apiKey,
   userLocation
 }, ref) {
+  console.log('🗺️ PropertyMap component initializing...', { 
+    propertiesCount: properties.length,
+    hasUserLocation: !!userLocation 
+  });
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<google.maps.Map | null>(null);
   const markers = useRef<google.maps.Marker[]>([]);
@@ -48,6 +52,7 @@ const PropertyMap = React.forwardRef<
 
   // Fetch Google Maps API key from Supabase Edge Function
   useEffect(() => {
+    console.log('🔑 PropertyMap: Starting API key fetch process...');
     const fetchGoogleMapsKey = async () => {
       try {
         logger.debug('Starting Google Maps API key fetch', { component: 'PropertyMap' });

@@ -15,8 +15,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const Map: React.FC = () => {
+  console.log('🗺️ Map component rendering...');
   const navigate = useNavigate();
   const { selectedCountry, coordinates } = useLocation();
+  console.log('🌍 Location context:', { selectedCountry, coordinates });
   const { toast } = useToast();
   const [searchMode] = useState<'rent' | 'buy'>('rent');
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -39,6 +41,7 @@ const Map: React.FC = () => {
 
   // Load real properties from Supabase
   useEffect(() => {
+    console.log('🔄 Loading properties from Supabase...');
     const loadProperties = async () => {
       try {
         setIsLoadingProperties(true);
