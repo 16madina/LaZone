@@ -133,6 +133,7 @@ export type Database = {
           updated_at: string
           user_id: string
           video_url: string | null
+          virtual_tour_url: string | null
         }
         Insert: {
           additional_info?: Json | null
@@ -161,6 +162,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           video_url?: string | null
+          virtual_tour_url?: string | null
         }
         Update: {
           additional_info?: Json | null
@@ -189,6 +191,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           video_url?: string | null
+          virtual_tour_url?: string | null
         }
         Relationships: []
       }
