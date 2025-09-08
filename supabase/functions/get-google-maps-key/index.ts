@@ -6,24 +6,24 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  console.log(`[MAPBOX-TOKEN] Function called with method: ${req.method}`)
+  console.log(`[GOOGLE-MAPS] Function called with method: ${req.method}`)
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('[MAPBOX-TOKEN] CORS preflight request')
+    console.log('[GOOGLE-MAPS] CORS preflight request')
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    console.log('[MAPBOX-TOKEN] Attempting to get token from environment')
-    const mapboxToken = Deno.env.get('MAPBOX_PUBLIC_TOKEN')
+    console.log('[GOOGLE-MAPS] Attempting to get API key from environment')
+    const googleMapsKey = Deno.env.get('GOOGLE_MAPS_API_KEY')
     
-    if (!mapboxToken) {
-      console.error('[MAPBOX-TOKEN] Token not found in environment variables')
+    if (!googleMapsKey) {
+      console.error('[GOOGLE-MAPS] API key not found in environment variables')
       return new Response(
         JSON.stringify({ 
-          error: 'Mapbox token not configured',
-          message: 'Please configure MAPBOX_PUBLIC_TOKEN in Supabase Edge Function secrets' 
+          error: 'Google Maps API key not configured',
+          message: 'Please configure GOOGLE_MAPS_API_KEY in Supabase Edge Function secrets' 
         }),
         { 
           status: 500, 
@@ -32,20 +32,20 @@ serve(async (req) => {
       )
     }
 
-    console.log(`[MAPBOX-TOKEN] Token found, length: ${mapboxToken.length}, prefix: ${mapboxToken.substring(0, 10)}...`)
+    console.log(`[GOOGLE-MAPS] API key found, length: ${googleMapsKey.length}, prefix: ${googleMapsKey.substring(0, 10)}...`)
     
     return new Response(
-      JSON.stringify({ mapboxToken }),
+      JSON.stringify({ googleMapsKey }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     )
   } catch (error) {
-    console.error(`[MAPBOX-TOKEN] Error occurred: ${error.message}`, error)
+    console.error(`[GOOGLE-MAPS] Error occurred: ${error.message}`, error)
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        message: 'Internal server error while fetching Mapbox token'
+        message: 'Internal server error while fetching Google Maps API key'
       }),
       { 
         status: 500, 
