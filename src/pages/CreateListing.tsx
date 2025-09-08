@@ -437,8 +437,19 @@ export default function CreateListing() {
         description: "Votre annonce est maintenant visible sur LaZone.",
       });
       
-      // Redirect to home page to see the new listing
-      navigate('/');
+      // Redirect to home page with rent filter for rental properties
+      if (formData.purpose === 'rent') {
+        navigate('/?tab=rent');
+      } else if (formData.purpose === 'sale') {
+        navigate('/?tab=buy');
+      } else {
+        navigate('/?tab=commercial');
+      }
+      
+      // Force page reload to ensure fresh data
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     } catch (error: any) {
       console.error('Error creating listing:', error);
       toast({
