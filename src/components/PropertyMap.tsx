@@ -239,8 +239,14 @@ const PropertyMap = React.forwardRef<
           domain: window.location.hostname
         });
 
+        console.log('🗺️ Tentative de chargement de l\'API Google Maps...');
+        console.log('🔑 Clé API utilisée:', googleMapsKey.substring(0, 15) + '...');
+        console.log('🌐 Domaine actuel:', window.location.hostname);
+        console.log('🌍 URL complète:', window.location.href);
+        
         await loader.load();
 
+        console.log('✅ API Google Maps chargée avec succès !');
         logger.debug('Creating Google Maps instance', { component: 'PropertyMap' });
 
         // Create map with Africa-focused configuration
