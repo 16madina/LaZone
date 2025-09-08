@@ -233,6 +233,12 @@ const PropertyMap = React.forwardRef<
           libraries: ['geometry', 'places']
         });
 
+        logger.info('Loading Google Maps API...', { 
+          component: 'PropertyMap',
+          apiKey: googleMapsKey.substring(0, 15) + '...',
+          domain: window.location.hostname
+        });
+
         await loader.load();
 
         logger.debug('Creating Google Maps instance', { component: 'PropertyMap' });
@@ -309,9 +315,45 @@ const PropertyMap = React.forwardRef<
         logger.error('Error initializing Google Maps', error as Error, { 
           component: 'PropertyMap', 
           keyPrefix: googleMapsKey.substring(0, 10),
-          errorStack: (error as Error).stack
+          errorStack: (error as Error).stack,
+          domain: window.location.hostname,
+          userAgent: navigator.userAgent
         });
-        setError(`Erreur d'initialisation Google Maps: ${errorMessage}`);
+        
+        let userFriendlyError = 'Erreur lors du chargement de Google Maps';
+        
+        if (errorMessage.includes('RefererNotAllowedMapError') || errorMessage.includes('InvalidKeyMapError')) {
+          userFriendlyError = `🔧 Erreur de configuration de la clé API Google Maps
+          
+Solutions possibles :
+• La clé API doit autoriser le domaine: ${window.location.hostname}  
+• Vérifiez que les APIs Google Maps JavaScript sont activées
+• Contrôlez les quotas et limites dans Google Cloud Console
+
+📋 Informations de débogage :
+• Domaine: ${window.location.hostname}
+• Clé: ${googleMapsKey.substring(0, 15)}...
+• Erreur: ${errorMessage}`;
+        } else if (errorMessage.includes('loading') || errorMessage.includes('load')) {
+          userFriendlyError = `🌐 Impossible de charger l'API Google Maps
+          
+Causes possibles :
+• Connexion internet instable
+• Clé API expirée ou révoquée  
+• Services Google Maps temporairement indisponibles
+• Blocage par pare-feu/proxy
+
+📋 Détails techniques : ${errorMessage}`;
+        } else {
+          userFriendlyError = `Erreur d'initialisation Google Maps: ${errorMessage}
+          
+📋 Pour résoudre ce problème :
+1. Vérifiez votre clé API Google Maps
+2. Contrôlez les restrictions de domaine  
+3. Assurez-vous que tous les services sont activés`;
+        }
+        
+        setError(userFriendlyError);
         setMapLoaded(false);
       }
     };
