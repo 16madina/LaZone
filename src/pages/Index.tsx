@@ -100,6 +100,10 @@ const Index = () => {
       setLoading(true);
       console.log('🔍 Fetching listings with:', { searchMode, selectedCountry });
       
+      // Vérifier l'utilisateur connecté
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      console.log('👤 Current user:', user?.id, userError ? `Error: ${userError.message}` : 'No error');
+      
       let query = supabase
         .from('listings')
         .select('*')
@@ -119,6 +123,9 @@ const Index = () => {
       }
       
       const { data, error } = await query.order('created_at', { ascending: false });
+      
+      console.log('📊 Query executed. Data count:', data?.length || 0);
+      console.log('📊 Sample data:', data?.slice(0, 2));
       
       if (error) {
         console.error('❌ Supabase error:', error);
