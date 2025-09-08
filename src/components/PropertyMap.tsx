@@ -68,13 +68,13 @@ const PropertyMap = React.forwardRef<
           throw new Error(`Edge function error: ${error.message}`);
         }
         
-        if (data?.mapboxToken) {
+        if (data?.token) {
           logger.debug('Token received successfully', { 
             component: 'PropertyMap',
-            tokenLength: data.mapboxToken.length,
-            tokenPrefix: data.mapboxToken.substring(0, 10) + '...'
+            tokenLength: data.token.length,
+            tokenPrefix: data.token.substring(0, 10) + '...'
           });
-          setMapboxToken(data.mapboxToken);
+          setMapboxToken(data.token);
         } else {
           logger.error('No token in response data', new Error('Missing token in response'), { component: 'PropertyMap', data });
           setError('Token Mapbox non disponible dans la réponse');
