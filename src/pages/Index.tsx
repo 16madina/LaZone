@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useLocation } from "@/contexts/LocationContext";
 import { useFavoritesContext } from "@/contexts/FavoritesContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,7 +29,18 @@ const Index = () => {
   const navigate = useNavigate();
   const { selectedCountry } = useLocation();
   const { isFavorite, toggleFavorite } = useFavoritesContext();
-  const [searchMode, setSearchMode] = useState<'rent' | 'buy' | 'commercial'>('rent');
+  const [searchParams] = useSearchParams();
+  
+  // Initialize searchMode based on URL parameter
+  const getInitialSearchMode = (): 'rent' | 'buy' | 'commercial' => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'buy' || tabParam === 'rent' || tabParam === 'commercial') {
+      return tabParam;
+    }
+    return 'rent'; // default
+  };
+  
+  const [searchMode, setSearchMode] = useState<'rent' | 'buy' | 'commercial'>(getInitialSearchMode());
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
