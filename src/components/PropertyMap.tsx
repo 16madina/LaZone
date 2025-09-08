@@ -234,71 +234,18 @@ const PropertyMap = React.forwardRef<
 
         logger.debug('Creating Mapbox instance', { component: 'PropertyMap' });
 
-        // Force HTTPS for all Mapbox requests to avoid "insecure operation" error
-        const mapOptions: mapboxgl.MapboxOptions = {
+        // Configuration simple et propre de la carte
+        map.current = new mapboxgl.Map({
           container: mapContainer.current,
           style: 'mapbox://styles/mapbox/light-v11',
-          center: [17.7, 7.2], // Centre de l'Afrique (République centrafricaine/Tchad)
-          zoom: 3, // Vue d'ensemble de l'Afrique
-          pitch: 0,
-          // Limiter la navigation aux coordonnées africaines
-          maxBounds: [
-            [-25, -40], // Sud-ouest de l'Afrique (Atlantic + Sud)
-            [55, 38]    // Nord-est de l'Afrique (Mer Rouge + Méditerranée)
-          ],
-          minZoom: 2, // Zoom minimum pour garder l'Afrique visible
-          maxZoom: 18, // Zoom maximum pour les détails urbains
-          transformRequest: (url, resourceType) => {
-            try {
-              // Log the request for debugging
-              console.log(`[MAPBOX] Request: ${resourceType} - ${url}`);
-              
-              // Force HTTPS for all requests
-              if (url.startsWith('http://')) {
-                const httpsUrl = url.replace('http://', 'https://');
-                console.log(`[MAPBOX] Converted ${url} to ${httpsUrl}`);
-                return { url: httpsUrl };
-              }
-              
-              // Ensure Mapbox resources use HTTPS
-              if (url.includes('mapbox.com') || url.includes('mapbox')) {
-                const secureUrl = url.startsWith('//') ? `https:${url}` : url;
-                return { url: secureUrl };
-              }
-              
-              return { url };
-            } catch (error) {
-              console.error('[MAPBOX] Transform request error:', error);
-              return { url };
-            }
-          },
-          // Additional security settings
-          crossSourceCollisions: false
-        };
-
-        // Verify protocol before creating map
-        const currentProtocol = window.location.protocol;
-        console.log(`[MAPBOX] Current protocol: ${currentProtocol}`);
-        
-        if (currentProtocol === 'http:' && window.location.hostname !== 'localhost') {
-          console.warn('[MAPBOX] Warning: Using HTTP in production may cause security issues');
-        }
-
-        map.current = new mapboxgl.Map(mapOptions);
+          center: [17.7, 7.2], // Centre de l'Afrique
+          zoom: 3,
+          maxBounds: [[-25, -40], [55, 38]], // Limites de l'Afrique
+          minZoom: 2,
+          maxZoom: 18
+        });
 
         logger.debug('Adding navigation control', { component: 'PropertyMap' });
-        
-        // Enhanced error handling
-        map.current.on('error', (e) => {
-          console.error('[MAPBOX] Map error:', e);
-          if (e.error && e.error.message) {
-            console.error('[MAPBOX] Error details:', e.error.message);
-            if (e.error.message.includes('insecure') || e.error.message.includes('mixed content')) {
-              console.error('[MAPBOX] Security error detected - this may be due to HTTP/HTTPS protocol mismatch');
-              setError(`Erreur de sécurité: ${e.error.message}. Vérifiez que votre site utilise HTTPS.`);
-            }
-          }
-        });
 
         map.current.addControl(
           new mapboxgl.NavigationControl({
