@@ -255,55 +255,43 @@ const Index = () => {
 
   // Filter properties based on filters
   const filteredProperties = properties.filter(property => {
-    console.log(`🔍 Filtering property: ${property.title}, purpose: ${property.purpose}, searchMode: ${searchMode}`);
-    
     // Type filter
     if (filters.propertyType.length > 0) {
       const typeMap = { 'apartment': 'Appartement', 'house': 'Maison', 'land': 'Terrain', 'commercial': 'Commercial' };
       if (!filters.propertyType.some(type => type === typeMap[property.type as keyof typeof typeMap])) {
-        console.log(`❌ ${property.title} filtered out by type`);
         return false;
       }
     }
 
     // Price filter
     if (property.price < filters.priceRange[0] || property.price > filters.priceRange[1]) {
-      console.log(`❌ ${property.title} filtered out by price: ${property.price} not in [${filters.priceRange[0]}, ${filters.priceRange[1]}]`);
       return false;
     }
 
     // Bedrooms filter
     if (filters.bedrooms !== 'any' && property.bedrooms && property.bedrooms < parseInt(filters.bedrooms)) {
-      console.log(`❌ ${property.title} filtered out by bedrooms`);
       return false;
     }
 
     // Bathrooms filter  
     if (filters.bathrooms !== 'any' && property.bathrooms && property.bathrooms < parseInt(filters.bathrooms)) {
-      console.log(`❌ ${property.title} filtered out by bathrooms`);
       return false;
     }
 
     // Area filter
     if (property.area < filters.areaRange[0] || property.area > filters.areaRange[1]) {
-      console.log(`❌ ${property.title} filtered out by area: ${property.area} not in [${filters.areaRange[0]}, ${filters.areaRange[1]}]`);
       return false;
     }
 
     // Amenities filter
     if (filters.amenities.length > 0) {
       if (!filters.amenities.every(amenity => property.amenities.includes(amenity))) {
-        console.log(`❌ ${property.title} filtered out by amenities`);
         return false;
       }
     }
 
-    console.log(`✅ ${property.title} passed all filters`);
     return true;
   });
-  
-  console.log(`🎯 Filtered properties count: ${filteredProperties.length}`);
-  console.log(`🎯 Filtered properties:`, filteredProperties.map(p => ({title: p.title, purpose: p.purpose})));
 
   // Apply text search
   const searchedProperties = searchQuery 
@@ -329,9 +317,6 @@ const Index = () => {
         return 0;
     }
   });
-
-  console.log(`🏆 Final sorted properties count: ${sortedProperties.length}`);
-  console.log(`🏆 Final properties to display:`, sortedProperties.map(p => ({title: p.title, purpose: p.purpose, price: p.price})));
 
   const handlePropertySelect = (property: Property) => {
     setSelectedProperty(property);
