@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState, useImperativeHandle } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import { Loader } from '@googlemaps/js-api-loader';
 import { Property } from './PropertyCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +13,7 @@ interface PropertyMapProps {
   properties: Property[];
   selectedProperty?: Property | null;
   onPropertySelect: (property: Property) => void;
-  onMapBoundsChange?: (bounds: mapboxgl.LngLatBounds) => void;
+  onMapBoundsChange?: (bounds: google.maps.LatLngBounds) => void;
   onNavigateToLocation?: (coordinates: [number, number], zoom: number) => void;
   className?: string;
   apiKey?: string;
@@ -35,59 +34,61 @@ const PropertyMap = React.forwardRef<
   userLocation
 }, ref) {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const markers = useRef<mapboxgl.Marker[]>([]);
+  const map = useRef<google.maps.Map | null>(null);
+  const markers = useRef<google.maps.Marker[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
+  const [googleMapsKey, setGoogleMapsKey] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState<Array<{type: 'city' | 'neighborhood', name: string, country: string, city?: string}>>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const geocoder = useRef<google.maps.Geocoder | null>(null);
+  const infoWindow = useRef<google.maps.InfoWindow | null>(null);
 
-  // Fetch Mapbox token from Supabase Edge Function
+  // Fetch Google Maps API key from Supabase Edge Function
   useEffect(() => {
-    const fetchMapboxToken = async () => {
+    const fetchGoogleMapsKey = async () => {
       try {
-        logger.debug('Starting Mapbox token fetch', { component: 'PropertyMap' });
+        logger.debug('Starting Google Maps API key fetch', { component: 'PropertyMap' });
         
         // Use provided apiKey if available
         if (apiKey) {
           logger.debug('Using provided API key', { component: 'PropertyMap' });
-          setMapboxToken(apiKey);
+          setGoogleMapsKey(apiKey);
           setIsLoading(false);
           return;
         }
 
         // Otherwise, fetch from Supabase Edge Function
-        logger.debug('Fetching token from Supabase Edge Function', { component: 'PropertyMap' });
-        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        logger.debug('Fetching API key from Supabase Edge Function', { component: 'PropertyMap' });
+        const { data, error } = await supabase.functions.invoke('get-google-maps-key');
         
         if (error) {
           logger.error('Edge function error', new Error(error.message), { component: 'PropertyMap' });
           throw new Error(`Edge function error: ${error.message}`);
         }
         
-        if (data?.mapboxToken) {
-          logger.debug('Token received successfully', { 
+        if (data?.googleMapsKey) {
+          logger.debug('API key received successfully', { 
             component: 'PropertyMap',
-            tokenLength: data.mapboxToken.length,
-            tokenPrefix: data.mapboxToken.substring(0, 10) + '...'
+            keyLength: data.googleMapsKey.length,
+            keyPrefix: data.googleMapsKey.substring(0, 10) + '...'
           });
-          setMapboxToken(data.mapboxToken);
+          setGoogleMapsKey(data.googleMapsKey);
         } else {
-          logger.error('No token in response data', new Error('Missing token in response'), { component: 'PropertyMap', data });
-          setError('Token Mapbox non disponible dans la réponse');
+          logger.error('No API key in response data', new Error('Missing API key in response'), { component: 'PropertyMap', data });
+          setError('Clé Google Maps non disponible dans la réponse');
         }
       } catch (err) {
-        logger.error('Error fetching Mapbox token', err as Error, { component: 'PropertyMap' });
+        logger.error('Error fetching Google Maps API key', err as Error, { component: 'PropertyMap' });
         setError(`Erreur lors du chargement de la carte: ${(err as Error).message}`);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchMapboxToken();
+    fetchGoogleMapsKey();
   }, [apiKey]);
 
   // Handle search input and generate suggestions
@@ -140,8 +141,8 @@ const PropertyMap = React.forwardRef<
 
   // Navigate to selected location
   const handleLocationSelect = async (suggestion: {type: 'city' | 'neighborhood', name: string, country: string, city?: string}) => {
-    if (!map.current || !mapboxToken) {
-      logger.warn('Map or token not ready for navigation', { component: 'PropertyMap' });
+    if (!map.current || !geocoder.current) {
+      logger.warn('Map or geocoder not ready for navigation', { component: 'PropertyMap' });
       return;
     }
 
@@ -150,38 +151,29 @@ const PropertyMap = React.forwardRef<
     setShowSuggestions(false);
 
     try {
-      // Use Mapbox Geocoding API to get coordinates
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-          suggestion.type === 'city' 
-            ? `${suggestion.name}, ${suggestion.country}` 
-            : `${suggestion.name}, ${suggestion.city}, ${suggestion.country}`
-        )}.json?access_token=${mapboxToken}&country=CI,SN,GH,NG,KE,TZ,UG,ET,EG,MA,DZ,TN,LY,SD,ML,BF,NE,TD,CF,CM,GQ,GA,CG,CD,AO,ZM,ZW,BW,NA,ZA,SZ,LS,MW,MZ,MG,MU,SC,KM,DJ,SO,ER,SS,RW,BI,GM,GW,SL,LR,GN,CV`
-      );
-      
-      const data = await response.json();
-      logger.debug('Geocoding response received', { component: 'PropertyMap', featuresCount: data.features?.length });
-      
-      if (data.features && data.features.length > 0) {
-        const [lng, lat] = data.features[0].center;
-        const zoom = suggestion.type === 'city' ? 11 : 14;
-        
-        logger.debug('Flying to coordinates', { 
-          component: 'PropertyMap', 
-          coordinates: [lng, lat], 
-          zoom 
-        });
-        
-        map.current.flyTo({
-          center: [lng, lat],
-          zoom: zoom,
-          duration: 2000
-        });
-        
-        logger.debug('Navigation completed', { component: 'PropertyMap' });
-      } else {
-        logger.warn('No geocoding results found', { component: 'PropertyMap', suggestion });
-      }
+      const address = suggestion.type === 'city' 
+        ? `${suggestion.name}, ${suggestion.country}` 
+        : `${suggestion.name}, ${suggestion.city}, ${suggestion.country}`;
+
+      geocoder.current.geocode({ address }, (results, status) => {
+        if (status === 'OK' && results && results[0]) {
+          const location = results[0].geometry.location;
+          const zoom = suggestion.type === 'city' ? 11 : 14;
+          
+          logger.debug('Flying to coordinates', { 
+            component: 'PropertyMap', 
+            coordinates: [location.lng(), location.lat()], 
+            zoom 
+          });
+          
+          map.current?.panTo(location);
+          map.current?.setZoom(zoom);
+          
+          logger.debug('Navigation completed', { component: 'PropertyMap' });
+        } else {
+          logger.warn('No geocoding results found', { component: 'PropertyMap', suggestion, status });
+        }
+      });
     } catch (error) {
       logger.error('Error geocoding location', error as Error, { 
         component: 'PropertyMap', 
@@ -190,161 +182,131 @@ const PropertyMap = React.forwardRef<
     }
   };
 
-  // Initialize map
+  // Expose navigation method
+  useImperativeHandle(ref, () => ({
+    navigateToLocation: (coords: [number, number], zoom: number) => {
+      if (map.current) {
+        map.current.panTo({ lat: coords[1], lng: coords[0] });
+        map.current.setZoom(zoom);
+        if (onNavigateToLocation) {
+          onNavigateToLocation(coords, zoom);
+        }
+      }
+    }
+  }));
+
+  // Initialize Google Maps
   useEffect(() => {
-    if (!mapboxToken || isLoading) {
+    if (!googleMapsKey || isLoading) {
       logger.debug('Map initialization skipped', { 
         component: 'PropertyMap',
-        hasToken: !!mapboxToken,
+        hasKey: !!googleMapsKey,
         isLoading 
       });
       return;
     }
 
-    // Wait a bit for the container to be ready
-    const initMap = () => {
+    const initMap = async () => {
       if (!mapContainer.current) {
         logger.debug('Map container not ready, retrying', { component: 'PropertyMap' });
         setTimeout(initMap, 100);
         return;
       }
 
-      logger.info('Starting map initialization', { 
+      logger.info('Starting Google Maps initialization', { 
         component: 'PropertyMap',
-        tokenPrefix: mapboxToken.substring(0, 10),
-        tokenLength: mapboxToken.length,
+        keyPrefix: googleMapsKey.substring(0, 10),
+        keyLength: googleMapsKey.length,
         containerReady: !!mapContainer.current
       });
 
-      // Clean up existing map
-      if (map.current) {
-        logger.debug('Cleaning up existing map', { component: 'PropertyMap' });
-        map.current.remove();
-        map.current = null;
-      }
-
-      // Set Mapbox access token
-      mapboxgl.accessToken = mapboxToken;
-      
       try {
-        // Simple token validation
-        if (!mapboxToken.startsWith('pk.')) {
-          throw new Error('Token Mapbox invalide - doit commencer par pk.');
-        }
+        // Initialize Google Maps loader
+        const loader = new Loader({
+          apiKey: googleMapsKey,
+          version: 'weekly',
+          libraries: ['geometry', 'places']
+        });
 
-        logger.debug('Creating Mapbox instance', { component: 'PropertyMap' });
+        await loader.load();
 
-        // Configuration simple et propre de la carte avec options de sécurité
-        map.current = new mapboxgl.Map({
-          container: mapContainer.current,
-          style: 'mapbox://styles/mapbox/light-v11',
-          center: [17.7, 7.2], // Centre de l'Afrique
+        logger.debug('Creating Google Maps instance', { component: 'PropertyMap' });
+
+        // Create map with Africa-focused configuration
+        map.current = new google.maps.Map(mapContainer.current, {
+          center: { lat: 7.2, lng: 17.7 }, // Centre de l'Afrique
           zoom: 3,
-          maxBounds: [[-25, -40], [55, 38]], // Limites de l'Afrique
           minZoom: 2,
           maxZoom: 18,
-          // Options de sécurité explicites
-          antialias: false,
-          attributionControl: true,
-          logoPosition: 'bottom-left',
-          refreshExpiredTiles: true,
-          trackResize: true,
-          transformRequest: (url, resourceType) => {
-            // Ensure all requests use https
-            if (url.startsWith('http://')) {
-              return {
-                url: url.replace('http://', 'https://'),
-              };
+          restriction: {
+            latLngBounds: {
+              north: 38,
+              south: -40,
+              west: -25,
+              east: 55
             }
-            return { url };
-          }
+          },
+          styles: [
+            {
+              featureType: 'water',
+              elementType: 'geometry',
+              stylers: [{ color: '#e9e9e9' }]
+            },
+            {
+              featureType: 'landscape',
+              elementType: 'geometry',
+              stylers: [{ color: '#f5f5f5' }]
+            }
+          ]
         });
 
-        logger.debug('Adding navigation control', { component: 'PropertyMap' });
+        // Initialize geocoder and info window
+        geocoder.current = new google.maps.Geocoder();
+        infoWindow.current = new google.maps.InfoWindow();
 
-        map.current.addControl(
-          new mapboxgl.NavigationControl({
-            visualizePitch: false,
-          }),
-          'top-right'
-        );
-
-        map.current.on('load', () => {
-          logger.info('Map loaded successfully', { component: 'PropertyMap' });
-          setMapLoaded(true);
-          setError(null); // Clear any previous errors
-          
-          // Center map on user location if available (only if in Africa)
-          if (userLocation && map.current) {
-            const [lng, lat] = userLocation;
-            logger.debug('Checking user location for map center', { 
-              component: 'PropertyMap', 
-              userLocation: [lng, lat] 
-            });
-            
-            // Vérifier si la localisation est en Afrique
-            if (lng >= -25 && lng <= 55 && lat >= -40 && lat <= 38) {
-              logger.info('Flying to user location', { component: 'PropertyMap', coords: [lng, lat] });
-              map.current.flyTo({
-                center: userLocation,
-                zoom: 12,
-                duration: 2000
-              });
-            } else {
-              // Si hors d'Afrique, garder le centre par défaut
-              logger.info('User location outside Africa, keeping default center', { 
-                component: 'PropertyMap',
-                userLocation 
-              });
-            }
-          }
-        });
-
-        map.current.on('error', (e) => {
-          const errorMessage = e.error?.message || 'Erreur inconnue de la carte';
-          logger.error('Map error event', new Error(errorMessage), { 
+        logger.info('Google Maps loaded successfully', { component: 'PropertyMap' });
+        setMapLoaded(true);
+        setError(null);
+        
+        // Center map on user location if available (only if in Africa)
+        if (userLocation && map.current) {
+          const [lng, lat] = userLocation;
+          logger.debug('Checking user location for map center', { 
             component: 'PropertyMap', 
-            errorType: (e.error as any)?.type,
-            errorStatus: (e.error as any)?.status,
-            fullError: e,
-            errorDetails: {
-              source: (e as any).sourceId || 'unknown',
-              layer: (e as any).layerId || 'unknown',
-              tile: (e as any).tile || 'unknown'
-            }
+            userLocation: [lng, lat] 
           });
           
-          // Log more specific error info for debugging
-          console.error('🗺️ Mapbox Error Details:', {
-            message: errorMessage,
-            type: (e.error as any)?.type,
-            status: (e.error as any)?.status,
-            source: (e as any).sourceId,
-            layer: (e as any).layerId,
-            fullEvent: e
-          });
-          
-          setError(`Erreur Mapbox: ${errorMessage}`);
-          setMapLoaded(false);
-        });
+          // Vérifier si la localisation est en Afrique
+          if (lng >= -25 && lng <= 55 && lat >= -40 && lat <= 38) {
+            logger.info('Setting center to user location', { component: 'PropertyMap', coords: [lng, lat] });
+            map.current.panTo({ lat, lng });
+            map.current.setZoom(12);
+          } else {
+            logger.info('User location outside Africa, keeping default center', { 
+              component: 'PropertyMap',
+              userLocation 
+            });
+          }
+        }
 
         // Listen for map movements
-        map.current.on('moveend', () => {
+        map.current.addListener('bounds_changed', () => {
           if (map.current && onMapBoundsChange) {
-            onMapBoundsChange(map.current.getBounds());
+            const bounds = map.current.getBounds();
+            if (bounds) {
+              onMapBoundsChange(bounds);
+            }
           }
         });
-
-        logger.debug('Map event listeners attached', { component: 'PropertyMap' });
 
       } catch (error) {
         const errorMessage = (error as Error).message;
-        logger.error('Error initializing map', error as Error, { 
+        logger.error('Error initializing Google Maps', error as Error, { 
           component: 'PropertyMap', 
-          tokenPrefix: mapboxToken.substring(0, 10),
+          keyPrefix: googleMapsKey.substring(0, 10),
           errorStack: (error as Error).stack
         });
-        setError(`Erreur d'initialisation: ${errorMessage}`);
+        setError(`Erreur d'initialisation Google Maps: ${errorMessage}`);
         setMapLoaded(false);
       }
     };
@@ -352,19 +314,19 @@ const PropertyMap = React.forwardRef<
     initMap();
 
     return () => {
-      if (map.current) {
-        map.current.remove();
-        map.current = null;
-      }
+      // Google Maps cleanup is handled automatically
+      map.current = null;
+      geocoder.current = null;
+      infoWindow.current = null;
     };
-  }, [mapboxToken, isLoading, onMapBoundsChange, userLocation]);
+  }, [googleMapsKey, isLoading, onMapBoundsChange, userLocation]);
 
   // Update markers when properties change
   useEffect(() => {
     if (!map.current || !mapLoaded || !properties.length) return;
 
     // Clear existing markers
-    markers.current.forEach(marker => marker.remove());
+    markers.current.forEach(marker => marker.setMap(null));
     markers.current = [];
 
     // Add markers for each property that has valid coordinates
@@ -378,11 +340,7 @@ const PropertyMap = React.forwardRef<
 
       console.log('📍 Adding marker for:', property.title, 'at', property.location.coordinates);
       
-      // Create custom marker with price
-      const el = document.createElement('div');
-      el.className = 'property-marker';
-      
-      // Format price for display - très compact
+      // Format price for display
       const formatPrice = (price: number, currency: string) => {
         if (currency === 'XOF' || currency === 'XAF') {
           if (price >= 1000000) {
@@ -397,278 +355,123 @@ const PropertyMap = React.forwardRef<
 
       const priceText = formatPrice(property.price, property.currency);
       
-      el.style.cssText = `
-        background: #22c55e;
-        color: white;
-        border: 1px solid white;
-        border-radius: 12px;
-        padding: 2px 4px;
-        font-size: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-        transition: all 0.2s ease;
-        white-space: nowrap;
-        position: relative;
-        min-width: 20px;
-        max-width: 35px;
-        text-align: center;
-        height: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transform-origin: center;
-      `;
-      
-      el.textContent = priceText;
-      
-      // Hover effect
-      el.addEventListener('mouseenter', () => {
-        el.style.transform = 'scale(1.15)';
-        el.style.zIndex = '1000';
-        el.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.4)';
-      });
-      
-      el.addEventListener('mouseleave', () => {
-        el.style.transform = 'scale(1)';
-        el.style.zIndex = '1';
-        el.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.3)';
+      // Create custom marker
+      const marker = new google.maps.Marker({
+        position: { lat, lng },
+        map: map.current,
+        title: property.title,
+        label: {
+          text: priceText,
+          color: 'white',
+          fontSize: '8px',
+          fontWeight: '600'
+        },
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 12,
+          fillColor: '#22c55e',
+          fillOpacity: 1,
+          strokeColor: 'white',
+          strokeWeight: 1
+        }
       });
 
-      // Create marker with offset to prevent overflow
-      const marker = new mapboxgl.Marker(el, {
-        offset: [0, -7] // Offset to prevent markers from going outside map bounds
-      })
-        .setLngLat(property.location.coordinates)
-        .addTo(map.current!);
-
-      // Create popup content with property preview
-      const popupContent = document.createElement('div');
-      popupContent.className = 'property-popup';
-      popupContent.style.cssText = `
-        width: 280px;
-        border-radius: 12px;
-        overflow: hidden;
-        background: white;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-        cursor: pointer;
-        transition: transform 0.2s ease;
-      `;
-      
-      popupContent.innerHTML = `
-        <div style="position: relative;">
-          <img 
-            src="${property.images[0]}" 
-            alt="${property.title}" 
-            style="
-              width: 100%;
-              height: 160px;
-              object-fit: cover;
-              display: block;
-            "
-          />
-          <div style="
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 600;
-          ">
-            ${property.purpose === 'rent' ? 'À louer' : 'À vendre'}
-          </div>
-        </div>
-        
-        <div style="padding: 16px;">
-          <div style="
-            font-size: 18px;
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 4px;
-          ">
-            ${property.price.toLocaleString()} ${property.currency === 'XOF' || property.currency === 'XAF' ? 'CFA' : property.currency}
-            ${property.purpose === 'rent' ? '/mois' : ''}
+      // Create info window content
+      const infoContent = `
+        <div style="width: 280px; border-radius: 12px; overflow: hidden; background: white; cursor: pointer;">
+          <div style="position: relative;">
+            <img 
+              src="${property.images[0]}" 
+              alt="${property.title}" 
+              style="width: 100%; height: 160px; object-fit: cover; display: block;"
+            />
+            <div style="
+              position: absolute; top: 12px; right: 12px; background: rgba(0, 0, 0, 0.8);
+              color: white; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;
+            ">
+              ${property.purpose === 'rent' ? 'À louer' : 'À vendre'}
+            </div>
           </div>
           
-          <div style="
-            color: #64748b;
-            font-size: 12px;
-            margin-bottom: 8px;
-            font-weight: 500;
-          ">
-            ${property.purpose === 'rent' ? 'Maison à louer' : 'Maison à vendre'}
-          </div>
-          
-          <div style="
-            color: #475569;
-            font-size: 13px;
-            margin-bottom: 12px;
-            line-height: 1.4;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+          <div style="padding: 16px;">
+            <div style="font-size: 18px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">
+              ${property.price.toLocaleString()} ${property.currency === 'XOF' || property.currency === 'XAF' ? 'CFA' : property.currency}
+              ${property.purpose === 'rent' ? '/mois' : ''}
+            </div>
+            
+            <div style="color: #64748b; font-size: 12px; margin-bottom: 8px; font-weight: 500;">
+              ${property.purpose === 'rent' ? 'Maison à louer' : 'Maison à vendre'}
+            </div>
+            
+            <div style="
+              color: #475569; font-size: 13px; margin-bottom: 12px; line-height: 1.4;
+              display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
             ">
               ${property.location.neighborhood}, ${property.location.city}
             </div>
-          
-          <div style="
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            color: #64748b;
-            font-size: 12px;
-          ">
-            ${property.bedrooms ? `
-              <div style="display: flex; align-items: center; gap: 4px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20 9.557V3h-2v2H6V3H4v6.557C2.81 10.25 2 11.525 2 13v4a1 1 0 0 0 1 1h1v4h2v-4h12v4h2v-4h1a1 1 0 0 0 1-1v-4c0-1.475-.81-2.75-2-3.443zM18 7v2.129c-.47-.08-.94-.129-1-.129-.66 0-1.26.22-1.78.46L15 7h3zM8 7h2l-.22 2.46c-.52-.24-1.12-.46-1.78-.46-.06 0-.53.049-1 .129V7z"/>
-                </svg>
-                ${property.bedrooms}
-              </div>
-            ` : ''}
-            ${property.bathrooms ? `
-              <div style="display: flex; align-items: center; gap: 4px;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-                ${property.bathrooms}
-              </div>
-            ` : ''}
-            <div style="display: flex; align-items: center; gap: 4px;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
-              ${property.area} m²
+            
+            <div style="display: flex; align-items: center; gap: 16px; color: #64748b; font-size: 12px;">
+              ${property.bedrooms ? `
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  🛏️ ${property.bedrooms} chambre${property.bedrooms > 1 ? 's' : ''}
+                </div>
+              ` : ''}
+              ${property.bathrooms ? `
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  🚿 ${property.bathrooms} sdb
+                </div>
+              ` : ''}
             </div>
           </div>
         </div>
       `;
 
-      // Add hover effect to popup
-      popupContent.addEventListener('mouseenter', () => {
-        popupContent.style.transform = 'translateY(-2px)';
-        popupContent.style.boxShadow = '0 12px 32px rgba(0, 0, 0, 0.2)';
-      });
-      
-      popupContent.addEventListener('mouseleave', () => {
-        popupContent.style.transform = 'translateY(0)';
-        popupContent.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.15)';
-      });
-
-      // Add click handler to navigate to property detail
-      popupContent.addEventListener('click', (e) => {
-        e.stopPropagation();
-        // Navigate to property detail page
-        window.location.href = `/property/${property.id}`;
-      });
-
-      const popup = new mapboxgl.Popup({
-        offset: 25,
-        closeButton: true,
-        anchor: 'bottom',
-        maxWidth: 'none'
-      }).setDOMContent(popupContent);
-
-      marker.setPopup(popup);
-
-      // Click event - show popup only (no map movement)
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        
-        // Disable map interactions temporarily to prevent movement
-        if (map.current) {
-          map.current.dragPan.disable();
-          map.current.scrollZoom.disable();
-          map.current.doubleClickZoom.disable();
+      // Add click listener to marker
+      marker.addListener('click', () => {
+        if (infoWindow.current) {
+          infoWindow.current.setContent(infoContent);
+          infoWindow.current.open(map.current, marker);
+          
+          // Call the property select callback
+          onPropertySelect(property);
         }
-        
-        // Close any existing popups first
-        const existingPopups = document.querySelectorAll('.mapboxgl-popup');
-        existingPopups.forEach(popup => popup.remove());
-        
-        // Select the property and show popup immediately
-        onPropertySelect(property);
-        
-        // Add popup to map with proper positioning
-        popup.setLngLat(property.location.coordinates).addTo(map.current!);
-        
-        // Re-enable map interactions after a short delay
-        setTimeout(() => {
-          if (map.current) {
-            map.current.dragPan.enable();
-            map.current.scrollZoom.enable();
-            map.current.doubleClickZoom.enable();
-          }
-        }, 100);
       });
 
       markers.current.push(marker);
     });
 
-    // Fit map to markers if we have properties with padding to keep markers visible
-    if (properties.length > 0) {
-      const bounds = new mapboxgl.LngLatBounds();
-      properties.forEach(property => {
-        bounds.extend(property.location.coordinates);
-      });
-      
-      // Add extra padding to ensure markers don't go outside visible area
-      map.current.fitBounds(bounds, {
-        padding: { top: 80, bottom: 80, left: 60, right: 60 }, // Increased padding
-        maxZoom: 12 // Reduced max zoom to show more area
-      });
-    }
   }, [properties, mapLoaded, onPropertySelect]);
 
-  // Add method to navigate to location
-  const navigateToLocationOnMap = (coordinates: [number, number], zoom: number) => {
-    logger.debug('Navigating to coordinates', { 
-      component: 'PropertyMap', 
-      coordinates, 
-      zoom 
-    });
-    
-    if (map.current) {
-      map.current.flyTo({
-        center: coordinates,
-        zoom: zoom,
-        duration: 1500
+  // Handle selected property change
+  useEffect(() => {
+    if (!map.current || !selectedProperty) return;
+
+    const [lng, lat] = selectedProperty.location.coordinates;
+    if (lng && lat && !(lng === 0 && lat === 0)) {
+      // Find the corresponding marker
+      const marker = markers.current.find((_, index) => {
+        const prop = properties[index];
+        return prop && prop.id === selectedProperty.id;
       });
-      logger.debug('Navigation command sent to map', { component: 'PropertyMap' });
-    } else {
-      logger.warn('Map not ready for navigation', { component: 'PropertyMap' });
+
+      if (marker && infoWindow.current) {
+        // Pan to property and open info window
+        map.current.panTo({ lat, lng });
+        map.current.setZoom(Math.max(map.current.getZoom() || 10, 14));
+        
+        // Trigger the marker click to show info window
+        google.maps.event.trigger(marker, 'click');
+      }
     }
-  };
-
-  // Expose navigation method via ref
-  useImperativeHandle(ref, () => ({
-    navigateToLocation: navigateToLocationOnMap
-  }), []);
-
-  logger.debug('PropertyMap render', { component: 'PropertyMap', refAvailable: !!ref });
-
-  const handleApiKeySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // This function is no longer needed but kept for compatibility
-  };
+  }, [selectedProperty, properties]);
 
   if (isLoading) {
     return (
-      <div className={`relative bg-card border border-border rounded-xl p-8 ${className}`}>
-        <div className="text-center space-y-6">
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-xl font-semibold text-foreground">Chargement de la carte</h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-              Préparation de la carte interactive...
-            </p>
+      <div className={`relative h-full w-full bg-muted/50 ${className}`}>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center space-y-2">
+            <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto"></div>
+            <p className="text-sm text-muted-foreground">Chargement de la carte...</p>
           </div>
         </div>
       </div>
@@ -677,183 +480,76 @@ const PropertyMap = React.forwardRef<
 
   if (error) {
     return (
-      <div className={`relative bg-card border border-border rounded-xl p-8 ${className}`}>
-        <div className="text-center space-y-6">
-          <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
-            <Layers className="w-8 h-8 text-destructive" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-xl font-semibold text-foreground">Erreur de carte</h3>
-            <p className="text-sm text-destructive max-w-md mx-auto leading-relaxed mb-3">
-              {error}
-            </p>
-          </div>
-          
-          {mapboxToken && (
-            <div className="bg-muted/50 rounded-lg p-4 max-w-md mx-auto">
-              <p className="text-xs text-muted-foreground mb-2">🔍 Informations de débogage :</p>
-              <div className="text-xs text-muted-foreground space-y-1 text-left">
-                <p>• Token présent: ✅</p>
-                <p>• Format valide: {mapboxToken.startsWith('pk.') ? '✅ pk.' : '❌ invalide'}</p>
-                <p>• Longueur: {mapboxToken.length} caractères</p>
-                <p>• Préfixe: {mapboxToken.substring(0, 15)}...</p>
+      <div className={`relative h-full w-full ${className}`}>
+        <div className="absolute inset-0 flex items-center justify-center p-4">
+          <Card className="p-6 text-center max-w-md">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                <Layers className="w-6 h-6 text-red-600" />
               </div>
-              <div className="mt-3 pt-2 border-t border-muted-foreground/20">
-                <p className="text-xs text-muted-foreground">
-                  Si le problème persiste, vérifiez que votre token Mapbox a les bonnes permissions 
-                  et qu'il n'est pas expiré.
-                </p>
+              <div>
+                <h3 className="text-lg font-semibold text-red-900 mb-2">Erreur de carte</h3>
+                <p className="text-red-600 mb-4">{error}</p>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p>🔍 <strong>Informations de débogage :</strong></p>
+                  <ul className="text-left space-y-1">
+                    <li>• Clé présente: {googleMapsKey ? '✅' : '❌'}</li>
+                    <li>• Format valide: {googleMapsKey?.startsWith('AIza') ? '✅' : '❌'} AIza...</li>
+                    <li>• Longueur: {googleMapsKey?.length || 0} caractères</li>
+                    <li>• Préfixe: {googleMapsKey?.substring(0, 10) + '...' || 'N/A'}</li>
+                  </ul>
+                  <p className="mt-3">Si le problème persiste, vérifiez que votre clé Google Maps a les bonnes permissions et qu'elle n'est pas expirée.</p>
+                </div>
               </div>
             </div>
-          )}
-          
-          {!mapboxToken && (
-            <div className="bg-muted/50 rounded-lg p-4 max-w-md mx-auto">
-              <p className="text-xs text-muted-foreground mb-2">📍 Configuration requise :</p>
-              <ol className="text-xs text-muted-foreground space-y-1 text-left">
-                <li>1. Créer un compte sur <a href="https://mapbox.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">mapbox.com</a></li>
-                <li>2. Obtenir votre token public</li>
-                <li>3. L'ajouter dans les secrets Supabase Edge Function</li>
-              </ol>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (!mapboxToken) {
-    return (
-      <div className={`relative bg-card border border-border rounded-xl p-8 ${className}`}>
-        <div className="text-center space-y-6">
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
-            <Layers className="w-8 h-8 text-primary" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-xl font-semibold text-foreground">Configuration Mapbox</h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-              Pour afficher la carte interactive avec les biens immobiliers, connectez votre token Mapbox public.
-            </p>
-          </div>
-          
-          <div className="bg-muted/50 rounded-lg p-4 max-w-md mx-auto">
-            <p className="text-xs text-muted-foreground mb-2">📍 Étapes simples :</p>
-            <ol className="text-xs text-muted-foreground space-y-1 text-left">
-              <li>1. Créez un compte gratuit sur <a href="https://mapbox.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">mapbox.com</a></li>
-              <li>2. Copiez votre "Public token" depuis le dashboard</li>
-              <li>3. Collez-le ci-dessous</li>
-            </ol>
-          </div>
-
-          <form onSubmit={handleApiKeySubmit} className="space-y-4 max-w-sm mx-auto">
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Configuration en cours...</p>
-            </div>
-          </form>
+          </Card>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`relative ${className}`}>
-      <div ref={mapContainer} className="w-full h-full rounded-xl overflow-hidden" />
-      
-      {/* Search Bar - positioned at the top center */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 w-full max-w-sm px-4 z-20">
+    <div className={`relative h-full w-full ${className}`}>
+      {/* Search Interface */}
+      <div className="absolute top-4 left-4 z-10 w-80">
         <div className="relative">
           <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              type="text"
               placeholder="Rechercher une ville ou un quartier..."
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
-              onFocus={() => {
-                logger.debug('Search focused', { 
-                  component: 'PropertyMap', 
-                  suggestionsCount: searchSuggestions.length 
-                });
-                if (searchSuggestions.length > 0) setShowSuggestions(true);
-              }}
-              className="pl-8 pr-3 py-2 h-8 text-xs bg-background/95 backdrop-blur-sm border-border/50 focus:border-primary"
+              className="pl-9 bg-background/95 backdrop-blur-sm border-border/50"
             />
           </div>
           
-          {/* Search Suggestions */}
           {showSuggestions && searchSuggestions.length > 0 && (
-            <Card className="absolute top-full mt-1 w-full bg-background/95 backdrop-blur-sm border-border/50 shadow-lg z-50">
-              <div className="max-h-64 overflow-y-auto">
-                {searchSuggestions.map((suggestion, index) => (
-                  <div
-                    key={index}
-                    className="p-3 hover:bg-muted/50 cursor-pointer border-b border-border/30 last:border-b-0 transition-colors"
-                    onClick={() => {
-                      logger.debug('Suggestion clicked', { 
-                        component: 'PropertyMap', 
-                        suggestion 
-                      });
-                      handleLocationSelect(suggestion);
-                    }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${suggestion.type === 'city' ? 'bg-primary' : 'bg-secondary'}`} />
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{suggestion.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {suggestion.type === 'city' ? (
-                            `Ville • ${suggestion.country}`
-                          ) : (
-                            `Quartier • ${suggestion.city}, ${suggestion.country}`
-                          )}
-                        </div>
-                      </div>
-                    </div>
+            <Card className="absolute top-full left-0 right-0 mt-1 p-0 bg-background/95 backdrop-blur-sm border-border/50 max-h-64 overflow-y-auto">
+              {searchSuggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleLocationSelect(suggestion)}
+                  className="w-full text-left px-3 py-2 hover:bg-muted/50 border-b border-border/30 last:border-b-0 transition-colors"
+                >
+                  <div className="font-medium text-sm">{suggestion.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {suggestion.type === 'city' 
+                      ? `Ville • ${suggestion.country}`
+                      : `Quartier • ${suggestion.city}, ${suggestion.country}`
+                    }
                   </div>
-                ))}
-              </div>
+                </button>
+              ))}
             </Card>
           )}
         </div>
       </div>
-      
-      {/* Map Controls */}
-      <div className="absolute top-3 left-3 flex flex-col gap-1">
-        <Button
-          size="sm"
-          variant="secondary"
-          className="bg-background/90 backdrop-blur-sm h-8 w-20 text-xs"
-          onClick={() => {
-            if (map.current && properties.length > 0) {
-              const bounds = new mapboxgl.LngLatBounds();
-              properties.forEach(property => {
-                bounds.extend(property.location.coordinates);
-              });
-              map.current.fitBounds(bounds, { 
-                padding: { top: 80, bottom: 80, left: 60, right: 60 }, 
-                maxZoom: 12 
-              });
-            }
-          }}
-        >
-          <Maximize2 className="w-3 h-3 mr-1" />
-          Tout voir
-        </Button>
-      </div>
 
-      {/* Search in area button */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
-        <Button 
-          className="bg-primary text-primary-foreground shadow-primary h-8 text-xs px-3"
-          onClick={() => {
-            if (map.current && onMapBoundsChange) {
-              onMapBoundsChange(map.current.getBounds());
-            }
-          }}
-        >
-          Rechercher dans cette zone
-        </Button>
-      </div>
+      {/* Map Container */}
+      <div ref={mapContainer} className="absolute inset-0 rounded-lg" />
+      
+      {/* Overlay */}
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent to-background/10 rounded-lg" />
     </div>
   );
 });
