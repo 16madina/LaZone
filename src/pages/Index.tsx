@@ -335,8 +335,18 @@ const Index = () => {
       <div className="fixed top-4 right-4 z-[9999]">
         <button 
           onClick={() => {
-            console.log('🚀 Navigating to map page...');
-            navigate('/map');
+            console.log('🚀 Button clicked! Current URL:', window.location.href);
+            console.log('🚀 About to navigate to /map');
+            try {
+              navigate('/map');
+              console.log('🚀 Navigate called successfully');
+              // Vérifier après un délai
+              setTimeout(() => {
+                console.log('🚀 After navigate - Current URL:', window.location.href);
+              }, 100);
+            } catch (error) {
+              console.error('🚨 Navigation error:', error);
+            }
           }}
           className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md font-medium shadow-lg border-2 border-white"
           style={{ backgroundColor: '#ef4444', color: 'white' }}

@@ -63,20 +63,26 @@ const PerformanceWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
 const queryClient = new QueryClient();
 
 const App = () => {
+  console.log('🏁 App component initializing...');
   const [showSplash, setShowSplash] = useState(true);
 
   // Check if splash has been shown before
   useEffect(() => {
+    console.log('🏁 App useEffect - checking splash...');
     const splashShown = sessionStorage.getItem('splashShown');
+    console.log('🏁 Splash shown before:', splashShown);
     if (splashShown) {
       setShowSplash(false);
     }
   }, []);
 
   const handleSplashFinish = () => {
+    console.log('🏁 Splash finished!');
     setShowSplash(false);
     sessionStorage.setItem('splashShown', 'true');
   };
+
+  console.log('🏁 App render - showSplash:', showSplash);
 
   if (showSplash) {
     return <SplashScreen onFinish={handleSplashFinish} />;
