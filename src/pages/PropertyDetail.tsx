@@ -58,7 +58,7 @@ export default function PropertyDetail() {
           const agentInfoWithPhone = await getAgentInfoWithPhone(data.user_id);
           setAgentPhone(agentInfoWithPhone.phone);
 
-          // Convert Supabase data to Property format
+            // Convert Supabase data to Property format
           const convertedProperty: Property = {
             id: data.id,
             title: data.title,
@@ -67,7 +67,11 @@ export default function PropertyDetail() {
             location: {
               city: data.city,
               neighborhood: data.neighborhood,
-              coordinates: [data.longitude || 0, data.latitude || 0] as [number, number]
+              // Use fallback coordinates if missing or invalid
+              coordinates: [
+                data.longitude && data.longitude !== 0 ? data.longitude : -4.0167, // Abidjan fallback
+                data.latitude && data.latitude !== 0 ? data.latitude : 5.3436
+              ] as [number, number]
             },
             images: data.images && data.images.length > 0 ? data.images : ['/placeholder.svg'],
             videoUrl: data.video_url,

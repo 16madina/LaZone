@@ -192,7 +192,14 @@ const PropertyMap = React.forwardRef<
 
   // Initialize map
   useEffect(() => {
-    if (!mapboxToken || isLoading) return;
+    if (!mapboxToken || isLoading) {
+      logger.debug('Map initialization skipped', { 
+        component: 'PropertyMap',
+        hasToken: !!mapboxToken,
+        isLoading 
+      });
+      return;
+    }
 
     // Wait a bit for the container to be ready
     const initMap = () => {
@@ -202,10 +209,16 @@ const PropertyMap = React.forwardRef<
         return;
       }
 
-      logger.debug('Initializing map', { component: 'PropertyMap' });
+      logger.info('Starting map initialization', { 
+        component: 'PropertyMap',
+        tokenPrefix: mapboxToken.substring(0, 10),
+        tokenLength: mapboxToken.length,
+        containerReady: !!mapContainer.current
+      });
 
       // Clean up existing map
       if (map.current) {
+        logger.debug('Cleaning up existing map', { component: 'PropertyMap' });
         map.current.remove();
         map.current = null;
       }
@@ -214,15 +227,12 @@ const PropertyMap = React.forwardRef<
       mapboxgl.accessToken = mapboxToken;
       
       try {
-        // Validate token first
-        if (!mapboxToken || typeof mapboxToken !== 'string' || mapboxToken.length < 10) {
-          throw new Error('Token Mapbox invalide ou manquant');
-        }
-
-        // Check if token starts with pk.
+        // Simple token validation
         if (!mapboxToken.startsWith('pk.')) {
           throw new Error('Token Mapbox invalide - doit commencer par pk.');
         }
+
+        logger.debug('Creating Mapbox instance', { component: 'PropertyMap' });
 
         map.current = new mapboxgl.Map({
           container: mapContainer.current,
@@ -239,6 +249,8 @@ const PropertyMap = React.forwardRef<
           maxZoom: 18 // Zoom maximum pour les détails urbains
         });
 
+        logger.debug('Adding navigation control', { component: 'PropertyMap' });
+
         map.current.addControl(
           new mapboxgl.NavigationControl({
             visualizePitch: false,
@@ -254,8 +266,14 @@ const PropertyMap = React.forwardRef<
           // Center map on user location if available (only if in Africa)
           if (userLocation && map.current) {
             const [lng, lat] = userLocation;
+            logger.debug('Checking user location for map center', { 
+              component: 'PropertyMap', 
+              userLocation: [lng, lat] 
+            });
+            
             // Vérifier si la localisation est en Afrique
             if (lng >= -25 && lng <= 55 && lat >= -40 && lat <= 38) {
+              logger.info('Flying to user location', { component: 'PropertyMap', coords: [lng, lat] });
               map.current.flyTo({
                 center: userLocation,
                 zoom: 12,
@@ -273,8 +291,14 @@ const PropertyMap = React.forwardRef<
 
         map.current.on('error', (e) => {
           const errorMessage = e.error?.message || 'Erreur inconnue de la carte';
-          logger.error('Map error', new Error(errorMessage), { component: 'PropertyMap', fullError: e });
+          logger.error('Map error event', new Error(errorMessage), { 
+            component: 'PropertyMap', 
+            errorType: (e.error as any)?.type,
+            errorStatus: (e.error as any)?.status,
+            fullError: e
+          });
           setError(`Erreur Mapbox: ${errorMessage}`);
+          setMapLoaded(false);
         });
 
         // Listen for map movements
@@ -284,13 +308,17 @@ const PropertyMap = React.forwardRef<
           }
         });
 
+        logger.debug('Map event listeners attached', { component: 'PropertyMap' });
+
       } catch (error) {
         const errorMessage = (error as Error).message;
         logger.error('Error initializing map', error as Error, { 
           component: 'PropertyMap', 
-          token: mapboxToken ? `${mapboxToken.substring(0, 10)}...` : 'undefined'
+          tokenPrefix: mapboxToken.substring(0, 10),
+          errorStack: (error as Error).stack
         });
         setError(`Erreur d'initialisation: ${errorMessage}`);
+        setMapLoaded(false);
       }
     };
 
@@ -629,10 +657,39 @@ const PropertyMap = React.forwardRef<
           </div>
           <div className="space-y-2">
             <h3 className="text-xl font-semibold text-foreground">Erreur de carte</h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+            <p className="text-sm text-destructive max-w-md mx-auto leading-relaxed mb-3">
               {error}
             </p>
           </div>
+          
+          {mapboxToken && (
+            <div className="bg-muted/50 rounded-lg p-4 max-w-md mx-auto">
+              <p className="text-xs text-muted-foreground mb-2">🔍 Informations de débogage :</p>
+              <div className="text-xs text-muted-foreground space-y-1 text-left">
+                <p>• Token présent: ✅</p>
+                <p>• Format valide: {mapboxToken.startsWith('pk.') ? '✅ pk.' : '❌ invalide'}</p>
+                <p>• Longueur: {mapboxToken.length} caractères</p>
+                <p>• Préfixe: {mapboxToken.substring(0, 15)}...</p>
+              </div>
+              <div className="mt-3 pt-2 border-t border-muted-foreground/20">
+                <p className="text-xs text-muted-foreground">
+                  Si le problème persiste, vérifiez que votre token Mapbox a les bonnes permissions 
+                  et qu'il n'est pas expiré.
+                </p>
+              </div>
+            </div>
+          )}
+          
+          {!mapboxToken && (
+            <div className="bg-muted/50 rounded-lg p-4 max-w-md mx-auto">
+              <p className="text-xs text-muted-foreground mb-2">📍 Configuration requise :</p>
+              <ol className="text-xs text-muted-foreground space-y-1 text-left">
+                <li>1. Créer un compte sur <a href="https://mapbox.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">mapbox.com</a></li>
+                <li>2. Obtenir votre token public</li>
+                <li>3. L'ajouter dans les secrets Supabase Edge Function</li>
+              </ol>
+            </div>
+          )}
         </div>
       </div>
     );
