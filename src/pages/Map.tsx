@@ -4,16 +4,17 @@ import { useLocation } from '@/contexts/LocationContext';
 import PropertyCard, { Property } from '@/components/PropertyCard';
 import PropertyFilters, { FilterState } from '@/components/PropertyFilters';
 import CountrySelector from '@/components/CountrySelector';
+import PropertyMap from '@/components/PropertyMap';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { filterProperties } from '@/data/mockProperties';
-import { ArrowLeft, List, SlidersHorizontal } from 'lucide-react';
+import { ArrowLeft, List, Map as MapIcon, SlidersHorizontal } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const Map: React.FC = () => {
-  console.log('🗺️ Map component rendering (list view only)...');
+  console.log('🗺️ Map component rendering with interactive map...');
   const navigate = useNavigate();
   const { selectedCountry } = useLocation();
   const { toast } = useToast();
@@ -23,6 +24,7 @@ const Map: React.FC = () => {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoadingProperties, setIsLoadingProperties] = useState(true);
+  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   
   const [filters, setFilters] = useState<FilterState>({
     propertyType: [],
@@ -209,7 +211,9 @@ const Map: React.FC = () => {
             
             <CountrySelector variant="compact" />
             <div className="flex items-center gap-1">
-              <span className="font-semibold text-sm">Liste des biens</span>
+              <span className="font-semibold text-sm">
+                {viewMode === 'map' ? 'Carte' : 'Liste'} des biens
+              </span>
               <Badge variant="secondary" className="text-xs px-2 py-0.5">
                 {sortedProperties.length} biens
               </Badge>
@@ -217,6 +221,27 @@ const Map: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-1">
+            <div className="flex bg-muted rounded-lg p-0.5 mr-2">
+              <Button
+                variant={viewMode === 'map' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('map')}
+                className="h-7 px-2 text-xs"
+              >
+                <MapIcon className="w-3 h-3 mr-1" />
+                Carte
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className="h-7 px-2 text-xs"
+              >
+                <List className="w-3 h-3 mr-1" />
+                Liste
+              </Button>
+            </div>
+            
             <Button
               variant="outline"
               size="sm"
@@ -258,31 +283,54 @@ const Map: React.FC = () => {
         searchMode={searchMode}
       />
 
-      {/* Properties List */}
-      <div className="flex-1 p-4">
-        {sortedProperties.length === 0 ? (
-          <div className="text-center py-12">
-            <List className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Aucune propriété trouvée</h3>
-            <p className="text-muted-foreground">
-              Essayez de modifier vos critères de recherche ou de filtrage.
-            </p>
-          </div>
+      {/* Content - Map or List */}
+      <div className="flex-1 relative">
+        {viewMode === 'map' ? (
+          sortedProperties.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center py-12">
+                <MapIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Aucune propriété à afficher</h3>
+                <p className="text-muted-foreground">
+                  Essayez de modifier vos critères de recherche ou de filtrage.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <PropertyMap
+              properties={sortedProperties}
+              favorites={favorites}
+              onPropertyClick={handlePropertyClick}
+              onFavoriteToggle={toggleFavorite}
+            />
+          )
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {sortedProperties.map((property) => (
-              <PropertyCard
-                key={property.id}
-                property={property}
-                onFavorite={toggleFavorite}
-                isFavorited={favorites.has(property.id)}
-                onClick={handlePropertyClick}
-                onContact={() => {
-                  console.log('Contact agent for property:', property.id);
-                }}
-                className="w-full"
-              />
-            ))}
+          <div className="p-4 h-full overflow-y-auto">
+            {sortedProperties.length === 0 ? (
+              <div className="text-center py-12">
+                <List className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Aucune propriété trouvée</h3>
+                <p className="text-muted-foreground">
+                  Essayez de modifier vos critères de recherche ou de filtrage.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {sortedProperties.map((property) => (
+                  <PropertyCard
+                    key={property.id}
+                    property={property}
+                    onFavorite={toggleFavorite}
+                    isFavorited={favorites.has(property.id)}
+                    onClick={handlePropertyClick}
+                    onContact={() => {
+                      console.log('Contact agent for property:', property.id);
+                    }}
+                    className="w-full"
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
