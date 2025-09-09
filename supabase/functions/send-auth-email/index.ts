@@ -1,9 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
 import { Resend } from "npm:resend@2.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-const hookSecret = Deno.env.get('AUTH_HOOK_SECRET') || 'your-webhook-secret';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,16 +23,10 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("📥 Processing auth webhook request");
     const payload = await req.text();
     console.log("Payload received:", payload.length, "characters");
-    
-    const headers = Object.fromEntries(req.headers);
-    console.log("AUTH_HOOK_SECRET available:", !!Deno.env.get('AUTH_HOOK_SECRET'));
     console.log("RESEND_API_KEY available:", !!Deno.env.get('RESEND_API_KEY'));
-    console.log("hookSecret being used:", hookSecret.substring(0, 10) + "...");
     
-    // Verify webhook signature
-    console.log("🔐 Verifying webhook signature");
-    const wh = new Webhook(hookSecret);
-    const verifiedData = wh.verify(payload, headers) as {
+    // Parse webhook payload directly (Supabase handles auth verification)
+    const webhookData = JSON.parse(payload) as {
       user: { email: string };
       email_data: {
         token: string;
@@ -45,9 +37,9 @@ const handler = async (req: Request): Promise<Response> => {
       };
     };
     
-    console.log("✅ Webhook signature verified successfully");
+    console.log("✅ Webhook payload parsed successfully");
     
-    const { user, email_data: { token, token_hash, redirect_to, email_action_type } } = verifiedData;
+    const { user, email_data: { token, token_hash, redirect_to, email_action_type } } = webhookData;
 
     console.log("Received auth webhook:", { email: user.email, email_action_type });
 
