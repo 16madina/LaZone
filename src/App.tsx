@@ -60,28 +60,17 @@ const PerformanceWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
   return <>{children}</>;
 };
 
-const queryClient = new QueryClient();
+// Create query client outside component to avoid recreation
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
-const AppContent = () => {
-  const [showSplash, setShowSplash] = useState(true);
-
-  // Check if splash has been shown before
-  useEffect(() => {
-    const splashShown = sessionStorage.getItem('splashShown');
-    if (splashShown) {
-      setShowSplash(false);
-    }
-  }, []);
-
-  const handleSplashFinish = () => {
-    setShowSplash(false);
-    sessionStorage.setItem('splashShown', 'true');
-  };
-
-  if (showSplash) {
-    return <SplashScreen onFinish={handleSplashFinish} />;
-  }
-
+const AppRoutes = () => {
   return (
     <BrowserRouter>
       <CriticalResourceLoader />
@@ -162,6 +151,29 @@ const AppContent = () => {
       </Layout>
     </BrowserRouter>
   );
+};
+
+const AppContent = () => {
+  const [showSplash, setShowSplash] = useState(true);
+
+  // Check if splash has been shown before
+  useEffect(() => {
+    const splashShown = sessionStorage.getItem('splashShown');
+    if (splashShown) {
+      setShowSplash(false);
+    }
+  }, []);
+
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+    sessionStorage.setItem('splashShown', 'true');
+  };
+
+  if (showSplash) {
+    return <SplashScreen onFinish={handleSplashFinish} />;
+  }
+
+  return <AppRoutes />;
 };
 
 const App = () => {
