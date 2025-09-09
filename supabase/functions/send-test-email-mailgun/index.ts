@@ -26,6 +26,21 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // First, let's just test if we can get the environment variables
+    console.log("📋 Testing environment variables:");
+    console.log("MAILGUN_API_KEY:", MAILGUN_API_KEY ? "SET" : "NOT SET");
+    console.log("MAILGUN_DOMAIN:", MAILGUN_DOMAIN || "NOT SET");  
+    console.log("MAILGUN_BASE_URL:", MAILGUN_BASE_URL || "NOT SET");
+    
+    if (!MAILGUN_API_KEY) {
+      throw new Error("MAILGUN_API_KEY is missing");
+    }
+    if (!MAILGUN_DOMAIN) {
+      throw new Error("MAILGUN_DOMAIN is missing");
+    }
+    if (!MAILGUN_BASE_URL) {
+      throw new Error("MAILGUN_BASE_URL is missing");
+    }
     const { to, subject, message, from }: TestEmailRequest = await req.json();
     
     console.log("📧 Preparing to send test email via Mailgun");
