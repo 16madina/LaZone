@@ -38,6 +38,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { formatPrice } from '@/utils/currency';
 import { useFavoritesContext } from '@/contexts/FavoritesContext';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface Profile {
   id: string;
@@ -92,6 +93,7 @@ const Profile: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { favorites } = useFavoritesContext();
+  const { isAdmin } = useUserRole();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
@@ -100,7 +102,6 @@ const Profile: React.FC = () => {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('annonces');
-  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -114,23 +115,13 @@ const Profile: React.FC = () => {
         setUser(user);
         await Promise.all([
           fetchProfile(user.id),
-          fetchListings(user.id),
-          checkAdminRole(user.id)
+          fetchListings(user.id)
         ]);
       }
     } catch (error) {
       console.error('Error checking auth:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const checkAdminRole = async (userId: string) => {
-    try {
-      // Mock admin check since user_roles table doesn't exist
-      setIsAdmin(false);
-    } catch (error) {
-      console.error('Error checking admin role:', error);
     }
   };
 
@@ -405,9 +396,10 @@ const Profile: React.FC = () => {
                 variant="ghost" 
                 size="sm"
                 onClick={() => navigate('/admin')}
-                title="Admin Panel"
+                title="Panel d'administration"
+                className="text-red-600 hover:text-red-700"
               >
-                <Crown className="w-5 h-5 text-yellow-600" />
+                <Shield className="w-5 h-5" />
               </Button>
             )}
             <Button 
