@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   ArrowLeft,
   User, 
@@ -17,7 +19,9 @@ import {
   HelpCircle,
   Trash2,
   Download,
-  Upload
+  Upload,
+  Mail,
+  Send
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -34,6 +38,12 @@ const Settings: React.FC = () => {
     marketing: false
   });
   const [darkMode, setDarkMode] = useState(false);
+  const [testEmail, setTestEmail] = useState({
+    to: '',
+    subject: 'Test email LaZone',
+    message: 'Ceci est un email de test envoyé via Mailgun pour vérifier la configuration.'
+  });
+  const [sendingTest, setSendingTest] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -43,6 +53,11 @@ const Settings: React.FC = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+      
+      // Set user's email as default for test email
+      if (user?.email) {
+        setTestEmail(prev => ({ ...prev, to: user.email }));
+      }
     } catch (error) {
       console.error('Error checking auth:', error);
     } finally {
@@ -79,6 +94,47 @@ const Settings: React.FC = () => {
       description: 'Contactez le support pour supprimer votre compte',
       variant: 'destructive',
     });
+  };
+
+  const handleTestEmail = async () => {
+    if (!testEmail.to) {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez saisir une adresse email',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSendingTest(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-test-email-mailgun', {
+        body: {
+          to: testEmail.to,
+          subject: testEmail.subject,
+          message: testEmail.message
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Email envoyé !',
+        description: `Email de test envoyé à ${testEmail.to}`,
+      });
+      
+      // Clear the form
+      setTestEmail(prev => ({ ...prev, to: '' }));
+    } catch (error: any) {
+      console.error('Error sending test email:', error);
+      toast({
+        title: 'Erreur',
+        description: `Erreur lors de l'envoi : ${error.message}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setSendingTest(false);
+    }
   };
 
   if (loading) {
@@ -272,6 +328,62 @@ const Settings: React.FC = () => {
             <Button variant="outline" className="w-full justify-start">
               <HelpCircle className="w-4 h-4 mr-2" />
               Politique de confidentialité
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Test Email */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="w-5 h-5" />
+              Test d'email
+            </CardTitle>
+            <CardDescription>
+              Testez l'envoi d'emails via Mailgun
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Adresse email de destination</label>
+              <Input
+                type="email"
+                placeholder="votre@email.com"
+                value={testEmail.to}
+                onChange={(e) => setTestEmail(prev => ({ ...prev, to: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Sujet</label>
+              <Input
+                value={testEmail.subject}
+                onChange={(e) => setTestEmail(prev => ({ ...prev, subject: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Message</label>
+              <Textarea
+                value={testEmail.message}
+                onChange={(e) => setTestEmail(prev => ({ ...prev, message: e.target.value }))}
+                rows={3}
+              />
+            </div>
+            <Button 
+              onClick={handleTestEmail}
+              disabled={sendingTest || !testEmail.to}
+              className="w-full"
+            >
+              {sendingTest ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Envoi en cours...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Envoyer l'email de test
+                </>
+              )}
             </Button>
           </CardContent>
         </Card>
