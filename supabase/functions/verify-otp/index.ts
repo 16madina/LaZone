@@ -9,6 +9,7 @@ const corsHeaders = {
 interface VerifyOTPRequest {
   phone: string;
   code: string;
+  isSignup?: boolean;
 }
 
 serve(async (req) => {
@@ -22,7 +23,7 @@ serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    const { phone, code }: VerifyOTPRequest = await req.json();
+    const { phone, code, isSignup = false }: VerifyOTPRequest = await req.json();
 
     // Input validation
     if (!phone || !code) {
@@ -136,11 +137,12 @@ serve(async (req) => {
       .from('profiles')
       .select('*')
       .eq('phone', phone)
-      .single();
+      .maybeSingle();
 
     let userId = profile?.user_id;
 
-    if (!profile) {
+    if (!profile && isSignup) {
+      // Mode inscription - créer un nouveau compte
       console.log('Creating new user account for phone:', phone);
       
       // Create a user account using admin API
@@ -160,18 +162,27 @@ serve(async (req) => {
 
       userId = newUser.user.id;
       
-      // Create profile record
+      // Create basic profile record - will be updated with full data later
       const { error: insertError } = await supabase
         .from('profiles')
         .insert({
           user_id: userId,
           phone: phone,
-          user_type: 'individual' // default type
+          user_type: 'individual' // default type, will be updated
         });
         
       if (insertError) {
         console.error('Failed to create profile:', insertError);
       }
+    } else if (!profile && !isSignup) {
+      // Mode connexion mais aucun profil trouvé
+      throw new Error('Aucun compte trouvé avec ce numéro. Veuillez vous inscrire d\'abord.');
+    } else if (profile && isSignup) {
+      // Mode inscription mais profil existant
+      throw new Error('Un compte existe déjà avec ce numéro. Utilisez "Se connecter" à la place.');
+    } else {
+      // Mode connexion avec profil existant - OK
+      userId = profile.user_id;
     }
 
     // 2. Generate access token for the user

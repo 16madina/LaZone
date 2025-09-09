@@ -261,14 +261,23 @@ export type Database = {
         Row: {
           account_status: string | null
           agency_name: string | null
+          agency_phone: string | null
           avatar_url: string | null
           bio: string | null
+          city: string | null
+          country: string | null
           created_at: string
           display_name: string | null
+          email: string | null
           first_name: string | null
           id: string
+          is_canvasser: boolean | null
           last_name: string | null
+          neighborhood: string | null
           phone: string | null
+          responsible_first_name: string | null
+          responsible_last_name: string | null
+          responsible_mobile: string | null
           updated_at: string
           user_id: string
           user_type: string | null
@@ -276,14 +285,23 @@ export type Database = {
         Insert: {
           account_status?: string | null
           agency_name?: string | null
+          agency_phone?: string | null
           avatar_url?: string | null
           bio?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           display_name?: string | null
+          email?: string | null
           first_name?: string | null
           id?: string
+          is_canvasser?: boolean | null
           last_name?: string | null
+          neighborhood?: string | null
           phone?: string | null
+          responsible_first_name?: string | null
+          responsible_last_name?: string | null
+          responsible_mobile?: string | null
           updated_at?: string
           user_id: string
           user_type?: string | null
@@ -291,14 +309,23 @@ export type Database = {
         Update: {
           account_status?: string | null
           agency_name?: string | null
+          agency_phone?: string | null
           avatar_url?: string | null
           bio?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           display_name?: string | null
+          email?: string | null
           first_name?: string | null
           id?: string
+          is_canvasser?: boolean | null
           last_name?: string | null
+          neighborhood?: string | null
           phone?: string | null
+          responsible_first_name?: string | null
+          responsible_last_name?: string | null
+          responsible_mobile?: string | null
           updated_at?: string
           user_id?: string
           user_type?: string | null
