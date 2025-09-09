@@ -224,8 +224,8 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Email details:", { to, subject: subject.substring(0, 50) + "..." });
     
     // Send email via Resend
-    const emailResponse = await resend.emails.send({
-      from: "LaZone <onboarding@resend.dev>",
+      const emailResponse = await resend.emails.send({
+        from: "LaZone <missdeeofficiel@gmail.com>",
       to: [to],
       subject: subject,
       html: html,
