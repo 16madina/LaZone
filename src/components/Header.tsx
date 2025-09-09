@@ -4,16 +4,18 @@ import CountrySelector from "@/components/CountrySelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Bell, Crown, ExternalLink } from "lucide-react";
+import { Bell, Crown, ExternalLink, Shield } from "lucide-react";
 import { useState } from "react";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface HeaderProps {}
 
 export default function Header({}: HeaderProps) {
   const { language, setLanguage, t } = useLanguage();
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
   const { notifications: notificationsCount } = useUnreadCounts();
@@ -36,6 +38,10 @@ export default function Header({}: HeaderProps) {
 
   const handleSubscriptionClick = () => {
     navigate('/subscription');
+  };
+
+  const handleAdminClick = () => {
+    navigate('/admin');
   };
 
   return (
@@ -84,6 +90,17 @@ export default function Header({}: HeaderProps) {
             >
               <Crown className="w-5 h-5" />
             </Button>
+            {isAdmin && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleAdminClick}
+                className="p-2 text-red-600 hover:text-red-700"
+                title="Panel d'administration"
+              >
+                <Shield className="w-5 h-5" />
+              </Button>
+            )}
             <div className="w-px h-6 bg-border"></div>
             <Button variant="ghost" size="sm" onClick={handleAuthClick}>
               {user ? 'Profil' : t('nav.login')}
