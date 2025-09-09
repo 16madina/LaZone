@@ -217,7 +217,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email via Resend
     const emailResponse = await resend.emails.send({
-      from: "LaZone <noreply@lazoneapp.com>",
+      from: "LaZone <noreply@yl-consulting.fr>",
       to: [to],
       subject: subject,
       html: html,
