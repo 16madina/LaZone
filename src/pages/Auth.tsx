@@ -188,13 +188,11 @@ const Auth: React.FC = () => {
 
         toast({
           title: 'Compte créé avec succès',
-          description: 'Un email de confirmation vous a été envoyé.',
+          description: 'Choisissez maintenant comment finaliser votre inscription.',
         });
         
-        // Rediriger vers la page principale après inscription réussie
-        setTimeout(() => {
-          navigate(nextUrl);
-        }, 2000);
+        // Rediriger vers l'étape de vérification avec l'email
+        navigate(`/verification?email=${encodeURIComponent(data.email || email)}&next=${encodeURIComponent(nextUrl)}`);
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: data.email || email,

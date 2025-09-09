@@ -16,6 +16,7 @@ import Auth from "./pages/Auth";
 import Stats from "./pages/Stats";
 import PropertyDetail from "./pages/PropertyDetail";
 import NotFound from "./pages/NotFound";
+import VerificationStep from "./pages/VerificationStep";
 import Subscription from "./pages/Subscription";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import SubscriptionSuccess from "./pages/SubscriptionSuccess";
@@ -107,6 +108,7 @@ const AppRoutes = () => {
               } 
             />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/verification" element={<VerificationStep />} />
             <Route path="/stats" element={<Stats />} />
             <Route path="/mobile-test" element={<MobileTest />} />
             <Route 
