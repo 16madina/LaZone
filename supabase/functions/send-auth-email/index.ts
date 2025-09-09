@@ -1,7 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+// Mailgun configuration
+const MAILGUN_API_KEY = Deno.env.get("MAILGUN_API_KEY");
+const MAILGUN_DOMAIN = Deno.env.get("MAILGUN_DOMAIN");
+const MAILGUN_BASE_URL = Deno.env.get("MAILGUN_BASE_URL");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -220,20 +222,38 @@ const handler = async (req: Request): Promise<Response> => {
         `;
     }
 
-    console.log("📧 Preparing to send email");
+    console.log("📧 Preparing to send email via Mailgun");
     console.log("Email details:", { to, subject: subject.substring(0, 50) + "..." });
+    console.log("MAILGUN_API_KEY available:", !!MAILGUN_API_KEY);
+    console.log("MAILGUN_DOMAIN available:", !!MAILGUN_DOMAIN);
+    console.log("MAILGUN_BASE_URL available:", !!MAILGUN_BASE_URL);
     
-    // Send email via Resend
-      const emailResponse = await resend.emails.send({
-        from: "LaZone <missdeeofficiel@gmail.com>",
-      to: [to],
-      subject: subject,
-      html: html,
+    // Send email via Mailgun
+    const formData = new FormData();
+    formData.append('from', `LaZone <noreply@${MAILGUN_DOMAIN}>`);
+    formData.append('to', to);
+    formData.append('subject', subject);
+    formData.append('html', html);
+
+    const mailgunUrl = `${MAILGUN_BASE_URL}/v3/${MAILGUN_DOMAIN}/messages`;
+    
+    const emailResponse = await fetch(mailgunUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${btoa(`api:${MAILGUN_API_KEY}`)}`,
+      },
+      body: formData,
     });
 
-    console.log("✅ Email sent successfully via Resend:", emailResponse);
+    const responseData = await emailResponse.json();
+    
+    if (!emailResponse.ok) {
+      throw new Error(`Mailgun API error: ${responseData.message || 'Unknown error'}`);
+    }
 
-    return new Response(JSON.stringify({ success: true, data: emailResponse }), {
+    console.log("✅ Email sent successfully via Mailgun:", responseData);
+
+    return new Response(JSON.stringify({ success: true, data: responseData }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
