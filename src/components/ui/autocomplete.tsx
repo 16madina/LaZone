@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,9 +25,6 @@ interface AutocompleteProps {
   searchPlaceholder?: string;
   className?: string;
   disabled?: boolean;
-  allowCustomInput?: boolean;
-  onAddCustomValue?: (value: string) => void;
-  customAddText?: string;
 }
 
 export function Autocomplete({
@@ -39,9 +36,6 @@ export function Autocomplete({
   searchPlaceholder = "Rechercher...",
   className,
   disabled = false,
-  allowCustomInput = false,
-  onAddCustomValue,
-  customAddText = "Ajouter",
 }: AutocompleteProps) {
   const [open, setOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState("");
@@ -62,15 +56,6 @@ export function Autocomplete({
     }
     setOpen(false);
     setSearchValue("");
-  };
-
-  const handleAddCustom = () => {
-    if (searchValue.trim() && onAddCustomValue) {
-      onAddCustomValue(searchValue.trim());
-      onValueChange(searchValue.trim());
-      setOpen(false);
-      setSearchValue("");
-    }
   };
 
   const displayValue = value || placeholder;
@@ -94,57 +79,32 @@ export function Autocomplete({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0 bg-background border z-50" align="start">
-        <Command shouldFilter={false} className="max-h-[300px]">
+      <PopoverContent className="w-full p-0" align="start">
+        <Command shouldFilter={false}>
           <CommandInput
             placeholder={searchPlaceholder}
             value={searchValue}
             onValueChange={setSearchValue}
           />
           <CommandList>
-            {filteredOptions.length === 0 ? (
-              <div className="p-2">
-                <div className="text-sm text-muted-foreground py-2">{emptyText}</div>
-                {allowCustomInput && searchValue.trim() && (
-                  <CommandItem
-                    onSelect={handleAddCustom}
-                    className="cursor-pointer"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    {customAddText} "{searchValue}"
-                  </CommandItem>
-                )}
-              </div>
-            ) : (
-              <CommandGroup>
-                {filteredOptions.map((option) => (
-                  <CommandItem
-                    key={option}
-                    value={option}
-                    onSelect={handleSelect}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === option ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {option}
-                  </CommandItem>
-                ))}
-                {allowCustomInput && searchValue.trim() && !filteredOptions.some(
-                  option => option.toLowerCase() === searchValue.toLowerCase()
-                ) && (
-                  <CommandItem
-                    onSelect={handleAddCustom}
-                    className="cursor-pointer border-t"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    {customAddText} "{searchValue}"
-                  </CommandItem>
-                )}
-              </CommandGroup>
-            )}
+            <CommandEmpty>{emptyText}</CommandEmpty>
+            <CommandGroup>
+              {filteredOptions.map((option) => (
+                <CommandItem
+                  key={option}
+                  value={option}
+                  onSelect={handleSelect}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === option ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {option}
+                </CommandItem>
+              ))}
+            </CommandGroup>
           </CommandList>
         </Command>
       </PopoverContent>

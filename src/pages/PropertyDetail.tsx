@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Property } from "@/components/PropertyCard";
-{/* PropertyMap component removed */}
+import PropertyMap from "@/components/PropertyMap";
 import VirtualTour from "@/components/vr/VirtualTour";
 import AIRecommendations from "@/components/ai/AIRecommendations";
 import ImageGallery from "@/components/ImageGallery";
@@ -58,7 +58,7 @@ export default function PropertyDetail() {
           const agentInfoWithPhone = await getAgentInfoWithPhone(data.user_id);
           setAgentPhone(agentInfoWithPhone.phone);
 
-            // Convert Supabase data to Property format
+          // Convert Supabase data to Property format
           const convertedProperty: Property = {
             id: data.id,
             title: data.title,
@@ -67,11 +67,7 @@ export default function PropertyDetail() {
             location: {
               city: data.city,
               neighborhood: data.neighborhood,
-              // Use fallback coordinates if missing or invalid
-              coordinates: [
-                data.longitude && data.longitude !== 0 ? data.longitude : -4.0167, // Abidjan fallback
-                data.latitude && data.latitude !== 0 ? data.latitude : 5.3436
-              ] as [number, number]
+              coordinates: [data.longitude || 0, data.latitude || 0] as [number, number]
             },
             images: data.images && data.images.length > 0 ? data.images : ['/placeholder.svg'],
             videoUrl: data.video_url,
@@ -522,16 +518,24 @@ export default function PropertyDetail() {
             <div className="space-y-3">
               <h2 className="text-xl font-semibold">Localisation</h2>
               <div className="h-64 rounded-xl overflow-hidden">
-                <div className="w-full h-full bg-muted flex items-center justify-center rounded-xl">
-                  <div className="text-center space-y-2">
-                    <MapPin className="w-8 h-8 text-muted-foreground mx-auto" />
-                    <div className="text-sm text-muted-foreground">
-                      <p className="font-medium">{property.location.neighborhood}</p>
-                      <p>{property.location.city}</p>
-                      <p className="mt-2 text-xs">Localisation exacte disponible sur demande</p>
+                {property.location.coordinates[0] !== 0 && property.location.coordinates[1] !== 0 ? (
+                  <PropertyMap
+                    properties={[property]}
+                    onPropertySelect={() => {}}
+                    className="w-full h-full"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center rounded-xl">
+                    <div className="text-center space-y-2">
+                      <MapPin className="w-8 h-8 text-muted-foreground mx-auto" />
+                      <div className="text-sm text-muted-foreground">
+                        <p className="font-medium">{property.location.neighborhood}</p>
+                        <p>{property.location.city}</p>
+                        <p className="mt-2 text-xs">Localisation exacte disponible sur demande</p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
               <p className="text-sm text-muted-foreground">
                 {property.location.neighborhood}, {property.location.city}

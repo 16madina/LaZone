@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,8 +17,6 @@ import {
   Video, Rotate3D, Play, Pause, Volume2, FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import ImagePreview from "@/components/ImagePreview";
-import PreviewImage from "@/components/PreviewImage";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLocation } from "@/contexts/LocationContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,7 +24,7 @@ import { useSubscription } from "@/contexts/SubscriptionContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Autocomplete } from "@/components/ui/autocomplete";
-import { searchCities, searchNeighborhoods, searchAllCities, searchCitiesByCountry } from "@/data/africanCities";
+import { searchCities, searchNeighborhoods } from "@/data/africanCities";
 import { getCityCoordinates } from "@/utils/geocoding";
 
 interface ListingData {
@@ -384,20 +382,8 @@ export default function CreateListing() {
       }
 
       // Géocodage automatique pour obtenir les coordonnées GPS
-      console.log('🌍 Géocodage automatique pour:', formData.city);
-      
-      // Extraire le nom de la ville et du pays du format "Ville, Pays"
-      let cityName = formData.city;
-      let countryName = selectedCountry;
-      
-      if (formData.city.includes(', ')) {
-        const parts = formData.city.split(', ');
-        cityName = parts[0];
-        countryName = parts[1];
-      }
-      
-      console.log('📍 Recherche coordonnées pour:', cityName, 'dans', countryName);
-      const coordinates = getCityCoordinates(cityName, countryName || undefined);
+      console.log('🌍 Géocodage automatique pour:', formData.city, selectedCountry);
+      const coordinates = getCityCoordinates(formData.city, selectedCountry || undefined);
       console.log('📍 Coordonnées trouvées:', coordinates);
 
       // Create the listing in database
@@ -416,9 +402,9 @@ export default function CreateListing() {
           area: parseFloat(formData.area) || 1,
           land_area: formData.landArea ? parseFloat(formData.landArea) : null,
           address: formData.address,
-          city: formData.city.includes(', ') ? formData.city.split(', ')[0] : formData.city,
+          city: formData.city,
           neighborhood: formData.neighborhood,
-          country: formData.city.includes(', ') ? formData.city.split(', ')[1] : selectedCountry,
+          country: selectedCountry,
           latitude: coordinates?.lat || null,
           longitude: coordinates?.lng || null,
           amenities: formData.amenities,
@@ -433,18 +419,12 @@ export default function CreateListing() {
       if (error) throw error;
 
       toast({
-        title: "✅ Nouvelle annonce ajoutée !",
-        description: "Votre annonce est maintenant visible sur LaZone.",
+        title: 'Annonce publiée avec succès !',
+        description: 'Votre annonce sera visible sous 24h après vérification.',
       });
       
-      // Redirect to home page with the appropriate tab for the listing type
-      if (formData.purpose === 'rent') {
-        navigate('/?tab=rent');
-      } else if (formData.purpose === 'sale') {
-        navigate('/?tab=buy');
-      } else {
-        navigate('/?tab=commercial');
-      }
+      // Redirect to profile page
+      navigate('/profile');
     } catch (error: any) {
       console.error('Error creating listing:', error);
       toast({
@@ -649,16 +629,10 @@ export default function CreateListing() {
                         neighborhood: '' // Reset neighborhood when city changes
                       });
                     }}
-                    options={selectedCountry ? searchCitiesByCountry(selectedCountry, '') : []}
+                    options={selectedCountry ? searchCities(selectedCountry, '') : []}
                     placeholder="Ex: Abidjan"
                     searchPlaceholder="Rechercher une ville..."
                     emptyText="Aucune ville trouvée"
-                    allowCustomInput={true}
-                    onAddCustomValue={(newCity) => {
-                      // L'utilisateur ajoute une nouvelle ville
-                      console.log("Nouvelle ville ajoutée:", newCity);
-                    }}
-                    customAddText="Ajouter la ville"
                   />
                   {errors.city && <p className="text-sm text-destructive">{errors.city}</p>}
                 </div>
@@ -668,20 +642,14 @@ export default function CreateListing() {
                   <Autocomplete
                     value={formData.neighborhood}
                     onValueChange={(value) => updateFormData({ neighborhood: value })}
-                    options={formData.city && selectedCountry
-                      ? searchNeighborhoods(selectedCountry, formData.city, '')
+                    options={selectedCountry && formData.city 
+                      ? searchNeighborhoods(selectedCountry, formData.city, '') 
                       : []
                     }
                     placeholder="Ex: Cocody"
                     searchPlaceholder="Rechercher un quartier..."
                     emptyText="Sélectionnez d'abord une ville"
                     disabled={!formData.city}
-                    allowCustomInput={true}
-                    onAddCustomValue={(newNeighborhood) => {
-                      // L'utilisateur ajoute un nouveau quartier
-                      console.log("Nouveau quartier ajouté:", newNeighborhood);
-                    }}
-                    customAddText="Ajouter le quartier"
                   />
                   {errors.neighborhood && <p className="text-sm text-destructive">{errors.neighborhood}</p>}
                 </div>
@@ -1147,13 +1115,24 @@ export default function CreateListing() {
               {formData.images.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {formData.images.map((image, index) => (
-                    <ImagePreview
-                      key={index}
-                      file={image}
-                      index={index}
-                      onRemove={removeImage}
-                      isMainPhoto={index === 0}
-                    />
+                    <div key={index} className="relative group">
+                      <img
+                        src={URL.createObjectURL(image)}
+                        alt={`Upload ${index + 1}`}
+                        className="w-full h-20 object-cover rounded-lg"
+                      />
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="absolute top-1 right-1 w-5 h-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeImage(index)}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                      {index === 0 && (
+                        <Badge className="absolute bottom-1 left-1 text-xs">Photo principale</Badge>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
@@ -1292,8 +1271,8 @@ export default function CreateListing() {
               <Card className="overflow-hidden">
                 {formData.images.length > 0 && (
                   <div className="aspect-[16/10] overflow-hidden">
-                    <PreviewImage
-                      file={formData.images[0]}
+                    <img
+                      src={URL.createObjectURL(formData.images[0])}
                       alt="Preview"
                       className="w-full h-full object-cover"
                     />

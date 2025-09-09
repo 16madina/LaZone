@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import PropertyFilters, { FilterState } from "@/components/PropertyFilters";
 import PropertyCard, { Property } from "@/components/PropertyCard";
+import PropertyMap from "@/components/PropertyMap";
 import WelcomeStats from "@/components/WelcomeStats";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useLocation } from "@/contexts/LocationContext";
 import { useFavoritesContext } from "@/contexts/FavoritesContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,18 +29,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { selectedCountry } = useLocation();
   const { isFavorite, toggleFavorite } = useFavoritesContext();
-  const [searchParams] = useSearchParams();
-  
-  // Initialize searchMode based on URL parameter
-  const getInitialSearchMode = (): 'rent' | 'buy' | 'commercial' => {
-    const tabParam = searchParams.get('tab');
-    if (tabParam === 'buy' || tabParam === 'rent' || tabParam === 'commercial') {
-      return tabParam;
-    }
-    return 'rent'; // default
-  };
-  
-  const [searchMode, setSearchMode] = useState<'rent' | 'buy' | 'commercial'>(getInitialSearchMode());
+  const [searchMode, setSearchMode] = useState<'rent' | 'buy' | 'commercial'>('rent');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -53,37 +43,13 @@ const Index = () => {
     priceRange: [0, searchMode === 'rent' ? 2000000 : searchMode === 'buy' ? 50000000 : 5000000],
     bedrooms: 'any',
     bathrooms: 'any',
-    areaRange: [1, 1000],
+    areaRange: [20, 1000],
     amenities: []
   });
 
   // Fetch listings from Supabase
   useEffect(() => {
     fetchListings();
-    
-    // Configurer les mises à jour en temps réel
-    const channel = supabase
-      .channel('listings-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // Écouter tous les événements (INSERT, UPDATE, DELETE)
-          schema: 'public',
-          table: 'listings'
-        },
-        (payload) => {
-          console.log('📡 Changement en temps réel détecté:', payload);
-          // Recharger les listings quand il y a un changement
-          fetchListings();
-        }
-      )
-      .subscribe();
-
-    // Nettoyer la subscription au démontage
-    return () => {
-      console.log('🧹 Nettoyage de la subscription realtime');
-      supabase.removeChannel(channel);
-    };
   }, [selectedCountry, searchMode]);
 
   // Update price range when search mode changes
@@ -99,10 +65,6 @@ const Index = () => {
       setLoading(true);
       console.log('🔍 Fetching listings with:', { searchMode, selectedCountry });
       
-      // Vérifier l'utilisateur connecté
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      console.log('👤 Current user:', user?.id, userError ? `Error: ${userError.message}` : 'No error');
-      
       let query = supabase
         .from('listings')
         .select('*')
@@ -114,17 +76,18 @@ const Index = () => {
       } else {
         const purpose = searchMode === 'buy' ? 'sale' : searchMode;
         query = query.eq('purpose', purpose);
+        console.log('🏠 Filtering for purpose:', purpose);
       }
 
       // Filtrage par pays avec inclusion des annonces sans pays spécifié
       if (selectedCountry) {
         query = query.or(`country.eq.${selectedCountry},country.is.null`);
+        console.log('🌍 Filtering for country:', selectedCountry, '(including listings without country)');
       }
       
+      console.log('📊 About to query Supabase...');
       const { data, error } = await query.order('created_at', { ascending: false });
-      
-      console.log('📊 Query executed. Data count:', data?.length || 0);
-      console.log('📊 Sample data:', data?.slice(0, 2));
+      console.log('📨 Supabase query completed');
       
       if (error) {
         console.error('❌ Supabase error:', error);
@@ -461,7 +424,6 @@ const Index = () => {
               className="pl-10 pr-4 py-3 bg-background/60 backdrop-blur-sm border-border/60 focus:border-primary/60 focus:ring-1 focus:ring-primary/20 rounded-xl"
             />
           </div>
-          {/* Configuration supprimée */}
           <Button
             variant="outline"
             size="sm"

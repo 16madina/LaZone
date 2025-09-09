@@ -252,7 +252,7 @@ export default function AdvancedPropertyFilters({
                       priceRange: [0, maxPrice],
                       bedrooms: 'any',
                       bathrooms: 'any',
-                      areaRange: [1, 1000],
+                      areaRange: [20, 1000],
                       amenities: []
                     });
                   }}
@@ -351,7 +351,7 @@ export default function AdvancedPropertyFilters({
                     priceRange: [0, maxPrice],
                     bedrooms: 'any',
                     bathrooms: 'any',
-                    areaRange: [1, 1000],
+                    areaRange: [20, 1000],
                     amenities: []
                   });
                 }}

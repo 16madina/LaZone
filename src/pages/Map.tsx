@@ -1,45 +1,97 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLocation } from '@/contexts/LocationContext';
+import PropertyMap from '@/components/PropertyMap';
 import PropertyCard, { Property } from '@/components/PropertyCard';
 import PropertyFilters, { FilterState } from '@/components/PropertyFilters';
 import CountrySelector from '@/components/CountrySelector';
-import PropertyMap from '@/components/PropertyMap';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { filterProperties, mockProperties } from '@/data/mockProperties';
-import { ArrowLeft, List, Map as MapIcon, SlidersHorizontal } from 'lucide-react';
+import { filterProperties } from '@/data/mockProperties';
+import { comprehensiveMockProperties, propertiesByCountry } from '@/data/comprehensiveSeedData';
+import { AFRICAN_CITIES_DATA, searchCities, searchNeighborhoods } from '@/data/africanCities';
+import { SlidersHorizontal, ArrowUpDown, List, Search, ArrowLeft, Menu } from 'lucide-react';
+import { MapSidebar } from '@/components/MapSidebar';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const Map: React.FC = () => {
-  console.log('🗺️ Map component is rendering...');
   const navigate = useNavigate();
-  const { selectedCountry } = useLocation();
+  const { selectedCountry, coordinates } = useLocation();
   const { toast } = useToast();
   const [searchMode] = useState<'rent' | 'buy'>('rent');
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [showList, setShowList] = useState(false);
   const [sortBy, setSortBy] = useState('date');
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [properties, setProperties] = useState<Property[]>(mockProperties.slice(0, 10)); // Start with mock data
-  const [isLoadingProperties, setIsLoadingProperties] = useState(false);
-  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
+  const [tokenLoaded, setTokenLoaded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchSuggestions, setSearchSuggestions] = useState<Array<{type: 'city' | 'neighborhood', name: string, country: string, city?: string}>>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showMapSidebar, setShowMapSidebar] = useState(false);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [isLoadingProperties, setIsLoadingProperties] = useState(true);
+
+  // Extract and persist Mapbox token
+  useEffect(() => {
+    const loadToken = () => {
+      // Check localStorage first
+      const savedToken = localStorage.getItem('mapbox_token');
+      if (savedToken) {
+        console.log('🗺️ Token Mapbox chargé depuis localStorage:', savedToken.substring(0, 20) + '...');
+        setMapboxToken(savedToken);
+        setTokenLoaded(true);
+        return;
+      }
+
+      // Then check URL hash
+      const hash = window.location.hash;
+      if (hash.includes('mapbox_token=')) {
+        const token = hash.split('mapbox_token=')[1].split('&')[0];
+        const decodedToken = decodeURIComponent(token);
+        console.log('🗺️ Token Mapbox extrait de l\'URL:', token.substring(0, 20) + '...');
+        setMapboxToken(decodedToken);
+        // Save to localStorage for future use
+        localStorage.setItem('mapbox_token', decodedToken);
+        // Clean URL
+        window.history.replaceState(null, '', window.location.pathname);
+        setTokenLoaded(true);
+        return;
+      }
+
+      // No token found
+      setMapboxToken('');
+      setTokenLoaded(true);
+    };
+
+    loadToken();
+  }, []);
+
+  // Debug: Log token changes
+  useEffect(() => {
+    console.log('🗺️ Mapbox token status:', {
+      hasToken: !!mapboxToken,
+      tokenLength: mapboxToken?.length,
+      tokenPrefix: mapboxToken?.substring(0, 10)
+    });
+  }, [mapboxToken]);
   
   const [filters, setFilters] = useState<FilterState>({
     propertyType: [],
     priceRange: [0, 2000000],
     bedrooms: 'any',
     bathrooms: 'any',
-    areaRange: [1, 1000],
+    areaRange: [20, 1000],
     amenities: []
   });
 
-  console.log('🏠 Using properties:', properties.length, 'View mode:', viewMode);
-
-  // Load properties from Supabase with fallback to mock data
+  // Load real properties from Supabase
   useEffect(() => {
-    console.log('🔄 Loading properties from Supabase...');
     const loadProperties = async () => {
       try {
         setIsLoadingProperties(true);
@@ -52,17 +104,12 @@ const Map: React.FC = () => {
           .not('longitude', 'is', null);
 
         if (error) {
-          console.error('Error loading properties from Supabase:', error);
-          console.log('🔄 Falling back to mock data...');
-          setProperties(mockProperties);
-          setIsLoadingProperties(false);
-          return;
-        }
-
-        if (!listings || listings.length === 0) {
-          console.log('📋 No properties found in Supabase, using mock data...');
-          setProperties(mockProperties);
-          setIsLoadingProperties(false);
+          console.error('Error loading properties:', error);
+          toast({
+            title: "Erreur",
+            description: "Impossible de charger les propriétés",
+            variant: "destructive",
+          });
           return;
         }
 
@@ -105,46 +152,29 @@ const Map: React.FC = () => {
         
       } catch (error) {
         console.error('Error loading properties:', error);
-        console.log('🔄 Falling back to mock data due to error...');
-        setProperties(mockProperties);
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les propriétés",
+          variant: "destructive",
+        });
       } finally {
         setIsLoadingProperties(false);
       }
     };
 
     loadProperties();
-    
-    // Real-time updates
-    const channel = supabase
-      .channel('map-listings-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'listings'
-        },
-        (payload) => {
-          console.log('🗺️ Real-time change detected:', payload);
-          loadProperties();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      console.log('🧹 Cleanup realtime subscription');
-      supabase.removeChannel(channel);
-    };
   }, [toast]);
 
   // Filter properties by selected country and search mode
   const countryFilteredProperties = selectedCountry 
     ? properties.filter(p => {
+        // For simplicity, we'll filter by city since we don't have country in the Property type
+        // You can extend this logic based on your country-city mapping
         const ivorianCities = ['Abidjan', 'Bouaké', 'Daloa', 'Yamoussoukro', 'San-Pédro', 'Korhogo', 'Man', 'Divo', 'Gagnoa', 'Abengourou'];
         if (selectedCountry === 'Côte d\'Ivoire') {
           return ivorianCities.includes(p.location.city);
         }
-        return true;
+        return true; // For other countries, show all for now
       })
     : properties;
 
@@ -172,6 +202,10 @@ const Map: React.FC = () => {
     }
   });
 
+  const handlePropertySelect = (property: Property) => {
+    setSelectedProperty(property);
+  };
+
   const handlePropertyClick = (property: Property) => {
     navigate(`/property/${property.id}`);
   };
@@ -186,23 +220,106 @@ const Map: React.FC = () => {
     setFavorites(newFavorites);
   };
 
-  if (isLoadingProperties) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Chargement des propriétés...</p>
-        </div>
-      </div>
-    );
-  }
+  // Handle search location navigation
+  const navigateToLocation = async (suggestion: {type: 'city' | 'neighborhood', name: string, country: string, city?: string}) => {
+    if (!mapboxToken) return;
+
+    try {
+      // Use Mapbox Geocoding API to get coordinates
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+          suggestion.type === 'city' 
+            ? `${suggestion.name}, ${suggestion.country}` 
+            : `${suggestion.name}, ${suggestion.city}, ${suggestion.country}`
+        )}.json?access_token=${mapboxToken}&country=CI,SN,GH,NG,KE,TZ,UG,ET,EG,MA,DZ,TN,LY,SD,ML,BF,NE,TD,CF,CM,GQ,GA,CG,CD,AO,ZM,ZW,BW,NA,ZA,SZ,LS,MW,MZ,MG,MU,SC,KM,DJ,SO,ER,SS,RW,BI,GM,GW,SL,LR,GN,CV`
+      );
+      
+      const data = await response.json();
+      
+      if (data.features && data.features.length > 0) {
+        const [lng, lat] = data.features[0].center;
+        const zoom = suggestion.type === 'city' ? 11 : 14;
+        
+        // Pass coordinates to PropertyMap for navigation
+        return { coordinates: [lng, lat] as [number, number], zoom };
+      }
+    } catch (error) {
+      console.error('Error geocoding location:', error);
+    }
+    return null;
+  };
+
+  // Ref to access PropertyMap instance
+  const propertyMapRef = useRef<{ navigateToLocation: (coords: [number, number], zoom: number) => void } | null>(null);
+
+  // Handle location navigation from search
+  const handleLocationSelect = async (suggestion: {type: 'city' | 'neighborhood', name: string, country: string, city?: string}) => {
+    console.log('🎯 Selecting location:', suggestion);
+    const result = await navigateToLocation(suggestion);
+    console.log('📍 Navigation result:', result);
+    
+    if (result && propertyMapRef.current) {
+      console.log('🗺️ Calling map navigation');
+      propertyMapRef.current.navigateToLocation(result.coordinates, result.zoom);
+    } else {
+      console.log('❌ Navigation failed:', { hasResult: !!result, hasMapRef: !!propertyMapRef.current });
+    }
+    
+    setSearchQuery(suggestion.name);
+    setShowSuggestions(false);
+  };
+
+  // Handle search input and generate suggestions
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    
+    if (value.length < 1) {
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const suggestions: Array<{type: 'city' | 'neighborhood', name: string, country: string, city?: string}> = [];
+
+    // Search in all African countries
+    AFRICAN_CITIES_DATA.forEach(country => {
+      // Search cities
+      const cities = searchCities(country.name, value);
+      cities.forEach(cityName => {
+        suggestions.push({
+          type: 'city',
+          name: cityName,
+          country: country.name
+        });
+      });
+
+      // Search neighborhoods
+      country.cities.forEach(city => {
+        const neighborhoods = searchNeighborhoods(country.name, city.name, value);
+        neighborhoods.forEach(neighborhoodName => {
+          suggestions.push({
+            type: 'neighborhood',
+            name: neighborhoodName,
+            country: country.name,
+            city: city.name
+          });
+        });
+      });
+    });
+
+    // Limit suggestions to 8 for better UX
+    setSearchSuggestions(suggestions.slice(0, 8));
+    setShowSuggestions(suggestions.length > 0);
+  };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col h-screen bg-background">
       {/* Header */}
       <div className="flex flex-col gap-2 p-3 bg-background border-b border-border z-10">
+        {/* Controls */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
+            {/* Back Button */}
             <Button
               variant="ghost"
               size="sm"
@@ -215,9 +332,7 @@ const Map: React.FC = () => {
             
             <CountrySelector variant="compact" />
             <div className="flex items-center gap-1">
-              <span className="font-semibold text-sm">
-                {viewMode === 'map' ? 'Carte' : 'Liste'} des biens
-              </span>
+              <span className="font-semibold text-sm">Carte</span>
               <Badge variant="secondary" className="text-xs px-2 py-0.5">
                 {sortedProperties.length} biens
               </Badge>
@@ -225,56 +340,16 @@ const Map: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-1">
-            <div className="flex bg-muted rounded-lg p-0.5 mr-2">
-              <Button
-                variant={viewMode === 'map' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('map')}
-                className="h-7 px-2 text-xs"
-              >
-                <MapIcon className="w-3 h-3 mr-1" />
-                Carte
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                className="h-7 px-2 text-xs"
-              >
-                <List className="w-3 h-3 mr-1" />
-                Liste
-              </Button>
-            </div>
-            
+            {/* Menu Button for Sidebar */}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-              className="h-8 px-2"
+              onClick={() => setShowMapSidebar(!showMapSidebar)}
+              className="h-8 w-8 p-0"
             >
-              <SlidersHorizontal className="w-3 h-3 mr-1" />
-              <span className="text-xs">Filtres</span>
+              <Menu className="w-3 h-3" />
             </Button>
           </div>
-        </div>
-
-        {/* Sort Controls */}
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            {sortedProperties.length} propriété{sortedProperties.length > 1 ? 's' : ''} trouvée{sortedProperties.length > 1 ? 's' : ''}
-          </div>
-          
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-40 h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="date">Plus récent</SelectItem>
-              <SelectItem value="price_asc">Prix croissant</SelectItem>
-              <SelectItem value="price_desc">Prix décroissant</SelectItem>
-              <SelectItem value="distance">Distance</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </div>
 
@@ -287,54 +362,61 @@ const Map: React.FC = () => {
         searchMode={searchMode}
       />
 
-      {/* Content - Map or List */}
+      {/* Map Container */}
       <div className="flex-1 relative">
-        {viewMode === 'map' ? (
-          sortedProperties.length === 0 ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center py-12">
-                <MapIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Aucune propriété à afficher</h3>
-                <p className="text-muted-foreground">
-                  Essayez de modifier vos critères de recherche ou de filtrage.
-                </p>
+        {/* Map Sidebar */}
+        <MapSidebar
+          isOpen={showMapSidebar}
+          onClose={() => setShowMapSidebar(false)}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          onShowFilters={() => setShowFilters(!showFilters)}
+          onShowList={() => setShowList(!showList)}
+        />
+
+        {tokenLoaded && (
+          <PropertyMap
+            ref={propertyMapRef}
+            properties={sortedProperties}
+            selectedProperty={selectedProperty}
+            onPropertySelect={handlePropertySelect}
+            className="h-full w-full"
+            apiKey={mapboxToken || undefined}
+            userLocation={coordinates}
+          />
+        )}
+
+        {/* List Overlay */}
+        {showList && (
+          <div className="absolute bottom-0 left-0 right-0 h-2/3 bg-background border-t border-border rounded-t-xl overflow-y-auto">
+            <div className="sticky top-0 bg-background border-b border-border p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">Liste des biens</h3>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowList(false)}
+                >
+                  ×
+                </Button>
               </div>
             </div>
-          ) : (
-            <PropertyMap
-              properties={sortedProperties}
-              favorites={favorites}
-              onPropertyClick={handlePropertyClick}
-              onFavoriteToggle={toggleFavorite}
-            />
-          )
-        ) : (
-          <div className="p-4 h-full overflow-y-auto">
-            {sortedProperties.length === 0 ? (
-              <div className="text-center py-12">
-                <List className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Aucune propriété trouvée</h3>
-                <p className="text-muted-foreground">
-                  Essayez de modifier vos critères de recherche ou de filtrage.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {sortedProperties.map((property) => (
-                  <PropertyCard
-                    key={property.id}
-                    property={property}
-                    onFavorite={toggleFavorite}
-                    isFavorited={favorites.has(property.id)}
-                    onClick={handlePropertyClick}
-                    onContact={() => {
-                      console.log('Contact agent for property:', property.id);
-                    }}
-                    className="w-full"
-                  />
-                ))}
-              </div>
-            )}
+            
+            <div className="p-4 space-y-4">
+              {sortedProperties.map((property) => (
+                <PropertyCard
+                  key={property.id}
+                  property={property}
+                  onFavorite={toggleFavorite}
+                  isFavorited={favorites.has(property.id)}
+                  onClick={handlePropertyClick}
+                  onContact={() => {
+                    console.log('Contact agent for property:', property.id);
+                  }}
+                  className="w-full"
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>

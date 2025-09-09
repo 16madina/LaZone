@@ -114,7 +114,6 @@ export type Database = {
           bathrooms: number | null
           bedrooms: number | null
           city: string
-          country: string | null
           created_at: string
           currency: string
           description: string | null
@@ -133,7 +132,6 @@ export type Database = {
           updated_at: string
           user_id: string
           video_url: string | null
-          virtual_tour_url: string | null
         }
         Insert: {
           additional_info?: Json | null
@@ -143,7 +141,6 @@ export type Database = {
           bathrooms?: number | null
           bedrooms?: number | null
           city: string
-          country?: string | null
           created_at?: string
           currency?: string
           description?: string | null
@@ -162,7 +159,6 @@ export type Database = {
           updated_at?: string
           user_id: string
           video_url?: string | null
-          virtual_tour_url?: string | null
         }
         Update: {
           additional_info?: Json | null
@@ -172,7 +168,6 @@ export type Database = {
           bathrooms?: number | null
           bedrooms?: number | null
           city?: string
-          country?: string | null
           created_at?: string
           currency?: string
           description?: string | null
@@ -191,7 +186,6 @@ export type Database = {
           updated_at?: string
           user_id?: string
           video_url?: string | null
-          virtual_tour_url?: string | null
         }
         Relationships: []
       }
