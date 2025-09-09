@@ -11,21 +11,30 @@ const corsHeaders = {
 };
 
 const handler = async (req: Request): Promise<Response> => {
+  console.log("🚀 send-auth-email function called");
+  console.log("Request method:", req.method);
+  console.log("Request headers:", Object.fromEntries(req.headers));
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
+    console.log("✅ Handling CORS preflight request");
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log("📥 Processing auth webhook request");
     const payload = await req.text();
+    console.log("Payload received:", payload.length, "characters");
+    
     const headers = Object.fromEntries(req.headers);
+    console.log("AUTH_HOOK_SECRET available:", !!Deno.env.get('AUTH_HOOK_SECRET'));
+    console.log("RESEND_API_KEY available:", !!Deno.env.get('RESEND_API_KEY'));
+    console.log("hookSecret being used:", hookSecret.substring(0, 10) + "...");
     
     // Verify webhook signature
+    console.log("🔐 Verifying webhook signature");
     const wh = new Webhook(hookSecret);
-    const {
-      user,
-      email_data: { token, token_hash, redirect_to, email_action_type }
-    } = wh.verify(payload, headers) as {
+    const verifiedData = wh.verify(payload, headers) as {
       user: { email: string };
       email_data: {
         token: string;
@@ -35,6 +44,10 @@ const handler = async (req: Request): Promise<Response> => {
         site_url: string;
       };
     };
+    
+    console.log("✅ Webhook signature verified successfully");
+    
+    const { user, email_data: { token, token_hash, redirect_to, email_action_type } } = verifiedData;
 
     console.log("Received auth webhook:", { email: user.email, email_action_type });
 
@@ -215,6 +228,9 @@ const handler = async (req: Request): Promise<Response> => {
         `;
     }
 
+    console.log("📧 Preparing to send email");
+    console.log("Email details:", { to, subject: subject.substring(0, 50) + "..." });
+    
     // Send email via Resend
     const emailResponse = await resend.emails.send({
       from: "LaZone <onboarding@resend.dev>",
@@ -223,7 +239,7 @@ const handler = async (req: Request): Promise<Response> => {
       html: html,
     });
 
-    console.log("Email sent successfully via Resend:", emailResponse);
+    console.log("✅ Email sent successfully via Resend:", emailResponse);
 
     return new Response(JSON.stringify({ success: true, data: emailResponse }), {
       status: 200,
@@ -233,9 +249,18 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
   } catch (error: any) {
-    console.error("Error in send-auth-email function:", error);
+    console.error("❌ ERROR in send-auth-email function:");
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
+    
+    // Return a more detailed error response
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        errorName: error.name,
+        details: "Check function logs for more information"
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
