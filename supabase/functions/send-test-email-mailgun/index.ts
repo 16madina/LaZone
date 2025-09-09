@@ -33,12 +33,17 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("MAILGUN_API_KEY available:", !!MAILGUN_API_KEY);
     console.log("MAILGUN_DOMAIN available:", !!MAILGUN_DOMAIN);
     console.log("MAILGUN_BASE_URL available:", !!MAILGUN_BASE_URL);
+    
+    if (!MAILGUN_API_KEY || !MAILGUN_DOMAIN || !MAILGUN_BASE_URL) {
+      throw new Error("Missing Mailgun configuration");
+    }
 
     // Prepare email data
     const formData = new FormData();
     formData.append('from', from || `LaZone <noreply@${MAILGUN_DOMAIN}>`);
     formData.append('to', to);
     formData.append('subject', subject);
+    formData.append('text', message);
     formData.append('html', `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
@@ -60,6 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email via Mailgun API
     const mailgunUrl = `${MAILGUN_BASE_URL}/v3/${MAILGUN_DOMAIN}/messages`;
+    console.log("📮 Sending to URL:", mailgunUrl);
     
     const response = await fetch(mailgunUrl, {
       method: 'POST',
@@ -69,24 +75,22 @@ const handler = async (req: Request): Promise<Response> => {
       body: formData,
     });
 
-    console.log("📊 Mailgun response status:", response.status);
-    console.log("📊 Mailgun response headers:", Object.fromEntries(response.headers.entries()));
-    
+    console.log("📊 Response status:", response.status);
     const responseText = await response.text();
-    console.log("📊 Raw Mailgun response:", responseText);
-    
+    console.log("📊 Response text:", responseText);
+
+    if (!response.ok) {
+      console.error("❌ Mailgun API error - Status:", response.status);
+      console.error("❌ Mailgun API error - Body:", responseText);
+      throw new Error(`Mailgun API error (${response.status}): ${responseText}`);
+    }
+
     let responseData;
     try {
       responseData = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error("❌ Failed to parse Mailgun response as JSON:", parseError);
-      console.error("❌ Raw response that failed to parse:", responseText);
-      throw new Error(`Mailgun API returned invalid JSON. Status: ${response.status}, Response: ${responseText.substring(0, 200)}`);
-    }
-    
-    if (!response.ok) {
-      console.error("❌ Mailgun API error:", responseData);
-      throw new Error(`Mailgun API error: ${responseData.message || 'Unknown error'}`);
+    } catch {
+      // If JSON parsing fails, return the raw response
+      responseData = { message: responseText };
     }
 
     console.log("✅ Email sent successfully via Mailgun:", responseData);
