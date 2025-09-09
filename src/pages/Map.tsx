@@ -8,7 +8,7 @@ import PropertyMap from '@/components/PropertyMap';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { filterProperties } from '@/data/mockProperties';
+import { filterProperties, mockProperties } from '@/data/mockProperties';
 import { ArrowLeft, List, Map as MapIcon, SlidersHorizontal } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -35,7 +35,7 @@ const Map: React.FC = () => {
     amenities: []
   });
 
-  // Load real properties from Supabase
+  // Load properties from Supabase with fallback to mock data
   useEffect(() => {
     console.log('🔄 Loading properties from Supabase...');
     const loadProperties = async () => {
@@ -50,12 +50,17 @@ const Map: React.FC = () => {
           .not('longitude', 'is', null);
 
         if (error) {
-          console.error('Error loading properties:', error);
-          toast({
-            title: "Erreur",
-            description: "Impossible de charger les propriétés",
-            variant: "destructive",
-          });
+          console.error('Error loading properties from Supabase:', error);
+          console.log('🔄 Falling back to mock data...');
+          setProperties(mockProperties);
+          setIsLoadingProperties(false);
+          return;
+        }
+
+        if (!listings || listings.length === 0) {
+          console.log('📋 No properties found in Supabase, using mock data...');
+          setProperties(mockProperties);
+          setIsLoadingProperties(false);
           return;
         }
 
@@ -98,11 +103,8 @@ const Map: React.FC = () => {
         
       } catch (error) {
         console.error('Error loading properties:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger les propriétés",
-          variant: "destructive",
-        });
+        console.log('🔄 Falling back to mock data due to error...');
+        setProperties(mockProperties);
       } finally {
         setIsLoadingProperties(false);
       }
