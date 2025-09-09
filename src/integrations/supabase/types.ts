@@ -114,6 +114,7 @@ export type Database = {
           bathrooms: number | null
           bedrooms: number | null
           city: string
+          country: string | null
           created_at: string
           currency: string
           description: string | null
@@ -132,6 +133,7 @@ export type Database = {
           updated_at: string
           user_id: string
           video_url: string | null
+          virtual_tour_url: string | null
         }
         Insert: {
           additional_info?: Json | null
@@ -141,6 +143,7 @@ export type Database = {
           bathrooms?: number | null
           bedrooms?: number | null
           city: string
+          country?: string | null
           created_at?: string
           currency?: string
           description?: string | null
@@ -159,6 +162,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           video_url?: string | null
+          virtual_tour_url?: string | null
         }
         Update: {
           additional_info?: Json | null
@@ -168,6 +172,7 @@ export type Database = {
           bathrooms?: number | null
           bedrooms?: number | null
           city?: string
+          country?: string | null
           created_at?: string
           currency?: string
           description?: string | null
@@ -186,6 +191,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           video_url?: string | null
+          virtual_tour_url?: string | null
         }
         Relationships: []
       }
@@ -332,11 +338,46 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       log_security_event: {
         Args: {
           p_action_type: string
@@ -350,7 +391,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -477,6 +518,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const
