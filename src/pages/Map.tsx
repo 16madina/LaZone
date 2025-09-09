@@ -14,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const Map: React.FC = () => {
-  console.log('🗺️ Map component rendering with interactive map...');
+  console.log('🗺️ Map component is rendering...');
   const navigate = useNavigate();
   const { selectedCountry } = useLocation();
   const { toast } = useToast();
@@ -22,8 +22,8 @@ const Map: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState('date');
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [isLoadingProperties, setIsLoadingProperties] = useState(true);
+  const [properties, setProperties] = useState<Property[]>(mockProperties.slice(0, 10)); // Start with mock data
+  const [isLoadingProperties, setIsLoadingProperties] = useState(false);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   
   const [filters, setFilters] = useState<FilterState>({
@@ -34,6 +34,8 @@ const Map: React.FC = () => {
     areaRange: [1, 1000],
     amenities: []
   });
+
+  console.log('🏠 Using properties:', properties.length, 'View mode:', viewMode);
 
   // Load properties from Supabase with fallback to mock data
   useEffect(() => {
