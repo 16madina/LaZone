@@ -69,7 +69,20 @@ const handler = async (req: Request): Promise<Response> => {
       body: formData,
     });
 
-    const responseData = await response.json();
+    console.log("📊 Mailgun response status:", response.status);
+    console.log("📊 Mailgun response headers:", Object.fromEntries(response.headers.entries()));
+    
+    const responseText = await response.text();
+    console.log("📊 Raw Mailgun response:", responseText);
+    
+    let responseData;
+    try {
+      responseData = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error("❌ Failed to parse Mailgun response as JSON:", parseError);
+      console.error("❌ Raw response that failed to parse:", responseText);
+      throw new Error(`Mailgun API returned invalid JSON. Status: ${response.status}, Response: ${responseText.substring(0, 200)}`);
+    }
     
     if (!response.ok) {
       console.error("❌ Mailgun API error:", responseData);
