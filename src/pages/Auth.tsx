@@ -14,6 +14,7 @@ import { useGeolocation } from '@/hooks/useGeolocation';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SecurityMonitor } from '@/utils/security';
+import CountryPhoneSelector from '@/components/CountryPhoneSelector';
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
@@ -35,7 +36,10 @@ const Auth: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   
   // Champs communs
-  const [loginIdentifier, setLoginIdentifier] = useState(''); // Email ou téléphone pour connexion
+  const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPhone, setLoginPhone] = useState('');
+  const [loginCountry, setLoginCountry] = useState<string | null>(null);
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -66,10 +70,21 @@ const Auth: React.FC = () => {
 
   // Fonction pour connexion directe avec email/phone et mot de passe
   const handleLogin = async () => {
-    if (!loginIdentifier.trim() || !password.trim()) {
+    const identifier = loginMethod === 'email' ? loginEmail : loginPhone;
+    
+    if (!identifier.trim() || !password.trim()) {
       toast({
         title: 'Champs requis',
-        description: 'Veuillez saisir votre email/téléphone et mot de passe.',
+        description: 'Veuillez remplir tous les champs obligatoires.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (loginMethod === 'phone' && !loginCountry) {
+      toast({
+        title: 'Pays requis',
+        description: 'Veuillez sélectionner votre pays.',
         variant: 'destructive',
       });
       return;
@@ -77,13 +92,13 @@ const Auth: React.FC = () => {
 
     setIsLoading(true);
     try {
-      let email = loginIdentifier;
+      let email = identifier;
       
       // Si c'est un numéro de téléphone, chercher l'email associé
-      if (/^\+?\d+$/.test(loginIdentifier.replace(/\s/g, ''))) {
-        const fullPhoneNumber = loginIdentifier.startsWith('+') 
-          ? loginIdentifier.replace(/\s/g, '') 
-          : `${phoneCode}${loginIdentifier.replace(/\s/g, '')}`;
+      if (loginMethod === 'phone') {
+        const country = countries.find(c => c.name === loginCountry);
+        const phoneCode = country?.phoneCode || '';
+        const fullPhoneNumber = `${phoneCode}${loginPhone.replace(/\s/g, '')}`;
         
         const { data: profile } = await supabase
           .from('profiles')
@@ -113,8 +128,8 @@ const Auth: React.FC = () => {
 
       // Log successful auth
       SecurityMonitor.logAuthEvent('login_success', undefined, {
-        authMethod: 'email_password',
-        identifier: loginIdentifier
+        authMethod: loginMethod === 'email' ? 'email_password' : 'phone_password',
+        identifier: identifier
       });
 
       toast({
@@ -125,8 +140,8 @@ const Auth: React.FC = () => {
       navigate(nextUrl);
     } catch (error: any) {
       SecurityMonitor.logAuthEvent('login_failure', undefined, {
-        authMethod: 'email_password',
-        identifier: loginIdentifier,
+        authMethod: loginMethod === 'email' ? 'email_password' : 'phone_password',
+        identifier: identifier,
         error: error.message
       });
       
@@ -267,7 +282,9 @@ const Auth: React.FC = () => {
   };
 
   const resetForm = () => {
-    setLoginIdentifier('');
+    setLoginEmail('');
+    setLoginPhone('');
+    setLoginCountry(null);
     setPassword('');
     setPhone('');
     setEmail('');
@@ -325,21 +342,55 @@ const Auth: React.FC = () => {
                   </div>
 
                   <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="login-identifier">Email ou numéro de téléphone</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                        <Input
-                          id="login-identifier"
-                          type="text"
-                          value={loginIdentifier}
-                          onChange={(e) => setLoginIdentifier(e.target.value)}
-                          className="pl-10"
-                          placeholder="email@exemple.com ou +225123456789"
-                          required
-                        />
-                      </div>
+                    {/* Méthode de connexion */}
+                    <div className="space-y-3">
+                      <Label className="text-base font-medium">Méthode de connexion</Label>
+                      <RadioGroup value={loginMethod} onValueChange={(value) => setLoginMethod(value as 'email' | 'phone')}>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="email" id="login-email" />
+                          <Label htmlFor="login-email" className="flex items-center cursor-pointer">
+                            <Mail className="w-4 h-4 mr-2" />
+                            Email
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="phone" id="login-phone" />
+                          <Label htmlFor="login-phone" className="flex items-center cursor-pointer">
+                            <Phone className="w-4 h-4 mr-2" />
+                            Numéro de téléphone
+                          </Label>
+                        </div>
+                      </RadioGroup>
                     </div>
+
+                    {/* Champ email ou téléphone selon la sélection */}
+                    {loginMethod === 'email' ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="login-email-input">Email</Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                          <Input
+                            id="login-email-input"
+                            type="email"
+                            value={loginEmail}
+                            onChange={(e) => setLoginEmail(e.target.value)}
+                            className="pl-10"
+                            placeholder="votre@email.com"
+                            required
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <CountryPhoneSelector
+                        countries={countries}
+                        selectedCountry={loginCountry}
+                        phoneNumber={loginPhone}
+                        onCountryChange={setLoginCountry}
+                        onPhoneChange={setLoginPhone}
+                        placeholder="XX XX XX XX"
+                        label="Numéro de téléphone"
+                      />
+                    )}
 
                     <div className="space-y-2">
                       <Label htmlFor="login-password">Mot de passe</Label>
@@ -371,7 +422,7 @@ const Auth: React.FC = () => {
                     <Button 
                       onClick={handleLogin}
                       className="w-full" 
-                      disabled={isLoading || !loginIdentifier.trim() || !password.trim()}
+                      disabled={isLoading || (loginMethod === 'email' ? !loginEmail.trim() : !loginPhone.trim() || !loginCountry) || !password.trim()}
                     >
                       {isLoading ? (
                         <>
