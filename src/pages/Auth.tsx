@@ -92,39 +92,51 @@ const Auth: React.FC = () => {
 
     setIsLoading(true);
     try {
-      let email = identifier;
-      
-      // Si c'est un numéro de téléphone, chercher l'email associé
       if (loginMethod === 'phone') {
+        // Pour la connexion par téléphone
         const country = countries.find(c => c.name === loginCountry);
         const phoneCode = country?.phoneCode || '';
         const fullPhoneNumber = `${phoneCode}${loginPhone.replace(/\s/g, '')}`;
         
         const { data: profile } = await supabase
           .from('profiles')
-          .select('email')
+          .select('user_id, email')
           .eq('phone', fullPhoneNumber)
           .maybeSingle();
         
-        if (!profile?.email) {
+        if (!profile) {
           toast({
             title: 'Compte introuvable',
-            description: 'Aucun compte n\'est associé à ce numéro.',
+            description: 'Aucun compte n\'est associé à ce numéro. Veuillez vous inscrire d\'abord.',
             variant: 'destructive',
           });
           return;
         }
-        
-        email = profile.email;
+
+        if (!profile.email) {
+          toast({
+            title: 'Compte incomplet',
+            description: 'Votre compte n\'a pas d\'email associé. Veuillez vous réinscrire avec un email pour pouvoir vous connecter.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        // Se connecter avec l'email associé
+        const { error } = await supabase.auth.signInWithPassword({
+          email: profile.email,
+          password,
+        });
+        if (error) throw error;
+
+      } else {
+        // Connexion normale avec email
+        const { error } = await supabase.auth.signInWithPassword({
+          email: loginEmail,
+          password,
+        });
+        if (error) throw error;
       }
-
-      // Connexion avec Supabase Auth
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
 
       // Log successful auth
       SecurityMonitor.logAuthEvent('login_success', undefined, {
@@ -147,8 +159,8 @@ const Auth: React.FC = () => {
       
       toast({
         title: 'Erreur de connexion',
-        description: error.message === 'Invalid login credentials' 
-          ? 'Email/téléphone ou mot de passe incorrect.' 
+        description: error.message.includes('Invalid login credentials')
+          ? 'Numéro de téléphone ou mot de passe incorrect.' 
           : error.message,
         variant: 'destructive',
       });
