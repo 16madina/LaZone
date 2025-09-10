@@ -6,10 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Shield, Construction, AlertTriangle, Mail, Send } from 'lucide-react';
+import { ArrowLeft, Shield, AlertTriangle, Mail, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
+import { UserManagement } from '@/components/admin/UserManagement';
+import { ListingManagement } from '@/components/admin/ListingManagement';
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();
@@ -149,10 +151,11 @@ const Admin: React.FC = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="email" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs defaultValue="users" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="users">Utilisateurs</TabsTrigger>
+          <TabsTrigger value="listings">Annonces</TabsTrigger>
           <TabsTrigger value="email">Test Email</TabsTrigger>
-          <TabsTrigger value="admin">Administration</TabsTrigger>
         </TabsList>
         
         <TabsContent value="email">
@@ -225,41 +228,12 @@ const Admin: React.FC = () => {
           </Card>
         </TabsContent>
         
-        <TabsContent value="admin">
-          <Card>
-            <CardHeader className="text-center">
-              <div className="flex items-center justify-center mb-4">
-                <Construction className="w-16 h-16 text-muted-foreground" />
-              </div>
-              <CardTitle className="text-2xl">Fonctionnalité en développement</CardTitle>
-              <CardDescription>
-                Les autres fonctions d'administration seront bientôt disponibles.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-center">
-              <p className="text-muted-foreground mb-6">
-                Fonctionnalités à venir :
-              </p>
-              <div className="grid md:grid-cols-2 gap-4 text-left">
-                <div className="space-y-2">
-                  <h4 className="font-medium">Gestion des utilisateurs</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• Voir tous les utilisateurs</li>
-                    <li>• Gérer les rôles et permissions</li>
-                    <li>• Modérer les comptes</li>
-                  </ul>
-                </div>
-                <div className="space-y-2">
-                  <h4 className="font-medium">Gestion du contenu</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• Modérer les annonces</li>
-                    <li>• Gérer les signalements</li>
-                    <li>• Configurer l'application</li>
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="users">
+          <UserManagement />
+        </TabsContent>
+        
+        <TabsContent value="listings">
+          <ListingManagement />
         </TabsContent>
       </Tabs>
     </div>
