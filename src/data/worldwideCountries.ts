@@ -11,7 +11,7 @@ export interface CountryData {
 
 export const WORLDWIDE_COUNTRIES: CountryData[] = [
   // Pays africains (pour les annonces)
-  { code: 'CI', name: 'Côte d\'Ivoire', currency: 'CFA', flag: '🇨🇮', phoneCode: '+225', cities: ['Abidjan', 'Bouaké', 'Daloa'], isAfrican: true },
+  { code: 'CI', name: "Côte d'Ivoire", currency: 'CFA', flag: '🇨🇮', phoneCode: '+225', cities: ['Abidjan', 'Bouaké', 'Daloa'], isAfrican: true },
   { code: 'SN', name: 'Sénégal', currency: 'CFA', flag: '🇸🇳', phoneCode: '+221', cities: ['Dakar', 'Thiès', 'Kaolack'], isAfrican: true },
   { code: 'NG', name: 'Nigeria', currency: 'NGN', flag: '🇳🇬', phoneCode: '+234', cities: ['Lagos', 'Kano', 'Ibadan', 'Port Harcourt'], isAfrican: true },
   { code: 'GH', name: 'Ghana', currency: 'GHS', flag: '🇬🇭', phoneCode: '+233', cities: ['Accra', 'Kumasi', 'Tamale', 'Takoradi'], isAfrican: true },
