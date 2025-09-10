@@ -172,10 +172,10 @@ const Auth: React.FC = () => {
   // Fonction pour inscription directe sans vérification
   const handleSignup = async () => {
     // Validation des champs obligatoires
-    if (!selectedCountry || !phone.trim() || !email.trim() || !password.trim()) {
+    if (!selectedCountry || !phone.trim() || !password.trim()) {
       toast({
         title: 'Champs obligatoires',
-        description: 'Veuillez remplir tous les champs obligatoires.',
+        description: 'Veuillez remplir le numéro de téléphone et le mot de passe.',
         variant: 'destructive',
       });
       return;
@@ -229,9 +229,12 @@ const Auth: React.FC = () => {
         return;
       }
 
+      // Générer un email temporaire si pas fourni
+      const userEmail = email.trim() || `user_${Date.now()}@lazone.app`;
+      
       // Créer le compte avec Supabase Auth
       const signupData = {
-        email: email.trim(),
+        email: userEmail,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
@@ -241,6 +244,7 @@ const Auth: React.FC = () => {
             city: selectedCity || '',
             neighborhood: neighborhood.trim(),
             user_type: userType,
+            email: email.trim(), // Store the actual email in profile even if empty
             ...(userType === 'particulier' ? {
               first_name: firstName.trim(),
               last_name: lastName.trim(),
@@ -485,7 +489,7 @@ const Auth: React.FC = () => {
                     {/* Champs communs */}
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="signup-email">Email *</Label>
+                        <Label htmlFor="signup-email">Email (optionnel)</Label>
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                           <Input
@@ -494,8 +498,7 @@ const Auth: React.FC = () => {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             className="pl-10"
-                            placeholder="votre@email.com"
-                            required
+                            placeholder="votre@email.com (optionnel)"
                           />
                         </div>
                       </div>
