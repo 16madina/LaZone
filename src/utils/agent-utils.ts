@@ -25,23 +25,68 @@ export const getAgentInfo = async (userId: string): Promise<AgentInfo> => {
 
   try {
     console.log('🔍 Fetching agent info for userId:', userId);
+    
     // Query profiles table directly
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('display_name, avatar_url, user_type, first_name, last_name, agency_name')
+      .select('display_name, avatar_url, user_type, first_name, last_name, agency_name, email')
       .eq('user_id', userId)
       .maybeSingle();
     
     console.log('📊 Agent info response:', { profile, error });
     
-    if (error || !profile) {
-      console.log('⚠️ Profile not found or error:', error);
+    if (error) {
+      console.error('❌ Database error fetching profile:', error);
+      return defaultAgent;
+    }
+
+    if (!profile) {
+      console.log('⚠️ Profile not found for userId:', userId);
+      // Try to get user info from auth.users and create a minimal profile
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.admin.getUserById(userId);
+        if (user && !authError) {
+          console.log('📝 Creating minimal profile for user:', user.email);
+          // The trigger should handle this now, but as a fallback
+          const { data: newProfile, error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              user_id: userId,
+              email: user.email,
+              first_name: user.user_metadata?.first_name,
+              last_name: user.user_metadata?.last_name,
+              user_type: user.user_metadata?.user_type || 'particulier',
+              account_status: 'active'
+            })
+            .select('display_name, avatar_url, user_type, first_name, last_name, agency_name, email')
+            .single();
+            
+          if (!insertError && newProfile) {
+            const displayName = newProfile.display_name || 
+              (newProfile.first_name && newProfile.last_name ? `${newProfile.first_name} ${newProfile.last_name}` : '') ||
+              newProfile.email ||
+              'Propriétaire';
+            
+            return {
+              name: displayName,
+              avatar: newProfile.avatar_url || '/placeholder.svg',
+              isVerified: false,
+              type: (newProfile.user_type as 'particulier' | 'agence' | 'démarcheur') || 'particulier',
+              agencyName: newProfile.user_type === 'agence' ? newProfile.agency_name : undefined
+            };
+          }
+        }
+      } catch (createError) {
+        console.error('❌ Error creating profile:', createError);
+      }
+      
       return defaultAgent;
     }
 
     const displayName = profile.display_name || 
       (profile.first_name && profile.last_name ? `${profile.first_name} ${profile.last_name}` : '') ||
       profile.agency_name ||
+      profile.email ||
       'Propriétaire';
 
     console.log('✅ Agent profile found:', displayName, 'Type:', profile.user_type);
