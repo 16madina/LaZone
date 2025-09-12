@@ -19,7 +19,8 @@ import {
 interface AutocompleteProps {
   value?: string;
   onValueChange: (value: string) => void;
-  options: string[];
+  options?: string[];
+  suggestions?: Array<{ label: string; value: string; type?: string }>;
   placeholder?: string;
   emptyText?: string;
   searchPlaceholder?: string;
@@ -30,7 +31,8 @@ interface AutocompleteProps {
 export function Autocomplete({
   value,
   onValueChange,
-  options,
+  options = [],
+  suggestions = [],
   placeholder = "Sélectionner...",
   emptyText = "Aucun résultat trouvé.",
   searchPlaceholder = "Rechercher...",
@@ -40,15 +42,23 @@ export function Autocomplete({
   const [open, setOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState("");
 
+  // Use suggestions if provided, otherwise use options
+  const allOptions = React.useMemo(() => {
+    if (suggestions.length > 0) {
+      return suggestions.map(s => s.label);
+    }
+    return options;
+  }, [options, suggestions]);
+
   const filteredOptions = React.useMemo(() => {
-    if (!searchValue) return options;
-    return options.filter((option) =>
+    if (!searchValue) return allOptions;
+    return allOptions.filter((option) =>
       option.toLowerCase().includes(searchValue.toLowerCase())
     );
-  }, [options, searchValue]);
+  }, [allOptions, searchValue]);
 
   const handleSelect = (selectedValue: string) => {
-    const option = options.find(
+    const option = allOptions.find(
       (option) => option.toLowerCase() === selectedValue.toLowerCase()
     );
     if (option) {

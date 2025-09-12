@@ -34,6 +34,7 @@ import Messages from "./pages/Messages";
 import { usePerformanceMonitor } from "./hooks/usePerformanceMonitor";
 import { CriticalResourceLoader } from "./components/mobile/CriticalResourceLoader";
 import { SecurityProvider } from "./components/security/SecurityProvider";
+import { useErrorDetection } from "./hooks/useErrorDetection";
 
 // Performance monitoring wrapper component
 const PerformanceWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -179,6 +180,9 @@ const AppContent = () => {
 };
 
 const App = () => {
+  // Initialize error detection
+  useErrorDetection();
+  
   return (
     <QueryClientProvider client={queryClient}>
       <SecurityProvider>
