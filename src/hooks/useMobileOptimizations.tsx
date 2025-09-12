@@ -25,7 +25,7 @@ export const useMobileOptimizations = (): MobileOptimizations => {
     maxImageQuality: 85
   });
 
-  // Détecter le type de connexion
+  // Enhanced connection detection with better heuristics
   const updateConnectionInfo = useCallback(() => {
     const connection = (navigator as any).connection || 
                       (navigator as any).mozConnection || 
@@ -34,27 +34,56 @@ export const useMobileOptimizations = (): MobileOptimizations => {
     if (connection) {
       const isSlowConnection = connection.effectiveType === 'slow-2g' || 
                                connection.effectiveType === '2g' ||
+                               connection.downlink < 1.5 ||  // Less than 1.5 Mbps
+                               connection.rtt > 300 ||        // High latency
                                connection.saveData;
+      
+      // Dynamic quality based on connection speed
+      let imageQuality = 85;
+      if (connection.effectiveType === 'slow-2g') imageQuality = 40;
+      else if (connection.effectiveType === '2g') imageQuality = 50;
+      else if (connection.effectiveType === '3g') imageQuality = 70;
+      else if (connection.saveData) imageQuality = 60;
       
       setOptimizations(prev => ({
         ...prev,
         connectionType: connection.effectiveType || 'unknown',
         isLowDataMode: connection.saveData || isSlowConnection,
         shouldOptimizeImages: isSlowConnection || connection.saveData,
-        maxImageQuality: isSlowConnection ? 60 : 85
+        maxImageQuality: imageQuality
+      }));
+    } else {
+      // Fallback for browsers without Network Information API
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/.test(userAgent);
+      
+      setOptimizations(prev => ({
+        ...prev,
+        shouldOptimizeImages: isMobile,
+        maxImageQuality: isMobile ? 70 : 85
       }));
     }
   }, []);
 
-  // Détecter les capacités de l'appareil
+  // Enhanced device capability detection
   const updateDeviceCapabilities = useCallback(() => {
-    const isLowEndDevice = optimizations.hardwareConcurrency <= 2 || 
-                          (optimizations.deviceMemory && optimizations.deviceMemory <= 2);
+    const deviceMemory = optimizations.deviceMemory || 4; // Default to 4GB if unknown
+    const hardwareConcurrency = optimizations.hardwareConcurrency;
+    
+    // More sophisticated device classification
+    const isLowEndDevice = hardwareConcurrency <= 2 || deviceMemory <= 2;
+    const isMidRangeDevice = hardwareConcurrency <= 4 && deviceMemory <= 4;
+    const isHighEndDevice = hardwareConcurrency > 4 && deviceMemory > 4;
+    
+    // Battery-aware optimizations for mobile
+    const battery = (navigator as any).battery;
+    const isLowBattery = battery && battery.level < 0.2 && !battery.charging;
     
     setOptimizations(prev => ({
       ...prev,
-      shouldPreloadCritical: !isLowEndDevice && prev.isOnline && !prev.isLowDataMode,
-      shouldOptimizeImages: isLowEndDevice || prev.isLowDataMode
+      shouldPreloadCritical: isHighEndDevice && prev.isOnline && !prev.isLowDataMode && !isLowBattery,
+      shouldOptimizeImages: isLowEndDevice || prev.isLowDataMode || isLowBattery,
+      maxImageQuality: prev.maxImageQuality * (isLowEndDevice ? 0.8 : isMidRangeDevice ? 0.9 : 1)
     }));
   }, [optimizations.hardwareConcurrency, optimizations.deviceMemory]);
 

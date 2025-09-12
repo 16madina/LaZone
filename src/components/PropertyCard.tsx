@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "@/contexts/LocationContext";
 import { formatPrice } from "@/utils/currency";
-import { ImageOptimizer } from "@/components/mobile/ImageOptimizer";
+import { LazyImage } from '@/components/ui/lazy-image';
 import { useMobileOptimizations } from "@/hooks/useMobileOptimizations";
 
 export interface Property {
@@ -186,13 +186,15 @@ export default function PropertyCard({
               {displayImages.slice(0, maxVisibleImages).map((image, index) => (
                 <CarouselItem key={`${property.id}-${index}`} className="h-full pl-0 basis-full flex-shrink-0">
                   <div className="relative w-full h-full">
-                    <ImageOptimizer
+                    <LazyImage
                       src={image}
                       alt={`${property.title} - Image ${index + 1}`}
                       className="w-full h-full object-cover"
                       quality={shouldOptimizeImages ? maxImageQuality : 85}
-                      lazy={false}
+                      priority={false}
                       fallbackSrc="/placeholder.svg"
+                      width={400}
+                      height={300}
                     />
                   </div>
                 </CarouselItem>
@@ -233,13 +235,15 @@ export default function PropertyCard({
             )}
           </Carousel>
         ) : (
-          <ImageOptimizer
+          <LazyImage
             src={displayImages[0]}
             alt={property.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-slow"
             quality={shouldOptimizeImages ? maxImageQuality : 85}
-            lazy={false}
+            priority={true}
             fallbackSrc="/placeholder.svg"
+            width={400}
+            height={300}
           />
         )}
         
@@ -390,14 +394,14 @@ export default function PropertyCard({
         {/* Agent and Actions */}
         <div className="flex items-center justify-between pt-2 border-t border-border/50">
           <div className="flex items-center gap-2">
-            <ImageOptimizer
+            <LazyImage
               src={property.agent.avatar}
               alt={property.agent.name}
               className="w-6 h-6 rounded-full object-cover"
               width={24}
               height={24}
               quality={shouldOptimizeImages ? 60 : 85}
-              lazy={true}
+              priority={false}
               fallbackSrc="/placeholder.svg"
             />
             <div className="flex flex-col">

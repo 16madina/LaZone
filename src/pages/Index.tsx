@@ -8,17 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { InfiniteScroll } from "@/components/ui/infinite-scroll";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "@/contexts/LocationContext";
 import { useFavoritesContext } from "@/contexts/FavoritesContext";
-import { supabase } from "@/integrations/supabase/client";
-import { MapPin, List, SlidersHorizontal, ArrowUpDown, Search } from "lucide-react";
+import { useOptimizedListings } from "@/hooks/useOptimizedListings";
+import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
+import { MapPin, List, SlidersHorizontal, ArrowUpDown, Search, Loader2 } from "lucide-react";
 import { extendedMockProperties } from "@/data/extendedMockProperties";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Input } from "@/components/ui/input";
 import AIRecommendations from "@/components/ai/AIRecommendations";
-import { getAgentInfo } from "@/utils/agent-utils";
 
 // Use fixed IDs for demo properties so they can be found in PropertyDetail
 const generateFixedDemoId = (originalId: string) => {
@@ -35,8 +36,20 @@ const Index = () => {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [sortBy, setSortBy] = useState('date');
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  // Use optimized listings hook
+  const {
+    properties,
+    loading,
+    error,
+    hasMore,
+    loadMore,
+    refetch,
+    totalCount
+  } = useOptimizedListings(searchMode, selectedCountry, 20);
+   
+  // Performance monitoring
+  const { trackUserInteraction, trackError } = usePerformanceMonitor();
   
   const [filters, setFilters] = useState<FilterState>({
     propertyType: [],
@@ -47,10 +60,12 @@ const Index = () => {
     amenities: []
   });
 
-  // Fetch listings from Supabase
+  // Refetch when search mode or country changes
   useEffect(() => {
-    fetchListings();
-  }, [selectedCountry, searchMode]);
+    const endInteraction = trackUserInteraction('search_mode_change', 'filter');
+    refetch();
+    endInteraction();
+  }, [selectedCountry, searchMode, refetch, trackUserInteraction]);
 
   // Update price range when search mode changes
   useEffect(() => {
@@ -60,131 +75,12 @@ const Index = () => {
     }));
   }, [searchMode]);
 
-  const fetchListings = async () => {
-    try {
-      setLoading(true);
-      console.log('🔍 Fetching listings with:', { searchMode, selectedCountry });
-      
-      let query = supabase
-        .from('listings')
-        .select('*')
-        .eq('status', 'active');
-      
-      if (searchMode === 'commercial') {
-        query = query.eq('property_type', 'commercial');
-        console.log('📊 Filtering for commercial properties');
-      } else {
-        const purpose = searchMode === 'buy' ? 'sale' : searchMode;
-        query = query.eq('purpose', purpose);
-        console.log('🏠 Filtering for purpose:', purpose);
-      }
-
-      // Filtrage par pays avec inclusion des annonces sans pays spécifié
-      if (selectedCountry) {
-        query = query.or(`country.eq.${selectedCountry},country.is.null`);
-        console.log('🌍 Filtering for country:', selectedCountry, '(including listings without country)');
-      }
-      
-      console.log('📊 About to query Supabase...');
-      const { data, error } = await query.order('created_at', { ascending: false });
-      console.log('📨 Supabase query completed');
-      
-      if (error) {
-        console.error('❌ Supabase error:', error);
-        throw error;
-      }
-
-      console.log('📋 Raw listings from DB:', data?.length || 0, 'items');
-      console.log('📋 Sample listing:', data?.[0]);
-
-      // Convert Supabase data to Property format
-      console.log('🔄 Starting conversion...');
-      const convertedProperties: Property[] = await Promise.all(
-        (data || []).map(async (listing, index) => {
-          console.log(`🔄 Converting listing ${index + 1}:`, listing.title);
-          
-          // Simplify agent info retrieval for debugging
-          let agentInfo;
-          try {
-            agentInfo = await getAgentInfo(listing.user_id);
-            console.log(`👤 Agent info for ${listing.title}:`, agentInfo.name);
-          } catch (agentError) {
-            console.error('❌ Agent info error:', agentError);
-            agentInfo = {
-              name: 'Propriétaire',
-              avatar: '/placeholder.svg',
-              isVerified: false,
-              type: 'particulier' as const,
-              agencyName: undefined
-            };
-          }
-          
-          console.log(`✅ Converted listing ${index + 1}:`, { title: listing.title, id: listing.id });
-          return {
-            id: listing.id,
-            title: listing.title,
-            price: listing.price,
-            currency: listing.currency,
-            location: {
-              city: listing.city,
-              neighborhood: listing.neighborhood,
-              coordinates: (listing.longitude && listing.latitude) ? 
-                [listing.longitude, listing.latitude] as [number, number] :
-                [0, 0] as [number, number] // Will be filtered out later if invalid
-            },
-            images: listing.images || ['/placeholder.svg'],
-            type: listing.property_type as 'apartment' | 'house' | 'land' | 'commercial',
-            purpose: listing.purpose as 'rent' | 'sale' | 'commercial',
-            bedrooms: listing.bedrooms,
-            bathrooms: listing.bathrooms,
-            area: listing.area,
-            landArea: listing.land_area,
-            amenities: listing.amenities || [],
-            isVerified: false,
-            isNew: isNewListing(listing.created_at),
-            isFeatured: false,
-            agent: agentInfo,
-            createdAt: listing.created_at
-          };
-        })
-      );
-
-      console.log('🎯 Converted properties count:', convertedProperties.length);
-
-      // Ajouter des propriétés de démonstration seulement si elles correspondent au pays sélectionné
-      let finalProperties = convertedProperties;
-      
-      // Filtrer les propriétés de démonstration selon le pays sélectionné
-      if (!selectedCountry || selectedCountry === 'Côte d\'Ivoire') {
-        let demoProperties;
-        if (searchMode === 'commercial') {
-          demoProperties = extendedMockProperties
-            .filter(prop => prop.type === 'commercial' && (!selectedCountry || prop.location.city.includes('Abidjan') || prop.location.city.includes('Côte')));
-        } else {
-          const targetPurpose = searchMode === 'buy' ? 'sale' : 'rent';
-          demoProperties = extendedMockProperties
-            .filter(prop => prop.purpose === targetPurpose && (!selectedCountry || prop.location.city.includes('Abidjan') || prop.location.city.includes('Côte')));
-        }
-        
-        // Prendre jusqu'à 3 propriétés de démonstration
-        demoProperties = demoProperties
-          .slice(0, 3)
-          .map((prop) => ({
-            ...prop,
-            // Utiliser un ID fixe pour la démonstration
-            id: generateFixedDemoId(prop.id)
-          }));
-        
-        // Les annonces réelles d'abord, puis les propriétés de démonstration
-        finalProperties = [...convertedProperties, ...demoProperties];
-      }
-
-      setProperties(finalProperties);
-      console.log('✅ Final properties set:', finalProperties.length, 'items');
-      console.log('✅ First 3 properties:', finalProperties.slice(0, 3).map(p => ({ title: p.title, purpose: p.purpose, city: p.location.city })));
-    } catch (error) {
-      console.error('Error fetching listings:', error);
-      // Fallback to demo data if there's an error
+  // Add demo properties to the mix for better UX
+  const getAllProperties = (): Property[] => {
+    let allProperties = [...properties];
+    
+    // Add demo properties if not many real properties
+    if (properties.length < 10 && (!selectedCountry || selectedCountry === 'Côte d\'Ivoire')) {
       let demoProperties;
       if (searchMode === 'commercial') {
         demoProperties = extendedMockProperties
@@ -194,29 +90,23 @@ const Index = () => {
         demoProperties = extendedMockProperties
           .filter(prop => prop.purpose === targetPurpose);
       }
+      
       demoProperties = demoProperties
-        .slice(0, 10)
+        .slice(0, Math.max(0, 10 - properties.length))
         .map((prop) => ({
           ...prop,
-          // Use fixed demo ID so it can be found in PropertyDetail
           id: generateFixedDemoId(prop.id)
         }));
-      setProperties(demoProperties);
-    } finally {
-      setLoading(false);
+      
+      allProperties = [...properties, ...demoProperties];
     }
+    
+    return allProperties;
   };
 
-  const isNewListing = (createdAt: string): boolean => {
-    const created = new Date(createdAt);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - created.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 3;
-  };
-
-  // Filter properties based on filters
-  const filteredProperties = properties.filter(property => {
+  // Filter properties based on filters with memoization
+  const allProperties = getAllProperties();
+  const filteredProperties = allProperties.filter(property => {
     // Type filter
     if (filters.propertyType.length > 0) {
       const typeMap = { 'apartment': 'Appartement', 'house': 'Maison', 'land': 'Terrain', 'commercial': 'Commercial' };
@@ -319,6 +209,7 @@ const Index = () => {
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium">
               {sortedProperties.length} {searchMode === 'rent' ? 'locations' : searchMode === 'buy' ? 'ventes' : 'espaces commerciaux'}
+              {totalCount > 0 && ` sur ${totalCount} total`}
             </span>
             
             {/* Active Filters */}
