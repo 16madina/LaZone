@@ -66,22 +66,55 @@ export default function PropertyCard({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [api, setApi] = useState<CarouselApi>();
   
-  // Production-ready image handling with validation
-  const cleanImages = (property.images || []).filter(img => 
-    img && 
-    img !== '/placeholder.svg' && 
-    img.trim() !== '' &&
-    img !== 'undefined' &&
-    img !== 'null'
-  );
+  // Enhanced image validation and fallback system
+  const validateImageUrl = (url: string): boolean => {
+    if (!url || typeof url !== 'string') return false;
+    
+    const trimmedUrl = url.trim();
+    if (trimmedUrl === '' || trimmedUrl === 'undefined' || trimmedUrl === 'null') return false;
+    if (trimmedUrl === '/placeholder.svg') return false;
+    
+    // Check for valid URL format
+    try {
+      new URL(trimmedUrl);
+      return true;
+    } catch {
+      // Check for relative paths that might be valid
+      return trimmedUrl.startsWith('/') || trimmedUrl.startsWith('./') || trimmedUrl.startsWith('../');
+    }
+  };
+
+  const cleanImages = (property.images || [])
+    .filter(validateImageUrl)
+    .map(img => img.trim());
   
   const hasValidImages = cleanImages.length > 0;
-  const displayImages = hasValidImages ? cleanImages : 
-    ['https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=500&fit=crop&crop=center'];
+  
+  // Improved fallback system with property-type specific images
+  const getDefaultImageByType = (type: string) => {
+    const baseParams = 'w=800&h=500&fit=crop&crop=center&auto=format';
+    switch (type) {
+      case 'apartment':
+        return `https://images.unsplash.com/photo-1560518883-ce09059eeffa?${baseParams}`;
+      case 'house':
+        return `https://images.unsplash.com/photo-1568605114967-8130f3a36994?${baseParams}`;
+      case 'land':
+        return `https://images.unsplash.com/photo-1500382017468-9049fed747ef?${baseParams}`;
+      case 'commercial':
+        return `https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?${baseParams}`;
+      default:
+        return `https://images.unsplash.com/photo-1560518883-ce09059eeffa?${baseParams}`;
+    }
+  };
+  
+  const displayImages = hasValidImages ? cleanImages : [getDefaultImageByType(property.type)];
     
-  // Log any image issues for debugging
+  // Enhanced logging for debugging
   if (!hasValidImages && property.images?.length > 0) {
-    console.warn(`Property ${property.id} has invalid images:`, property.images);
+    console.warn(`Property ${property.id} (${property.type}) has invalid images:`, {
+      originalImages: property.images,
+      fallbackUsed: getDefaultImageByType(property.type)
+    });
   }
   const maxVisibleImages = 5;
 

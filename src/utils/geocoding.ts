@@ -1,6 +1,129 @@
 /**
- * Système de géocodage automatique pour les annonces
+ * Système de géocodage automatique pour les annonces avec cache et rate limiting
  */
+
+// Enhanced geocoding utilities with caching and rate limiting
+interface GeocodingCache {
+  [key: string]: {
+    result: GeocodingResult | null;
+    timestamp: number;
+    ttl: number;
+  };
+}
+
+interface GeocodingResult {
+  latitude: number;
+  longitude: number;
+  displayName: string;
+}
+
+// Cache for geocoding results (24h TTL)
+const geocodingCache: GeocodingCache = {};
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const RATE_LIMIT_DELAY = 1000; // 1 second between requests
+let lastRequestTime = 0;
+
+// Rate limiting function
+const rateLimitedRequest = async (url: string): Promise<Response> => {
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastRequestTime;
+  
+  if (timeSinceLastRequest < RATE_LIMIT_DELAY) {
+    const delay = RATE_LIMIT_DELAY - timeSinceLastRequest;
+    await new Promise(resolve => setTimeout(resolve, delay));
+  }
+  
+  lastRequestTime = Date.now();
+  return fetch(url, {
+    headers: {
+      'User-Agent': 'LaZone Real Estate App/1.0'
+    }
+  });
+};
+
+// African cities fallback data for better geocoding
+const africanCitiesFallback: { [key: string]: GeocodingResult } = {
+  'abidjan': { latitude: 5.3364, longitude: -4.0267, displayName: 'Abidjan, Côte d\'Ivoire' },
+  'lagos': { latitude: 6.5244, longitude: 3.3792, displayName: 'Lagos, Nigeria' },
+  'accra': { latitude: 5.6037, longitude: -0.1870, displayName: 'Accra, Ghana' },
+  'dakar': { latitude: 14.7167, longitude: -17.4677, displayName: 'Dakar, Sénégal' },
+  'casablanca': { latitude: 33.5731, longitude: -7.5898, displayName: 'Casablanca, Maroc' },
+  'tunis': { latitude: 36.8065, longitude: 10.1815, displayName: 'Tunis, Tunisie' },
+  'nairobi': { latitude: -1.2921, longitude: 36.8219, displayName: 'Nairobi, Kenya' },
+  'cairo': { latitude: 30.0444, longitude: 31.2357, displayName: 'Le Caire, Égypte' },
+  'johannesburg': { latitude: -26.2041, longitude: 28.0473, displayName: 'Johannesburg, Afrique du Sud' },
+  'alger': { latitude: 36.7538, longitude: 3.0588, displayName: 'Alger, Algérie' }
+};
+
+// Enhanced Nominatim geocoding with caching and fallback
+export async function geocodeAddressNominatim(query: string): Promise<GeocodingResult | null> {
+  const normalizedQuery = query.toLowerCase().trim();
+  
+  // Check cache first
+  const cacheKey = normalizedQuery;
+  const cached = geocodingCache[cacheKey];
+  if (cached && (Date.now() - cached.timestamp < cached.ttl)) {
+    return cached.result;
+  }
+
+  // Check African cities fallback first
+  const fallbackCity = Object.keys(africanCitiesFallback).find(city => 
+    normalizedQuery.includes(city)
+  );
+  
+  if (fallbackCity) {
+    const result = africanCitiesFallback[fallbackCity];
+    geocodingCache[cacheKey] = {
+      result,
+      timestamp: Date.now(),
+      ttl: CACHE_TTL
+    };
+    return result;
+  }
+
+  try {
+    const response = await rateLimitedRequest(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&countrycodes=ci,gh,sn,ma,tn,ng,ke,eg,bf,ml,ne,cd,cm,mg,za,et,ug,dz,sd,mz,mw,zm,zw,bj,tg,gn,sl,lr,gm,gw,cv,st,gq,ga,cg,cf,td,dj,so,er,ss,ls,sz,bw,na,ao`
+    );
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    let result: GeocodingResult | null = null;
+    
+    if (data && data.length > 0) {
+      const firstResult = data[0];
+      result = {
+        latitude: parseFloat(firstResult.lat),
+        longitude: parseFloat(firstResult.lon),
+        displayName: firstResult.display_name
+      };
+    }
+    
+    // Cache the result (even null results to avoid repeated failed requests)
+    geocodingCache[cacheKey] = {
+      result,
+      timestamp: Date.now(),
+      ttl: result ? CACHE_TTL : CACHE_TTL / 24 // Cache failed results for 1 hour
+    };
+    
+    return result;
+  } catch (error) {
+    console.error('Geocoding error:', error);
+    
+    // Cache failed request to avoid immediate retry
+    geocodingCache[cacheKey] = {
+      result: null,
+      timestamp: Date.now(),
+      ttl: CACHE_TTL / 24 // 1 hour for failed requests
+    };
+    
+    return null;
+  }
+}
 
 // Coordonnées principales des villes africaines
 export const CITY_COORDINATES = {
@@ -145,13 +268,23 @@ const getDefaultCoordinatesByCountry = (country: string): { lat: number; lng: nu
 };
 
 /**
- * Géocode une adresse complète (pour les futures intégrations avec Mapbox)
+ * Géocode une adresse complète avec cache intelligent et fallback
  */
 export const geocodeAddress = async (address: string, city: string, country: string, mapboxToken?: string): Promise<{ lat: number; lng: number } | null> => {
-  // D'abord essayer notre base locale
+  // D'abord essayer notre base locale (plus rapide)
   const cityCoords = getCityCoordinates(city, country);
   if (cityCoords) {
     return cityCoords;
+  }
+  
+  // Essayer le géocodage Nominatim avec cache
+  const fullAddress = `${address}, ${city}, ${country}`;
+  const nominatimResult = await geocodeAddressNominatim(fullAddress);
+  if (nominatimResult) {
+    return {
+      lat: nominatimResult.latitude,
+      lng: nominatimResult.longitude
+    };
   }
   
   // Si on a un token Mapbox, utiliser l'API de géocodage
@@ -172,5 +305,6 @@ export const geocodeAddress = async (address: string, city: string, country: str
     }
   }
   
-  return null;
+  // Dernier fallback : coordonnées par défaut du pays
+  return getDefaultCoordinatesByCountry(country);
 };
