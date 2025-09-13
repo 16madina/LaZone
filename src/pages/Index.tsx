@@ -79,8 +79,8 @@ const Index = () => {
   const getAllProperties = (): Property[] => {
     let allProperties = [...properties];
     
-    // Add demo properties if not many real properties
-    if (properties.length < 10 && (!selectedCountry || selectedCountry === 'Côte d\'Ivoire')) {
+    // Only add demo properties if there are very few real properties (less than 3)
+    if (properties.length < 3 && (!selectedCountry || selectedCountry === 'Côte d\'Ivoire')) {
       let demoProperties;
       if (searchMode === 'commercial') {
         demoProperties = extendedMockProperties
@@ -92,7 +92,7 @@ const Index = () => {
       }
       
       demoProperties = demoProperties
-        .slice(0, Math.max(0, 10 - properties.length))
+        .slice(0, Math.max(0, 5 - properties.length)) // Limit demo properties to 5
         .map((prop) => ({
           ...prop,
           id: generateFixedDemoId(prop.id)
