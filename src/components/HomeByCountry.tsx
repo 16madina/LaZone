@@ -13,6 +13,7 @@ type Listing = {
   latitude: number | null; 
   longitude: number | null; 
   city_id: string | null;
+  images?: string[] | null;
   cities?: { name: string; slug: string } | null;
 };
 
@@ -94,29 +95,52 @@ export default function HomeByCountry({ countryCode }: { countryCode: string }) 
       {items.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {items.map(listing => (
-            <div key={listing.id} className="rounded-lg border p-4 hover:shadow-md transition-shadow">
-              <h3 className="text-base font-semibold mb-2 line-clamp-2">
-                {listing.title}
-              </h3>
-              
-              {listing.price && (
-                <p className="text-primary font-bold text-lg mb-2">
-                  {listing.price.toLocaleString()} FCFA
-                </p>
-              )}
-              
-              <div className="text-xs text-muted-foreground mb-3">
-                {listing.cities?.name}
-                {listing.neighborhood && ` • ${listing.neighborhood}`}
-                {` • ${countryCode}`}
+            <div key={listing.id} className="rounded-lg border overflow-hidden hover:shadow-md transition-shadow">
+              {/* Image de l'annonce */}
+              <div className="aspect-[16/10] overflow-hidden">
+                {listing.images && listing.images.length > 0 ? (
+                  <img 
+                    src={typeof listing.images === 'string' ? listing.images : listing.images[0]}
+                    alt={listing.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback vers une image par défaut si l'image ne charge pas
+                      const target = e.target as HTMLImageElement;
+                      target.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=500&fit=crop&crop=center&auto=format';
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center">
+                    <span className="text-muted-foreground text-sm">Aucune image</span>
+                  </div>
+                )}
               </div>
               
-              <div className="text-xs text-muted-foreground">
-                {new Date(listing.created_at).toLocaleDateString('fr-FR', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric'
-                })}
+              {/* Contenu de l'annonce */}
+              <div className="p-4">
+                <h3 className="text-base font-semibold mb-2 line-clamp-2">
+                  {listing.title}
+                </h3>
+                
+                {listing.price && (
+                  <p className="text-primary font-bold text-lg mb-2">
+                    {listing.price.toLocaleString()} FCFA
+                  </p>
+                )}
+                
+                <div className="text-xs text-muted-foreground mb-3">
+                  {listing.cities?.name}
+                  {listing.neighborhood && ` • ${listing.neighborhood}`}
+                  {` • ${countryCode}`}
+                </div>
+                
+                <div className="text-xs text-muted-foreground">
+                  {new Date(listing.created_at).toLocaleDateString('fr-FR', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                  })}
+                </div>
               </div>
             </div>
           ))}

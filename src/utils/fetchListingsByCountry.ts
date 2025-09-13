@@ -5,7 +5,7 @@ export async function fetchListingsByCountry(countryCode: string) {
     .from('listings')
     .select(`
       id, title, price, neighborhood, created_at, country_code, 
-      latitude, longitude, city_id,
+      latitude, longitude, city_id, images,
       cities(name, slug)
     `)
     .eq('country_code', countryCode)  // 'CI'
@@ -27,7 +27,7 @@ export async function fetchAllActiveListings() {
     .from('listings')
     .select(`
       id, title, price, neighborhood, created_at, country_code, 
-      latitude, longitude, city_id,
+      latitude, longitude, city_id, images,
       cities(name, slug)
     `)
     .eq('status', 'active')
