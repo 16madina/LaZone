@@ -365,6 +365,48 @@ export type Database = {
         }
         Relationships: []
       }
+      sponsored_listings: {
+        Row: {
+          amount_paid: number
+          boost_level: number
+          created_at: string
+          currency: string
+          id: string
+          listing_id: string
+          sponsored_from: string
+          sponsored_until: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_paid: number
+          boost_level?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          listing_id: string
+          sponsored_from?: string
+          sponsored_until: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number
+          boost_level?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          listing_id?: string
+          sponsored_from?: string
+          sponsored_until?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -416,6 +458,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_listing_sponsored: {
+        Args: { listing_uuid: string }
         Returns: boolean
       }
       log_security_event: {
