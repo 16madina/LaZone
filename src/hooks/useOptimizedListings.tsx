@@ -67,14 +67,15 @@ export const useOptimizedListings = (
         }
       }
 
-      // Build optimized query with indexes
+      // Build optimized query with indexes using new structure
       let query = supabase
         .from('listings')
         .select(`
           id, title, price, currency, city, neighborhood, 
           longitude, latitude, images, property_type, purpose,
           bedrooms, bathrooms, area, land_area, amenities,
-          created_at, user_id
+          created_at, user_id, owner_id, country_code,
+          cities!inner(name, country_code)
         `, { count: 'estimated' })
         .eq('status', 'active')
         .order('created_at', { ascending: false });
@@ -87,9 +88,18 @@ export const useOptimizedListings = (
         query = query.eq('purpose', purpose);
       }
 
-      // Filter by country - show all listings if no country selected
+      // Filter by country using country_code - show all listings if no country selected
       if (selectedCountry) {
-        query = query.or(`country.eq.${selectedCountry},country.is.null`);
+        // Convert country name to country code
+        const countryCodeMap: Record<string, string> = {
+          'Côte d\'Ivoire': 'CI',
+          'Sénégal': 'SN', 
+          'Mali': 'ML',
+          'Burkina Faso': 'BF',
+          'Cameroun': 'CM'
+        };
+        const countryCode = countryCodeMap[selectedCountry] || selectedCountry;
+        query = query.eq('country_code', countryCode);
       }
       // If no selectedCountry, show all listings (no country filter)
 
@@ -144,7 +154,7 @@ export const useOptimizedListings = (
       const paginatedListings = sortedListings.slice(currentOffset, currentOffset + pageSize);
 
       // Batch agent info requests for better performance
-      const userIds = [...new Set(paginatedListings?.map(listing => listing.user_id) || [])];
+      const userIds = [...new Set(paginatedListings?.map(listing => listing.owner_id || listing.user_id) || [])];
       const agentInfoPromises = userIds.map(userId => getAgentInfo(userId));
       const agentInfos = await Promise.all(agentInfoPromises);
       
@@ -156,6 +166,7 @@ export const useOptimizedListings = (
 
       const convertedProperties: Property[] = paginatedListings.map(listing => {
         const sponsorship = sponsorshipLookup.get(listing.id);
+        const userId = listing.owner_id || listing.user_id;
         
         return {
           id: listing.id,
@@ -163,7 +174,7 @@ export const useOptimizedListings = (
           price: listing.price,
           currency: listing.currency,
           location: {
-            city: listing.city,
+            city: listing.cities?.name || listing.city,
             neighborhood: listing.neighborhood,
             coordinates: (listing.longitude && listing.latitude) ? 
               [listing.longitude, listing.latitude] as [number, number] :
@@ -184,7 +195,7 @@ export const useOptimizedListings = (
           isSponsored: !!sponsorship,
           sponsorshipLevel: sponsorship?.boost_level || 0,
           sponsorshipEnd: sponsorship?.sponsored_until || null,
-          agent: agentLookup.get(listing.user_id) || {
+          agent: agentLookup.get(userId) || {
             name: 'Propriétaire',
             avatar: '/placeholder.svg',
             isVerified: false,
