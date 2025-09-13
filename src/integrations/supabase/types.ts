@@ -38,6 +38,27 @@ export type Database = {
         }
         Relationships: []
       }
+      cities: {
+        Row: {
+          country_code: string
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          country_code: string
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          country_code?: string
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           buyer_id: string
@@ -114,7 +135,9 @@ export type Database = {
           bathrooms: number | null
           bedrooms: number | null
           city: string
+          city_id: string | null
           country: string | null
+          country_code: string | null
           created_at: string
           currency: string
           description: string | null
@@ -125,6 +148,7 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           neighborhood: string | null
+          owner_id: string | null
           price: number
           property_type: string
           purpose: string
@@ -143,7 +167,9 @@ export type Database = {
           bathrooms?: number | null
           bedrooms?: number | null
           city: string
+          city_id?: string | null
           country?: string | null
+          country_code?: string | null
           created_at?: string
           currency?: string
           description?: string | null
@@ -154,6 +180,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           neighborhood?: string | null
+          owner_id?: string | null
           price: number
           property_type: string
           purpose: string
@@ -172,7 +199,9 @@ export type Database = {
           bathrooms?: number | null
           bedrooms?: number | null
           city?: string
+          city_id?: string | null
           country?: string | null
+          country_code?: string | null
           created_at?: string
           currency?: string
           description?: string | null
@@ -183,6 +212,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           neighborhood?: string | null
+          owner_id?: string | null
           price?: number
           property_type?: string
           purpose?: string
@@ -193,7 +223,15 @@ export type Database = {
           video_url?: string | null
           virtual_tour_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "listings_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messages: {
         Row: {
