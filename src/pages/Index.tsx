@@ -150,7 +150,7 @@ const Index = () => {
     ? filteredProperties.filter(p => 
         p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.location.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.location.neighborhood.toLowerCase().includes(searchQuery.toLowerCase())
+        (p.location.neighborhood && p.location.neighborhood.toLowerCase().includes(searchQuery.toLowerCase()))
       )
     : filteredProperties;
 
