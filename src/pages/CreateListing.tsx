@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Autocomplete } from "@/components/ui/autocomplete";
 import { searchCities, searchNeighborhoods, getCitiesByCountry, getNeighborhoodsByCity } from "@/data/africanCities";
+import { getAfricanCountries } from "@/data/worldwideCountries";
 import { getCityCoordinates } from "@/utils/geocoding";
 
 interface ListingData {
@@ -96,6 +97,10 @@ export default function CreateListing() {
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [posterType, setPosterType] = useState<'particulier' | 'demarcheur'>('particulier');
   const [isLoading, setIsLoading] = useState(false);
+  const [manualCountry, setManualCountry] = useState(selectedCountry || '');
+  
+  // Pays effectif à utiliser (manuel ou détecté automatiquement)
+  const effectiveCountry = manualCountry || selectedCountry;
   const [formData, setFormData] = useState<ListingData>({
     purpose: 'rent',
     propertyType: '',
@@ -602,21 +607,44 @@ export default function CreateListing() {
             </div>
 
             <div className="space-y-4">
-              {/* Pays automatiquement détecté */}
-              {selectedCountry && (
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-green-500" />
-                    Pays (détecté automatiquement)
-                  </Label>
-                  <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
-                    <p className="text-sm font-medium text-green-700 dark:text-green-300 flex items-center gap-2">
-                      <Shield className="w-4 h-4" />
-                      {selectedCountry}
-                    </p>
-                  </div>
-                </div>
-              )}
+              {/* Sélection du pays */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  Pays
+                  {selectedCountry && (
+                    <Badge variant="secondary" className="ml-2">
+                      <Shield className="w-3 h-3 mr-1" />
+                      Détecté automatiquement
+                    </Badge>
+                  )}
+                </Label>
+                <Select 
+                  value={effectiveCountry} 
+                  onValueChange={(value) => {
+                    setManualCountry(value);
+                    updateFormData({ city: '', neighborhood: '' }); // Reset city and neighborhood when country changes
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez votre pays" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getAfricanCountries().map((country) => (
+                      <SelectItem key={country.code} value={country.name}>
+                        <span className="flex items-center gap-2">
+                          {country.flag} {country.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedCountry && (
+                  <p className="text-xs text-muted-foreground">
+                    Nous avons détecté votre localisation en {selectedCountry}. Vous pouvez changer si nécessaire.
+                  </p>
+                )}
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -629,10 +657,11 @@ export default function CreateListing() {
                         neighborhood: '' // Reset neighborhood when city changes
                       });
                     }}
-                    options={selectedCountry ? getCitiesByCountry(selectedCountry).map(city => city.name) : []}
-                    placeholder="Ex: Abidjan"
+                    options={effectiveCountry ? getCitiesByCountry(effectiveCountry).map(city => city.name) : []}
+                    placeholder={effectiveCountry ? "Ex: Abidjan, tapez pour rechercher..." : "Sélectionnez d'abord un pays"}
                     searchPlaceholder="Rechercher une ville..."
-                    emptyText="Aucune ville trouvée"
+                    emptyText={effectiveCountry ? "Aucune ville trouvée" : "Sélectionnez d'abord un pays"}
+                    disabled={!effectiveCountry}
                   />
                   {errors.city && <p className="text-sm text-destructive">{errors.city}</p>}
                 </div>
@@ -642,13 +671,13 @@ export default function CreateListing() {
                   <Autocomplete
                     value={formData.neighborhood}
                     onValueChange={(value) => updateFormData({ neighborhood: value })}
-                    options={selectedCountry && formData.city 
-                      ? getNeighborhoodsByCity(selectedCountry, formData.city)
+                    options={effectiveCountry && formData.city 
+                      ? getNeighborhoodsByCity(effectiveCountry, formData.city)
                       : []
                     }
-                    placeholder="Ex: Cocody"
+                    placeholder={formData.city ? "Ex: Cocody, tapez pour rechercher..." : "Sélectionnez d'abord une ville"}
                     searchPlaceholder="Rechercher un quartier..."
-                    emptyText="Sélectionnez d'abord une ville"
+                    emptyText={formData.city ? "Aucun quartier trouvé" : "Sélectionnez d'abord une ville"}
                     disabled={!formData.city}
                   />
                   {errors.neighborhood && <p className="text-sm text-destructive">{errors.neighborhood}</p>}
