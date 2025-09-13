@@ -87,6 +87,7 @@ export const useOptimizedListings = (
         query = query.eq('purpose', purpose);
       }
 
+      // Filter by country - include listings without country set for selected country
       if (selectedCountry) {
         query = query.or(`country.eq.${selectedCountry},country.is.null`);
       }
