@@ -87,10 +87,11 @@ export const useOptimizedListings = (
         query = query.eq('purpose', purpose);
       }
 
-      // Filter by country - include listings without country set for selected country
+      // Filter by country - show all listings if no country selected
       if (selectedCountry) {
         query = query.or(`country.eq.${selectedCountry},country.is.null`);
       }
+      // If no selectedCountry, show all listings (no country filter)
 
       const { data: allListings, error: queryError, count } = await query;
 

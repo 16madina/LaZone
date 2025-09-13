@@ -28,7 +28,7 @@ const generateFixedDemoId = (originalId: string) => {
 
 const Index = () => {
   const navigate = useNavigate();
-  const { selectedCountry } = useLocation();
+  const { selectedCountry, setSelectedCountry, setSelectedCity } = useLocation();
   const { isFavorite, toggleFavorite } = useFavoritesContext();
   const [searchMode, setSearchMode] = useState<'rent' | 'buy' | 'commercial'>('rent');
   const [searchQuery, setSearchQuery] = useState('');
@@ -195,6 +195,29 @@ const Index = () => {
       <main className="container mx-auto px-4 py-6 pb-24">
         {/* Welcome Stats */}
         <WelcomeStats />
+        
+        {/* Location Indicator */}
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <MapPin className="w-4 h-4" />
+            <span>
+              Affichage: {selectedCountry || 'Toutes les régions'}
+              {selectedCountry && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedCountry(null);
+                    setSelectedCity(null);
+                  }}
+                  className="ml-2 h-auto p-1 text-xs underline"
+                >
+                  Voir toutes les annonces
+                </Button>
+              )}
+            </span>
+          </div>
+        </div>
         
         {/* Main Content Tabs */}
         <Tabs defaultValue="properties" className="w-full">
