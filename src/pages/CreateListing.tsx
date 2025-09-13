@@ -1298,12 +1298,18 @@ export default function CreateListing() {
             <div className="space-y-6">
               {/* Preview Card */}
               <Card className="overflow-hidden">
-                {formData.images.length > 0 && (
+                {formData.images && formData.images.length > 0 && (
                   <div className="aspect-[16/10] overflow-hidden">
                     <img
-                      src={URL.createObjectURL(formData.images[0])}
+                      src={typeof formData.images[0] === 'string' 
+                        ? formData.images[0] 
+                        : URL.createObjectURL(formData.images[0])
+                      }
                       alt="Preview"
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.log('Image preview error:', e);
+                      }}
                     />
                   </div>
                 )}
