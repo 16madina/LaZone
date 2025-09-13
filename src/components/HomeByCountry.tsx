@@ -98,9 +98,9 @@ export default function HomeByCountry({ countryCode }: { countryCode: string }) 
             <div key={listing.id} className="rounded-lg border overflow-hidden hover:shadow-md transition-shadow">
               {/* Image de l'annonce */}
               <div className="aspect-[16/10] overflow-hidden">
-                {listing.images && listing.images.length > 0 ? (
+                {listing.images && Array.isArray(listing.images) && listing.images.length > 0 ? (
                   <img 
-                    src={typeof listing.images === 'string' ? listing.images : listing.images[0]}
+                    src={listing.images[0]}
                     alt={listing.title}
                     className="w-full h-full object-cover"
                     onError={(e) => {
