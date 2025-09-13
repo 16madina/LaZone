@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Users, Ban, UserCheck, UserX, Mail, Phone } from 'lucide-react';
+import { Users, Ban, UserCheck, UserX, Mail, Phone, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { UserMessageDialog } from './UserMessageDialog';
 
 interface UserProfile {
   id: string;
@@ -214,7 +215,20 @@ export const UserManagement: React.FC = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
+                      {/* Message Button */}
+                      <UserMessageDialog user={user}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-1"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                          Message
+                        </Button>
+                      </UserMessageDialog>
+
+                      {/* Ban/Unban Button */}
                       {user.account_status === 'banned' ? (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>

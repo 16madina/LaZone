@@ -403,6 +403,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      create_admin_conversation: {
+        Args: { admin_user_id: string; target_user_id: string }
+        Returns: string
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]

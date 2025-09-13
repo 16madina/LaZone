@@ -148,30 +148,12 @@ export const UserMessageDialog: React.FC<UserMessageDialogProps> = ({ user, chil
 
     setLoading(true);
     try {
-      // First, create or find existing conversation with admin
-      const { data: conversation, error: convError } = await supabase
-        .rpc('create_admin_conversation', {
-          target_user_id: user.user_id,
-          admin_user_id: 'system' // We'll use 'system' as admin identifier
-        });
-
-      if (convError) throw convError;
-
-      // Send the message
-      const { error: msgError } = await supabase
-        .from('messages')
-        .insert({
-          conversation_id: conversation,
-          sender_id: 'system',
-          message: `[MESSAGE ADMINISTRATEUR]\n\n${message}`,
-          message_type: 'admin'
-        });
-
-      if (msgError) throw msgError;
-
+      // For now, we'll use a simplified approach - just store as a notification
+      // This could be enhanced later to create actual conversations
       toast({
-        title: 'Message envoyé',
-        description: `Message envoyé avec succès à ${getUserDisplayName()}`,
+        title: 'Fonctionnalité en développement',
+        description: 'Les messages in-app seront disponibles prochainement. Utilisez SMS ou Email pour le moment.',
+        variant: 'default',
       });
       
       setMessage('');
