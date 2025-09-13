@@ -24,7 +24,7 @@ import { useSubscription } from "@/contexts/SubscriptionContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Autocomplete } from "@/components/ui/autocomplete";
-import { searchCities, searchNeighborhoods } from "@/data/africanCities";
+import { searchCities, searchNeighborhoods, getCitiesByCountry, getNeighborhoodsByCity } from "@/data/africanCities";
 import { getCityCoordinates } from "@/utils/geocoding";
 
 interface ListingData {
@@ -629,7 +629,7 @@ export default function CreateListing() {
                         neighborhood: '' // Reset neighborhood when city changes
                       });
                     }}
-                    options={selectedCountry ? searchCities(selectedCountry, '') : []}
+                    options={selectedCountry ? getCitiesByCountry(selectedCountry).map(city => city.name) : []}
                     placeholder="Ex: Abidjan"
                     searchPlaceholder="Rechercher une ville..."
                     emptyText="Aucune ville trouvée"
@@ -643,7 +643,7 @@ export default function CreateListing() {
                     value={formData.neighborhood}
                     onValueChange={(value) => updateFormData({ neighborhood: value })}
                     options={selectedCountry && formData.city 
-                      ? searchNeighborhoods(selectedCountry, formData.city, '') 
+                      ? getNeighborhoodsByCity(selectedCountry, formData.city)
                       : []
                     }
                     placeholder="Ex: Cocody"

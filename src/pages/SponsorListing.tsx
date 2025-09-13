@@ -6,13 +6,13 @@ import { ArrowLeft } from 'lucide-react';
 import { SponsorshipLevels } from '@/components/sponsorship/SponsorshipLevels';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuthContext } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function SponsorListing() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuthContext();
+  const { user } = useAuth();
   
   const [listing, setListing] = useState<any>(null);
   const [selectedLevel, setSelectedLevel] = useState(0);
