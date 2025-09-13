@@ -77,8 +77,7 @@ export const useOptimizedListings = (
           created_at, user_id
         `, { count: 'estimated' })
         .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .range(currentOffset, currentOffset + pageSize - 1);
+        .order('created_at', { ascending: false });
 
       // Apply filters with indexed columns first for better performance
       if (searchMode === 'commercial') {
@@ -92,12 +91,58 @@ export const useOptimizedListings = (
         query = query.or(`country.eq.${selectedCountry},country.is.null`);
       }
 
-      const { data, error: queryError, count } = await query;
+      const { data: allListings, error: queryError, count } = await query;
 
       if (queryError) throw queryError;
 
+      // Get active sponsorships separately
+      const listingIds = allListings?.map(listing => listing.id) || [];
+      let sponsorships: any[] = [];
+      
+      if (listingIds.length > 0) {
+        const { data: sponsorshipData } = await supabase
+          .from('sponsored_listings')
+          .select('*')
+          .in('listing_id', listingIds)
+          .eq('status', 'active')
+          .gt('sponsored_until', new Date().toISOString());
+        
+        sponsorships = sponsorshipData || [];
+      }
+
+      // Create sponsorship lookup map
+      const sponsorshipLookup = new Map();
+      sponsorships.forEach(sponsor => {
+        sponsorshipLookup.set(sponsor.listing_id, sponsor);
+      });
+
+      // Sort listings: sponsored first (by boost level desc, then by sponsored date), then regular listings by creation date
+      const sortedListings = (allListings || []).sort((a, b) => {
+        const aSponsor = sponsorshipLookup.get(a.id);
+        const bSponsor = sponsorshipLookup.get(b.id);
+
+        // Both sponsored - sort by boost level (higher first), then by sponsored date
+        if (aSponsor && bSponsor) {
+          const levelDiff = bSponsor.boost_level - aSponsor.boost_level;
+          if (levelDiff !== 0) return levelDiff;
+          return new Date(bSponsor.sponsored_from).getTime() - new Date(aSponsor.sponsored_from).getTime();
+        }
+        
+        // Only a is sponsored
+        if (aSponsor && !bSponsor) return -1;
+        
+        // Only b is sponsored  
+        if (!aSponsor && bSponsor) return 1;
+        
+        // Neither sponsored - sort by creation date
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+
+      // Apply pagination to sorted results
+      const paginatedListings = sortedListings.slice(currentOffset, currentOffset + pageSize);
+
       // Batch agent info requests for better performance
-      const userIds = [...new Set(data?.map(listing => listing.user_id) || [])];
+      const userIds = [...new Set(paginatedListings?.map(listing => listing.user_id) || [])];
       const agentInfoPromises = userIds.map(userId => getAgentInfo(userId));
       const agentInfos = await Promise.all(agentInfoPromises);
       
@@ -107,38 +152,46 @@ export const useOptimizedListings = (
         agentLookup.set(userId, agentInfos[index]);
       });
 
-      const convertedProperties: Property[] = (data || []).map(listing => ({
-        id: listing.id,
-        title: listing.title,
-        price: listing.price,
-        currency: listing.currency,
-        location: {
-          city: listing.city,
-          neighborhood: listing.neighborhood,
-          coordinates: (listing.longitude && listing.latitude) ? 
-            [listing.longitude, listing.latitude] as [number, number] :
-            [0, 0] as [number, number]
-        },
-        images: listing.images || ['/placeholder.svg'],
-        type: listing.property_type as 'apartment' | 'house' | 'land' | 'commercial',
-        purpose: listing.purpose as 'rent' | 'sale' | 'commercial',
-        bedrooms: listing.bedrooms,
-        bathrooms: listing.bathrooms,
-        area: listing.area,
-        landArea: listing.land_area,
-        amenities: listing.amenities || [],
-        isVerified: false,
-        isNew: isNewListing(listing.created_at),
-        isFeatured: false,
-        agent: agentLookup.get(listing.user_id) || {
-          name: 'Propriétaire',
-          avatar: '/placeholder.svg',
+      const convertedProperties: Property[] = paginatedListings.map(listing => {
+        const sponsorship = sponsorshipLookup.get(listing.id);
+        
+        return {
+          id: listing.id,
+          title: listing.title,
+          price: listing.price,
+          currency: listing.currency,
+          location: {
+            city: listing.city,
+            neighborhood: listing.neighborhood,
+            coordinates: (listing.longitude && listing.latitude) ? 
+              [listing.longitude, listing.latitude] as [number, number] :
+              [0, 0] as [number, number]
+          },
+          images: listing.images || ['/placeholder.svg'],
+          type: listing.property_type as 'apartment' | 'house' | 'land' | 'commercial',
+          purpose: listing.purpose as 'rent' | 'sale' | 'commercial',
+          bedrooms: listing.bedrooms,
+          bathrooms: listing.bathrooms,
+          area: listing.area,
+          landArea: listing.land_area,
+          amenities: listing.amenities || [],
           isVerified: false,
-          type: 'particulier' as const,
-          agencyName: undefined
-        },
-        createdAt: listing.created_at
-      }));
+          isNew: isNewListing(listing.created_at),
+          isFeatured: false,
+          // Add sponsorship data
+          isSponsored: !!sponsorship,
+          sponsorshipLevel: sponsorship?.boost_level || 0,
+          sponsorshipEnd: sponsorship?.sponsored_until || null,
+          agent: agentLookup.get(listing.user_id) || {
+            name: 'Propriétaire',
+            avatar: '/placeholder.svg',
+            isVerified: false,
+            type: 'particulier' as const,
+            agencyName: undefined
+          },
+          createdAt: listing.created_at
+        };
+      });
 
       // Cache initial results only
       if (isInitial && convertedProperties.length > 0) {

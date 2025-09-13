@@ -34,6 +34,10 @@ export interface Property {
   isVerified: boolean;
   isNew: boolean;
   isFeatured: boolean;
+  // Sponsorship fields
+  isSponsored?: boolean;
+  sponsorshipLevel?: number;
+  sponsorshipEnd?: string;
   agent: {
     name: string;
     avatar: string;
