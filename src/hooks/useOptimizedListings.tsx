@@ -75,7 +75,7 @@ export const useOptimizedListings = (
           longitude, latitude, images, property_type, purpose,
           bedrooms, bathrooms, area, land_area, amenities,
           created_at, user_id, owner_id, country_code,
-          cities!inner(name, country_code)
+          cities(name, country_code)
         `, { count: 'estimated' })
         .eq('status', 'active')
         .order('created_at', { ascending: false });
