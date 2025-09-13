@@ -154,11 +154,10 @@ export const UserManagement: React.FC = () => {
           <CardTitle>Gestion des utilisateurs</CardTitle>
         </div>
       </CardHeader>
-      <CardContent className="p-0">
+      <CardContent className="p-6">
         <div className="max-h-[70vh] overflow-auto">
-          <div className="p-6 pb-0">
-            <div className="overflow-x-auto">
-              <Table>
+          <div className="overflow-x-auto">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Utilisateur</TableHead>
@@ -294,16 +293,15 @@ export const UserManagement: React.FC = () => {
                 </TableRow>
               ))}
             </TableBody>
-              </Table>
-            </div>
-          </div>
+          </Table>
+        </div>
         
-          {users.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground px-6">
-              <UserX className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>Aucun utilisateur trouvé.</p>
-            </div>
-          )}
+        {users.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground">
+            <UserX className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <p>Aucun utilisateur trouvé.</p>
+          </div>
+        )}
         </div>
       </CardContent>
     </Card>
