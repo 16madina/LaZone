@@ -1,10 +1,12 @@
-import { Bell } from 'lucide-react';
+import { Bell, User } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { HeroSection } from '@/components/home/HeroSection';
 import { SearchBar } from '@/components/home/SearchBar';
 import { FilterChips } from '@/components/home/FilterChips';
 import { StatsSection } from '@/components/home/StatsSection';
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { useAppStore } from '@/stores/appStore';
+import logoLazone from '@/assets/logo-lazone.png';
 
 const Index = () => {
   const { properties, activeFilter, searchQuery } = useAppStore();
@@ -37,14 +39,16 @@ const Index = () => {
     <div className="page-container">
       {/* Header */}
       <header className="flex items-center justify-between mb-6">
-        <div>
-          <p className="text-muted-foreground text-sm">Bonjour 👋</p>
-          <h2 className="font-display text-xl font-bold">Bienvenue</h2>
+        <img src={logoLazone} alt="LaZone" className="h-10" />
+        <div className="flex items-center gap-3">
+          <button className="icon-button relative active:scale-90 transition-transform">
+            <Bell className="w-5 h-5" />
+            <span className="absolute -top-1 -right-1 w-3 h-3 gradient-primary rounded-full" />
+          </button>
+          <Link to="/profile" className="icon-button active:scale-90 transition-transform">
+            <User className="w-5 h-5" />
+          </Link>
         </div>
-        <button className="icon-button relative active:scale-90 transition-transform">
-          <Bell className="w-5 h-5" />
-          <span className="absolute -top-1 -right-1 w-3 h-3 gradient-primary rounded-full" />
-        </button>
       </header>
 
       {/* Hero Section */}
