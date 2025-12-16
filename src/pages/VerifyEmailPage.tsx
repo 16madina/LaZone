@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import logoLazone from '@/assets/logo-lazone.png';
 
 const VerifyEmailPage = () => {
   const navigate = useNavigate();
@@ -65,7 +66,7 @@ const VerifyEmailPage = () => {
         animate={{ opacity: 1, scale: 1 }}
         className="glass-card p-8 text-center max-w-md w-full"
       >
-        <div className="text-6xl mb-6">🏠</div>
+        <img src={logoLazone} alt="LaZone" className="h-20 mx-auto mb-4" />
         <h1 className="font-display text-2xl font-bold gradient-text mb-2">LaZone</h1>
         
         {verifying ? (
