@@ -1,35 +1,25 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Settings, 
-  Heart, 
-  Home, 
-  Bell, 
-  HelpCircle, 
   LogOut, 
-  ChevronRight,
-  Star,
-  Eye,
-  LogIn,
-  BadgeCheck,
-  XCircle,
   Mail,
-  Loader2
+  Phone,
+  MapPin,
+  Calendar,
+  Home,
+  Heart,
+  Users,
+  Eye,
+  Loader2,
+  LogIn,
+  CalendarDays,
+  RefreshCw
 } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-
-const menuItems = [
-  { icon: Heart, label: 'Mes favoris', badge: null, color: 'text-destructive' },
-  { icon: Home, label: 'Mes annonces', badge: '0', color: 'text-primary' },
-  { icon: Eye, label: 'Vues récentes', badge: null, color: 'text-secondary' },
-  { icon: Bell, label: 'Notifications', badge: '0', color: 'text-accent' },
-  { icon: Star, label: 'Avis reçus', badge: null, color: 'text-yellow-500' },
-  { icon: Settings, label: 'Paramètres', badge: null, color: 'text-muted-foreground' },
-  { icon: HelpCircle, label: 'Aide & Support', badge: null, color: 'text-muted-foreground' },
-];
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -61,192 +51,194 @@ const ProfilePage = () => {
     }
   };
 
-  return (
-    <div className="page-container">
-      {/* Profile Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass-card p-6 mb-6 text-center"
-      >
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: 'spring', delay: 0.2 }}
-          className="relative inline-block mb-4"
-        >
-          <div className="w-24 h-24 rounded-full gradient-primary p-1">
-            <div className="w-full h-full rounded-full bg-background flex items-center justify-center overflow-hidden">
-              {profile?.avatar_url ? (
-                <img 
-                  src={profile.avatar_url} 
-                  alt="Avatar" 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-4xl">👤</span>
-              )}
-            </div>
-          </div>
-          {user && (
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              className="absolute bottom-0 right-0 w-8 h-8 gradient-primary rounded-full flex items-center justify-center shadow-lg"
-            >
-              <Settings className="w-4 h-4 text-primary-foreground" />
-            </motion.button>
-          )}
-        </motion.div>
+  const memberSince = user?.created_at 
+    ? format(new Date(user.created_at), "MMMM yyyy", { locale: fr })
+    : 'décembre 2025';
 
-        {loading ? (
-          <div className="animate-pulse">
-            <div className="h-6 bg-muted rounded w-32 mx-auto mb-2" />
-            <div className="h-4 bg-muted rounded w-48 mx-auto" />
-          </div>
-        ) : user ? (
-          <>
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <h2 className="font-display text-xl font-bold">
-                {user.user_metadata?.full_name || 'Utilisateur'}
-              </h2>
-              {/* Verification Badge */}
-              {isEmailVerified ? (
-                <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full text-xs font-medium">
-                  <BadgeCheck className="w-3.5 h-3.5" />
-                  <span>Vérifié</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full text-xs font-medium">
-                  <XCircle className="w-3.5 h-3.5" />
-                  <span>Non vérifié</span>
-                </div>
-              )}
-            </div>
-            <p className="text-muted-foreground text-sm mb-2">{user.email}</p>
-            
-            {/* User details */}
-            {user.user_metadata?.city && user.user_metadata?.country && (
-              <p className="text-muted-foreground text-xs mb-2">
-                📍 {user.user_metadata.city}, {user.user_metadata.country}
-              </p>
-            )}
-            {user.user_metadata?.phone && (
-              <p className="text-muted-foreground text-xs mb-4">
-                📱 {user.user_metadata.phone}
-              </p>
-            )}
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
-            {/* Resend Verification Email Button */}
-            {!isEmailVerified && (
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={handleResendVerification}
-                disabled={sendingEmail}
-                className="flex items-center justify-center gap-2 px-4 py-2 mx-auto bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-600 dark:text-amber-400 text-sm font-medium transition-colors disabled:opacity-50"
-              >
-                {sendingEmail ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Mail className="w-4 h-4" />
-                )}
-                <span>{sendingEmail ? 'Envoi en cours...' : 'Renvoyer l\'email de vérification'}</span>
-              </motion.button>
-            )}
-          </>
-        ) : (
-          <>
-            <h2 className="font-display text-xl font-bold mb-1">Invité</h2>
-            <p className="text-muted-foreground text-sm mb-4">
+  // Guest view
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-primary/20 to-background">
+        <div className="h-32 bg-gradient-to-r from-primary to-primary/80" />
+        <div className="px-4 -mt-16 pb-24">
+          <div className="bg-card rounded-2xl shadow-lg p-6 text-center">
+            <div className="w-24 h-24 mx-auto rounded-full bg-muted flex items-center justify-center mb-4">
+              <span className="text-4xl">👤</span>
+            </div>
+            <h2 className="text-xl font-bold mb-2">Invité</h2>
+            <p className="text-muted-foreground text-sm mb-6">
               Connectez-vous pour accéder à toutes les fonctionnalités
             </p>
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              whileHover={{ scale: 1.02 }}
+            <button
               onClick={() => navigate('/auth')}
-              className="gradient-primary px-6 py-3 rounded-xl text-primary-foreground font-medium w-full flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-medium flex items-center justify-center gap-2"
             >
               <LogIn className="w-5 h-5" />
               Se connecter
-            </motion.button>
-          </>
-        )}
-      </motion.div>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-      {/* Stats Cards */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="grid grid-cols-3 gap-3 mb-6"
-      >
-        <div className="glass-card p-4 text-center">
-          <p className="font-display font-bold text-2xl gradient-text">{favorites.length}</p>
-          <p className="text-xs text-muted-foreground">Favoris</p>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <p className="font-display font-bold text-2xl gradient-text">0</p>
-          <p className="text-xs text-muted-foreground">Annonces</p>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <p className="font-display font-bold text-2xl gradient-text">0</p>
-          <p className="text-xs text-muted-foreground">Messages</p>
-        </div>
-      </motion.div>
+  return (
+    <div className="min-h-screen bg-muted/30 pb-24">
+      {/* Orange Gradient Header */}
+      <div className="h-32 bg-gradient-to-r from-primary via-primary to-primary/80" />
 
-      {/* Menu Items */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="glass-card overflow-hidden"
-      >
-        {menuItems.map((item, index) => (
-          <motion.button
-            key={item.label}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 + index * 0.05 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors border-b border-border last:border-b-0"
-          >
-            <div className={`p-2 rounded-xl glass ${item.color}`}>
-              <item.icon className="w-5 h-5" />
+      {/* Profile Card */}
+      <div className="px-4 -mt-16">
+        <div className="bg-card rounded-2xl shadow-lg overflow-hidden">
+          {/* Main Content */}
+          <div className="p-5">
+            <div className="flex gap-4">
+              {/* Avatar */}
+              <div className="relative flex-shrink-0">
+                <div className="w-24 h-24 rounded-xl overflow-hidden border-4 border-card shadow-md">
+                  {profile?.avatar_url ? (
+                    <img 
+                      src={profile.avatar_url} 
+                      alt="Avatar" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <span className="text-3xl">👤</span>
+                    </div>
+                  )}
+                </div>
+                {/* Verification Badge */}
+                <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
+                  isEmailVerified 
+                    ? 'bg-green-500 text-white' 
+                    : 'bg-primary text-primary-foreground'
+                }`}>
+                  {isEmailVerified ? 'Vérifié' : 'Non vérifié'}
+                </div>
+              </div>
+
+              {/* User Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <h1 className="text-lg font-bold text-foreground truncate">
+                    {user.user_metadata?.full_name || 'Utilisateur'}
+                  </h1>
+                  <button className="flex-shrink-0 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium flex items-center gap-1.5">
+                    <CalendarDays className="w-4 h-4" />
+                    Mes RDV
+                  </button>
+                </div>
+
+                {/* Tags */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium flex items-center gap-1">
+                    <Users className="w-3 h-3" />
+                    Particulier
+                  </span>
+                  {!isEmailVerified && (
+                    <>
+                      <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
+                        ⚠ Email non vérifié
+                      </span>
+                      <span className="px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-xs font-medium">
+                        ⊘ Lien expiré
+                      </span>
+                      <button 
+                        onClick={handleResendVerification}
+                        disabled={sendingEmail}
+                        className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium flex items-center gap-1 hover:bg-green-200 transition-colors disabled:opacity-50"
+                      >
+                        {sendingEmail ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-3 h-3" />
+                        )}
+                        Renvoyer le lien
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {/* Contact Info */}
+                <div className="mt-3 space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Mail className="w-4 h-4" />
+                    <span className="truncate">{user.email}</span>
+                  </div>
+                  {user.user_metadata?.phone && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Phone className="w-4 h-4" />
+                      <span>{user.user_metadata.phone}</span>
+                    </div>
+                  )}
+                  {user.user_metadata?.city && user.user_metadata?.country && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <MapPin className="w-4 h-4" />
+                      <span>{user.user_metadata.city}, {user.user_metadata.country}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="w-4 h-4" />
+                    <span>Membre depuis {memberSince}</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <span className="flex-1 text-left font-medium">{item.label}</span>
-            {item.badge && (
-              <span className="px-2 py-0.5 gradient-primary rounded-full text-xs text-primary-foreground font-bold">
-                {item.badge}
-              </span>
-            )}
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
-          </motion.button>
-        ))}
-      </motion.div>
+          </div>
 
-      {/* Logout Button */}
-      {user && (
-        <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={handleSignOut}
-          className="w-full mt-6 glass-card p-4 flex items-center justify-center gap-2 text-destructive font-medium"
-        >
-          <LogOut className="w-5 h-5" />
-          <span>Se déconnecter</span>
-        </motion.button>
-      )}
+          {/* Stats Row */}
+          <div className="grid grid-cols-4 border-t border-border">
+            <div className="p-4 text-center border-r border-border">
+              <div className="flex items-center justify-center gap-1 text-foreground font-bold text-lg">
+                <Home className="w-4 h-4 text-muted-foreground" />
+                <span>0</span>
+              </div>
+              <p className="text-xs text-muted-foreground">Annonces</p>
+            </div>
+            <div className="p-4 text-center border-r border-border">
+              <div className="flex items-center justify-center gap-1 text-foreground font-bold text-lg">
+                <Heart className="w-4 h-4 text-muted-foreground" />
+                <span>{favorites.length}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">Favoris</p>
+            </div>
+            <div className="p-4 text-center border-r border-border bg-green-50 dark:bg-green-900/20">
+              <div className="flex items-center justify-center gap-1 text-foreground font-bold text-lg">
+                <Users className="w-4 h-4 text-muted-foreground" />
+                <span>0</span>
+              </div>
+              <p className="text-xs text-muted-foreground">Followers</p>
+            </div>
+            <div className="p-4 text-center">
+              <div className="flex items-center justify-center gap-1 text-foreground font-bold text-lg">
+                <Eye className="w-4 h-4 text-muted-foreground" />
+                <span>0</span>
+              </div>
+              <p className="text-xs text-muted-foreground">Vues</p>
+            </div>
+          </div>
+        </div>
 
-      {/* App Version */}
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-        className="text-center text-xs text-muted-foreground mt-6"
-      >
-        LaZone v1.0.0
-      </motion.p>
+        {/* Logout Link */}
+        <div className="flex justify-end mt-4">
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-2 text-primary font-medium text-sm hover:underline"
+          >
+            <LogOut className="w-4 h-4" />
+            Déconnexion
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
