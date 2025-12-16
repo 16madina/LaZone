@@ -181,6 +181,7 @@ export const useConversation = (participantId: string | null) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
 
   const fetchMessages = useCallback(async () => {
     if (!user || !participantId) return;
@@ -214,38 +215,56 @@ export const useConversation = (participantId: string | null) => {
     if (user && participantId) {
       fetchMessages();
 
-      // Subscribe to realtime updates
-      const channel = supabase
+      // Subscribe to realtime updates for messages
+      const messagesChannel = supabase
         .channel(`conversation-${participantId}`)
         .on(
           'postgres_changes',
           {
-            event: 'INSERT',
+            event: '*',
             schema: 'public',
             table: 'messages'
           },
           (payload) => {
-            const newMsg = payload.new as Message;
-            if (
-              (newMsg.sender_id === user.id && newMsg.receiver_id === participantId) ||
-              (newMsg.sender_id === participantId && newMsg.receiver_id === user.id)
-            ) {
-              setMessages(prev => [...prev, newMsg]);
-              
-              // Mark as read if we're the receiver
-              if (newMsg.receiver_id === user.id) {
-                supabase
-                  .from('messages')
-                  .update({ is_read: true })
-                  .eq('id', newMsg.id);
+            if (payload.eventType === 'INSERT') {
+              const newMsg = payload.new as Message;
+              if (
+                (newMsg.sender_id === user.id && newMsg.receiver_id === participantId) ||
+                (newMsg.sender_id === participantId && newMsg.receiver_id === user.id)
+              ) {
+                setMessages(prev => [...prev, newMsg]);
+                
+                // Mark as read if we're the receiver
+                if (newMsg.receiver_id === user.id) {
+                  supabase
+                    .from('messages')
+                    .update({ is_read: true })
+                    .eq('id', newMsg.id);
+                }
               }
+            } else if (payload.eventType === 'UPDATE') {
+              const updatedMsg = payload.new as Message;
+              setMessages(prev => prev.map(m => m.id === updatedMsg.id ? updatedMsg : m));
             }
           }
         )
         .subscribe();
 
+      // Subscribe to typing presence
+      const typingChannel = supabase
+        .channel(`typing-${[user.id, participantId].sort().join('-')}`)
+        .on('presence', { event: 'sync' }, () => {
+          const state = typingChannel.presenceState();
+          const otherUserTyping = Object.values(state).some((presences: any) =>
+            presences.some((p: any) => p.user_id === participantId && p.is_typing)
+          );
+          setIsTyping(otherUserTyping);
+        })
+        .subscribe();
+
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(messagesChannel);
+        supabase.removeChannel(typingChannel);
       };
     }
   }, [user, participantId, fetchMessages]);
@@ -271,10 +290,24 @@ export const useConversation = (participantId: string | null) => {
     }
   };
 
+  const setTyping = useCallback(async (typing: boolean) => {
+    if (!user || !participantId) return;
+    
+    const channelName = `typing-${[user.id, participantId].sort().join('-')}`;
+    const channel = supabase.channel(channelName);
+    
+    await channel.track({
+      user_id: user.id,
+      is_typing: typing
+    });
+  }, [user, participantId]);
+
   return {
     messages,
     loading,
     sendMessage,
-    refetch: fetchMessages
+    refetch: fetchMessages,
+    isTyping,
+    setTyping
   };
 };

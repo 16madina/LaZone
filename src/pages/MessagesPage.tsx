@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Search, MoreVertical, ArrowLeft, Send, Loader2, 
-  MessageCircle 
+  MessageCircle, Check, CheckCheck 
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useMessages, useConversation } from '@/hooks/useMessages';
@@ -167,11 +167,12 @@ interface ConversationViewProps {
 
 const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
   const { user } = useAuth();
-  const { messages, loading, sendMessage } = useConversation(participantId);
+  const { messages, loading, sendMessage, isTyping, setTyping } = useConversation(participantId);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [participant, setParticipant] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Fetch participant info
@@ -190,10 +191,34 @@ const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Handle typing indicator
+  const handleTyping = useCallback(() => {
+    setTyping(true);
+    
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    typingTimeoutRef.current = setTimeout(() => {
+      setTyping(false);
+    }, 2000);
+  }, [setTyping]);
+
+  // Cleanup typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      setTyping(false);
+    };
+  }, [setTyping]);
+
   const handleSend = async () => {
     if (!newMessage.trim() || sending) return;
 
     setSending(true);
+    setTyping(false);
     const { error } = await sendMessage(newMessage.trim());
     setSending(false);
 
@@ -207,6 +232,11 @@ const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+    handleTyping();
   };
 
   return (
@@ -226,7 +256,11 @@ const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
         />
         <div className="flex-1">
           <h2 className="font-semibold">{participant?.full_name || 'Utilisateur'}</h2>
-          <p className="text-xs text-muted-foreground">En ligne</p>
+          {isTyping ? (
+            <p className="text-xs text-primary animate-pulse">En train d'écrire...</p>
+          ) : (
+            <p className="text-xs text-muted-foreground">En ligne</p>
+          )}
         </div>
       </div>
 
@@ -259,15 +293,41 @@ const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
                     }`}
                   >
                     <p className="text-sm">{message.content}</p>
-                    <p className={`text-[10px] mt-1 ${isMe ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                      {formatDistanceToNow(new Date(message.created_at), { addSuffix: true, locale: fr })}
-                    </p>
+                    <div className={`flex items-center gap-1 mt-1 ${isMe ? 'justify-end' : ''}`}>
+                      <p className={`text-[10px] ${isMe ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                        {formatDistanceToNow(new Date(message.created_at), { addSuffix: true, locale: fr })}
+                      </p>
+                      {isMe && (
+                        message.is_read ? (
+                          <CheckCheck className="w-3.5 h-3.5 text-primary-foreground/70" />
+                        ) : (
+                          <Check className="w-3.5 h-3.5 text-primary-foreground/70" />
+                        )
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               );
             })}
             <div ref={messagesEndRef} />
           </>
+        )}
+
+        {/* Typing indicator in chat */}
+        {isTyping && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex justify-start"
+          >
+            <div className="bg-muted p-3 rounded-2xl rounded-bl-sm">
+              <div className="flex gap-1">
+                <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+          </motion.div>
         )}
       </div>
 
@@ -277,7 +337,7 @@ const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
           <input
             type="text"
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={handleInputChange}
             onKeyPress={handleKeyPress}
             placeholder="Votre message..."
             className="flex-1 bg-muted px-4 py-3 rounded-full outline-none focus:ring-2 focus:ring-primary"
