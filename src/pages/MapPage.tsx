@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, MapPin, Bed, Bath, Maximize, Search, Loader2, Navigation } from 'lucide-react';
+import { Filter, X, MapPin, Bed, Bath, Maximize, Search, Loader2, Navigation, Check, Globe } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useProperties, Property } from '@/hooks/useProperties';
 import {
@@ -11,12 +11,50 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { toast } from 'sonner';
+import { africanCountries, Country } from '@/data/africanCountries';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+
+// Country coordinates for map zooming
+const countryCoordinates: Record<string, { lat: number; lng: number; zoom: number }> = {
+  'CI': { lat: 7.54, lng: -5.55, zoom: 7 },
+  'SN': { lat: 14.50, lng: -14.45, zoom: 7 },
+  'ML': { lat: 17.57, lng: -4.00, zoom: 6 },
+  'BF': { lat: 12.24, lng: -1.56, zoom: 7 },
+  'GN': { lat: 9.95, lng: -9.70, zoom: 7 },
+  'CM': { lat: 7.37, lng: 12.35, zoom: 6 },
+  'GA': { lat: -0.80, lng: 11.61, zoom: 7 },
+  'CG': { lat: -0.23, lng: 15.83, zoom: 7 },
+  'CD': { lat: -4.04, lng: 21.76, zoom: 5 },
+  'BJ': { lat: 9.31, lng: 2.31, zoom: 7 },
+  'TG': { lat: 8.62, lng: 0.82, zoom: 7 },
+  'NE': { lat: 17.61, lng: 8.08, zoom: 6 },
+  'NG': { lat: 9.08, lng: 8.67, zoom: 6 },
+  'GH': { lat: 7.95, lng: -1.02, zoom: 7 },
+  'MA': { lat: 31.79, lng: -7.09, zoom: 6 },
+  'DZ': { lat: 28.03, lng: 1.66, zoom: 5 },
+  'TN': { lat: 33.89, lng: 9.54, zoom: 7 },
+  'EG': { lat: 26.82, lng: 30.80, zoom: 6 },
+  'KE': { lat: -0.02, lng: 37.91, zoom: 6 },
+  'TZ': { lat: -6.37, lng: 34.89, zoom: 6 },
+  'UG': { lat: 1.37, lng: 32.29, zoom: 7 },
+  'RW': { lat: -1.94, lng: 29.87, zoom: 9 },
+  'ZA': { lat: -30.56, lng: 22.94, zoom: 5 },
+  'MG': { lat: -18.77, lng: 46.87, zoom: 6 },
+  'MU': { lat: -20.35, lng: 57.55, zoom: 10 },
+  'SC': { lat: -4.68, lng: 55.49, zoom: 10 },
+};
 
 const formatPriceShort = (price: number) => {
   if (price >= 1000000) {
@@ -47,10 +85,12 @@ const MapPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>('all');
+  const [countryFilter, setCountryFilter] = useState<Country | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locatingUser, setLocatingUser] = useState(false);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
-  // Default center (Abidjan, Côte d'Ivoire)
+  // Default center (Africa)
   const defaultCenter = { lat: 5.3600, lng: -4.0083 };
 
   useEffect(() => {
@@ -184,9 +224,26 @@ const MapPage = () => {
         p.city.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType = typeFilter === 'all' || p.type === typeFilter;
       const matchesPropertyType = propertyTypeFilter === 'all' || p.propertyType === propertyTypeFilter;
-      return matchesSearch && matchesType && matchesPropertyType;
+      const matchesCountry = !countryFilter || p.country === countryFilter.code;
+      return matchesSearch && matchesType && matchesPropertyType && matchesCountry;
     });
-  }, [properties, searchQuery, typeFilter, propertyTypeFilter]);
+  }, [properties, searchQuery, typeFilter, propertyTypeFilter, countryFilter]);
+
+  const handleCountrySelect = (country: Country | null) => {
+    setCountryFilter(country);
+    setFilterSheetOpen(false);
+    
+    if (country && mapRef.current) {
+      const coords = countryCoordinates[country.code];
+      if (coords) {
+        mapRef.current.setView([coords.lat, coords.lng], coords.zoom);
+        toast.success(`Carte centrée sur ${country.name}`);
+      }
+    } else if (!country && mapRef.current) {
+      // Reset to Africa view
+      mapRef.current.setView([5, 20], 4);
+    }
+  };
 
   // Update markers when properties change
   useEffect(() => {
@@ -272,9 +329,61 @@ const MapPage = () => {
       {/* Search and Filters Header */}
       <div className="absolute top-0 left-0 right-0 z-[1000] p-3">
         <div className="flex gap-2">
-          <button className="p-3 bg-card rounded-xl shadow-md border">
-            <Filter className="w-5 h-5" />
-          </button>
+          <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
+            <SheetTrigger asChild>
+              <button className={`p-3 rounded-xl shadow-md border ${countryFilter ? 'bg-primary text-primary-foreground' : 'bg-card'}`}>
+                {countryFilter ? (
+                  <img 
+                    src={`https://flagcdn.com/w40/${countryFilter.code.toLowerCase()}.png`}
+                    alt={countryFilter.name}
+                    className="w-5 h-5 rounded-sm object-cover"
+                  />
+                ) : (
+                  <Globe className="w-5 h-5" />
+                )}
+              </button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-80 p-0">
+              <SheetHeader className="p-4 border-b">
+                <SheetTitle>Sélectionner un pays</SheetTitle>
+              </SheetHeader>
+              <div className="overflow-y-auto max-h-[calc(100vh-120px)]">
+                {/* All countries option */}
+                <button
+                  onClick={() => handleCountrySelect(null)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left ${
+                    !countryFilter ? 'bg-primary/10' : ''
+                  }`}
+                >
+                  <Globe className="w-6 h-6 text-muted-foreground" />
+                  <span className="flex-1 text-sm font-medium">Tous les pays</span>
+                  {!countryFilter && <Check className="w-4 h-4 text-primary" />}
+                </button>
+                
+                {/* Country list */}
+                {africanCountries.map((country) => (
+                  <button
+                    key={country.code}
+                    onClick={() => handleCountrySelect(country)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left ${
+                      countryFilter?.code === country.code ? 'bg-primary/10' : ''
+                    }`}
+                  >
+                    <img
+                      src={`https://flagcdn.com/w40/${country.code.toLowerCase()}.png`}
+                      alt={country.name}
+                      className="w-6 h-4 rounded-sm object-cover"
+                    />
+                    <span className="flex-1 text-sm">{country.name}</span>
+                    {countryFilter?.code === country.code && (
+                      <Check className="w-4 h-4 text-primary" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </SheetContent>
+          </Sheet>
+          
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
