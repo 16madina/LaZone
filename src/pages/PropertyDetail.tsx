@@ -468,25 +468,62 @@ const PropertyDetailPage = () => {
           </motion.div>
         )}
 
-        {/* Features */}
-        {property.features.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="glass-card p-5 mb-4"
-          >
-            <h3 className="font-display font-semibold mb-3">Caractéristiques</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {property.features.map((feature) => (
-                <div key={feature} className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-primary" />
-                  <span className="text-sm">{feature}</span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
+        {/* Features & Documents */}
+        {property.features.length > 0 && (() => {
+          // Separate amenities from documents
+          const documentLabels = [
+            'ACD (Attestation de Cession de Droits)',
+            'Titre Foncier',
+            'Permis de construire',
+            'Certificat d\'urbanisme',
+            'Plan cadastral',
+            'Attestation de propriété'
+          ];
+          
+          const amenities = property.features.filter(f => !documentLabels.includes(f));
+          const documents = property.features.filter(f => documentLabels.includes(f));
+          
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="glass-card p-5 mb-4"
+            >
+              <div className="grid grid-cols-2 gap-6">
+                {/* Amenities Column */}
+                {amenities.length > 0 && (
+                  <div>
+                    <h3 className="font-display font-semibold mb-3">Caractéristiques</h3>
+                    <div className="space-y-2">
+                      {amenities.map((feature) => (
+                        <div key={feature} className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                          <span className="text-sm">{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Documents Column */}
+                {documents.length > 0 && (
+                  <div>
+                    <h3 className="font-display font-semibold mb-3">Documents</h3>
+                    <div className="space-y-2">
+                      {documents.map((doc) => (
+                        <div key={doc} className="flex items-center gap-2">
+                          <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                          <span className="text-sm">{doc}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          );
+        })()}
 
         {/* Owner/Agent Section */}
         {ownerInfo && (
