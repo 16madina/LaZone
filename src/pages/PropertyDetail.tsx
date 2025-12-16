@@ -420,8 +420,8 @@ const PropertyDetailPage = () => {
         initial={{ y: 100 }}
         animate={{ y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="fixed bottom-0 left-0 right-0 p-4 glass border-t border-glass-border"
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
+        className="fixed bottom-20 left-0 right-0 p-4 glass border-t border-glass-border"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)' }}
       >
         <div className="flex gap-3 max-w-lg mx-auto">
           <motion.button
