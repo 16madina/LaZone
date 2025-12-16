@@ -1,4 +1,5 @@
 import { Sparkles } from 'lucide-react';
+import logoLazone from '@/assets/logo-lazone.png';
 
 export const HeroSection = () => {
   return (
@@ -28,9 +29,9 @@ export const HeroSection = () => {
         </p>
       </div>
 
-      {/* House Icon */}
-      <div className="absolute right-4 bottom-4 text-6xl opacity-30">
-        🏠
+      {/* Logo */}
+      <div className="absolute right-4 bottom-4 opacity-40">
+        <img src={logoLazone} alt="LaZone" className="w-20 h-auto" />
       </div>
     </div>
   );
