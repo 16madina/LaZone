@@ -804,28 +804,28 @@ const ProfilePage = () => {
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground" />
                     </button>
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => navigate('/settings/security')} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <Shield className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Authentification 2FA</span>
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground" />
                     </button>
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => navigate('/settings/security')} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <Fingerprint className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Biométrie (Face ID/Touch ID)</span>
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground" />
                     </button>
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => navigate('/settings/security')} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <EyeIcon className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Visibilité du profil</span>
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground" />
                     </button>
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => navigate('/settings/security')} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <UserX className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Utilisateurs bloqués</span>
@@ -846,7 +846,7 @@ const ProfilePage = () => {
                       </div>
                       <Switch checked={notifications} onCheckedChange={setNotifications} />
                     </div>
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => navigate('/settings/notifications')} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <MessageCircle className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Préférences de notifications</span>
@@ -860,7 +860,7 @@ const ProfilePage = () => {
                 <div>
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Paiements</h3>
                   <div className="space-y-2">
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => toast({ title: 'Bientôt disponible', description: 'L\'historique des ventes sera disponible prochainement.' })} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <CreditCard className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Historique des ventes</span>
@@ -881,7 +881,7 @@ const ProfilePage = () => {
                       </div>
                       <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
                     </div>
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => toast({ title: 'Bientôt disponible', description: 'Les badges vendeur seront disponibles prochainement.' })} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <Award className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Badges vendeur</span>
@@ -895,14 +895,14 @@ const ProfilePage = () => {
                 <div>
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Stockage & Données</h3>
                   <div className="space-y-2">
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => { localStorage.clear(); toast({ title: 'Cache vidé', description: 'Le cache de l\'application a été vidé.' }); }} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <Database className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Vider le cache</span>
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground" />
                     </button>
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => toast({ title: 'Tutoriel réinitialisé', description: 'Le tutoriel sera affiché à nouveau.' })} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <RotateCcw className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Réinitialiser le tutoriel</span>
@@ -916,7 +916,7 @@ const ProfilePage = () => {
                 <div>
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Paramètres régionaux</h3>
                   <div className="space-y-2">
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => navigate('/settings/regional')} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <Globe className="w-5 h-5 text-primary" />
                         <div className="text-left">
@@ -926,7 +926,7 @@ const ProfilePage = () => {
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground" />
                     </button>
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => navigate('/settings/regional')} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <Coins className="w-5 h-5 text-primary" />
                         <div className="text-left">
@@ -943,14 +943,14 @@ const ProfilePage = () => {
                 <div>
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Application</h3>
                   <div className="space-y-2">
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => navigator.share?.({ title: 'LaZone', text: 'Découvrez LaZone - Immobilier en Afrique', url: window.location.origin }) || toast({ title: 'Partage non disponible' })} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <Share2 className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Partager l'application</span>
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground" />
                     </button>
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => toast({ title: 'Merci !', description: 'La notation sera disponible sur les stores mobiles.' })} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <Star className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Noter l'application</span>
@@ -964,21 +964,21 @@ const ProfilePage = () => {
                 <div>
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Centre d'aide</h3>
                   <div className="space-y-2">
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => navigate('/settings/help')} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <HelpCircle className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">FAQ</span>
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground" />
                     </button>
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => navigate('/settings/support')} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <MessageCircle className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Support</span>
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground" />
                     </button>
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => navigate('/settings/support')} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <AlertTriangle className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Signaler un problème</span>
@@ -992,28 +992,28 @@ const ProfilePage = () => {
                 <div>
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Légal</h3>
                   <div className="space-y-2">
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => navigate('/settings/legal/terms')} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <FileText className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Conditions d'utilisation</span>
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground" />
                     </button>
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => navigate('/settings/legal/privacy')} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <Shield className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Politique de confidentialité</span>
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground" />
                     </button>
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => navigate('/settings/legal/community')} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <Users className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Règles de la communauté</span>
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground" />
                     </button>
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => navigate('/settings/legal/child-safety')} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <Baby className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Sécurité et protection (enfants)</span>
