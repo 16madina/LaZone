@@ -1,12 +1,22 @@
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
 
-export const SearchBar = () => {
+interface SearchBarProps {
+  variant?: 'default' | 'hero';
+}
+
+export const SearchBar = ({ variant = 'default' }: SearchBarProps) => {
   const { searchQuery, setSearchQuery } = useAppStore();
 
+  const isHero = variant === 'hero';
+
   return (
-    <div className="search-bar">
-      <Search className="w-5 h-5 text-muted-foreground" />
+    <div className={`flex items-center gap-3 p-3 rounded-2xl ${
+      isHero 
+        ? 'bg-white/95 backdrop-blur-sm shadow-lg' 
+        : 'search-bar'
+    }`}>
+      <Search className={`w-5 h-5 ${isHero ? 'text-muted-foreground' : 'text-muted-foreground'}`} />
       <input
         type="text"
         placeholder="Rechercher une ville, un quartier..."
