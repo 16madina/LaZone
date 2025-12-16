@@ -48,9 +48,9 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Failed to generate verification token");
     }
 
-    // Build verification URL
-    const baseUrl = req.headers.get("origin") || "https://your-app.lovable.app";
-    const verificationUrl = `${baseUrl}/verify-email?token=${newToken}`;
+    // Build verification URL - use production URL for email links
+    const productionUrl = "https://lazoneapp.com";
+    const verificationUrl = `${productionUrl}/verify-email?token=${newToken}`;
 
     const emailResponse = await resend.emails.send({
       from: "LaZone <noreply@lazoneapp.com>",
