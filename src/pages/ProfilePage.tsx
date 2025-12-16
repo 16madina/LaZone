@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/hooks/useTheme';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -59,19 +60,21 @@ interface Property {
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const { favorites } = useAppStore();
+  const { favorites, toggleFavorite } = useAppStore();
   const { user, profile, signOut, loading, isEmailVerified, resendVerificationEmail, refreshVerificationStatus } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [sendingEmail, setSendingEmail] = useState(false);
   const [propertiesCount, setPropertiesCount] = useState(0);
   const [properties, setProperties] = useState<Property[]>([]);
+  const [favoriteProperties, setFavoriteProperties] = useState<Property[]>([]);
   const [loadingProperties, setLoadingProperties] = useState(false);
+  const [loadingFavorites, setLoadingFavorites] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('profil');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Settings states
   const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -84,6 +87,12 @@ const ProfilePage = () => {
       fetchProperties();
     }
   }, [user, activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'favoris') {
+      fetchFavoriteProperties();
+    }
+  }, [activeTab, favorites]);
 
   const fetchPropertiesCount = async () => {
     if (!user) return;
@@ -114,6 +123,36 @@ const ProfilePage = () => {
     } finally {
       setLoadingProperties(false);
     }
+  };
+
+  const fetchFavoriteProperties = async () => {
+    if (favorites.length === 0) {
+      setFavoriteProperties([]);
+      return;
+    }
+    
+    setLoadingFavorites(true);
+    try {
+      const { data, error } = await supabase
+        .from('properties')
+        .select(`
+          *,
+          property_images (url, is_primary)
+        `)
+        .in('id', favorites)
+        .eq('is_active', true);
+
+      if (error) throw error;
+      setFavoriteProperties(data || []);
+    } catch (error) {
+      console.error('Error fetching favorite properties:', error);
+    } finally {
+      setLoadingFavorites(false);
+    }
+  };
+
+  const handleRemoveFavorite = (propertyId: string) => {
+    toggleFavorite(propertyId);
   };
 
   const handleAvatarClick = () => {
@@ -638,12 +677,80 @@ const ProfilePage = () => {
             )}
 
             {activeTab === 'favoris' && (
-              <div className="text-center py-8">
-                <Heart className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                <h3 className="font-semibold mb-1">Mes Favoris</h3>
-                <p className="text-sm text-muted-foreground">
-                  {favorites.length} bien{favorites.length > 1 ? 's' : ''} sauvegardé{favorites.length > 1 ? 's' : ''}
-                </p>
+              <div>
+                {loadingFavorites ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary" />
+                  </div>
+                ) : favoriteProperties.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Heart className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                    <h3 className="font-semibold mb-1">Aucun favori</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Vous n'avez pas encore de propriétés favorites.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {favoriteProperties.map((property) => (
+                      <div
+                        key={property.id}
+                        className="bg-muted/30 rounded-xl overflow-hidden"
+                      >
+                        <div className="flex">
+                          <div className="w-24 h-24 flex-shrink-0">
+                            <img
+                              src={getPrimaryImage(property.property_images)}
+                              alt={property.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 p-2">
+                            <div className="flex items-start justify-between gap-1">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-medium text-sm truncate">{property.title}</h3>
+                                <p className="text-primary font-bold text-sm">{formatPrice(property.price)}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                              <MapPin className="w-3 h-3" />
+                              <span className="truncate">{property.city}</span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-0.5">
+                                <Bed className="w-3 h-3" />
+                                {property.bedrooms || 0}
+                              </span>
+                              <span className="flex items-center gap-0.5">
+                                <Bath className="w-3 h-3" />
+                                {property.bathrooms || 0}
+                              </span>
+                              <span className="flex items-center gap-0.5">
+                                <Maximize className="w-3 h-3" />
+                                {property.area}m²
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 mt-1">
+                              <button
+                                onClick={() => navigate(`/property/${property.id}`)}
+                                className="p-1 rounded bg-muted"
+                              >
+                                <Eye className="w-3 h-3 text-muted-foreground" />
+                              </button>
+                              <button
+                                onClick={() => handleRemoveFavorite(property.id)}
+                                className="p-1 rounded bg-red-50"
+                                title="Retirer des favoris"
+                              >
+                                <Heart className="w-3 h-3 text-red-500 fill-red-500" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -670,7 +777,7 @@ const ProfilePage = () => {
                       <p className="text-xs text-muted-foreground">Thème de l'application</p>
                     </div>
                   </div>
-                  <Switch checked={darkMode} onCheckedChange={setDarkMode} />
+                  <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
                 </div>
 
                 {/* Language */}
