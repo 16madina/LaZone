@@ -351,15 +351,15 @@ const PropertyDetailPage = () => {
 
         {/* Thumbnails */}
         {property.images.length > 1 && (
-          <div className="absolute bottom-20 left-4 flex gap-1.5 z-10">
+          <div className="absolute bottom-4 left-4 flex gap-1.5 z-20">
             {visibleThumbnails.map((img, idx) => (
               <button
                 key={idx}
                 onClick={() => setCurrentImageIndex(idx)}
-                className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${
+                className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all shadow-lg ${
                   idx === currentImageIndex 
                     ? 'border-primary' 
-                    : 'border-transparent opacity-70'
+                    : 'border-white/50'
                 }`}
               >
                 <img 
@@ -375,17 +375,17 @@ const PropertyDetailPage = () => {
             {hasMoreImages && (
               <button
                 onClick={() => setShowGallery(true)}
-                className="w-12 h-12 rounded-lg overflow-hidden border-2 border-transparent relative"
+                className="w-12 h-12 rounded-lg overflow-hidden border-2 border-white/50 relative shadow-lg"
               >
                 <img 
                   src={property.images[maxThumbnails]} 
                   alt="" 
-                  className="w-full h-full object-cover opacity-50"
+                  className="w-full h-full object-cover"
                   onError={(e) => {
                     e.currentTarget.src = '/placeholder.svg';
                   }}
                 />
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                   <span className="text-white font-semibold text-sm flex items-center">
                     <Plus className="w-3 h-3" />{remainingCount}
                   </span>
@@ -396,19 +396,8 @@ const PropertyDetailPage = () => {
         )}
 
         {/* Image Counter */}
-        <div className="absolute bottom-20 right-4 glass px-3 py-1.5 rounded-full text-sm font-medium z-10">
+        <div className="absolute bottom-4 right-4 glass px-3 py-1.5 rounded-full text-sm font-medium z-20">
           {currentImageIndex + 1}/{property.images.length}
-        </div>
-
-        {/* Type Badge */}
-        <div className="absolute bottom-6 left-4 z-10">
-          <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
-            property.type === 'sale' 
-              ? 'gradient-primary text-primary-foreground' 
-              : 'bg-secondary text-secondary-foreground'
-          }`}>
-            {property.type === 'sale' ? 'À vendre' : 'À louer'}
-          </span>
         </div>
       </div>
 
