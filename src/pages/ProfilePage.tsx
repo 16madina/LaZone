@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   LogOut, 
@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -26,6 +27,22 @@ const ProfilePage = () => {
   const { favorites } = useAppStore();
   const { user, profile, signOut, loading, isEmailVerified, resendVerificationEmail } = useAuth();
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [propertiesCount, setPropertiesCount] = useState(0);
+
+  useEffect(() => {
+    if (user) {
+      fetchPropertiesCount();
+    }
+  }, [user]);
+
+  const fetchPropertiesCount = async () => {
+    if (!user) return;
+    const { count } = await supabase
+      .from('properties')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+    setPropertiesCount(count || 0);
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -195,15 +212,17 @@ const ProfilePage = () => {
             </div>
           </div>
 
-          {/* Stats Row */}
           <div className="grid grid-cols-4 border-t border-border">
-            <div className="p-4 text-center border-r border-border">
+            <button 
+              onClick={() => navigate('/my-listings')}
+              className="p-4 text-center border-r border-border hover:bg-muted/50 transition-colors"
+            >
               <div className="flex items-center justify-center gap-1 text-foreground font-bold text-lg">
                 <Home className="w-4 h-4 text-muted-foreground" />
-                <span>0</span>
+                <span>{propertiesCount}</span>
               </div>
               <p className="text-xs text-muted-foreground">Annonces</p>
-            </div>
+            </button>
             <div className="p-4 text-center border-r border-border">
               <div className="flex items-center justify-center gap-1 text-foreground font-bold text-lg">
                 <Heart className="w-4 h-4 text-muted-foreground" />

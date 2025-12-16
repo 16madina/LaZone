@@ -13,6 +13,7 @@ import ProfilePage from "./pages/ProfilePage";
 import PropertyDetail from "./pages/PropertyDetail";
 import AuthPage from "./pages/AuthPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
+import MyListingsPage from "./pages/MyListingsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/publish" element={<PublishPage />} />
               <Route path="/messages" element={<MessagesPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/my-listings" element={<MyListingsPage />} />
               <Route path="/property/:id" element={<PropertyDetail />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
