@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Filter, X, MapPin, Bed, Bath, Maximize, Search, Loader2, Navigation, Check, Globe } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useProperties, Property } from '@/hooks/useProperties';
+import { useAuth } from '@/hooks/useAuth';
 import {
   Select,
   SelectContent,
@@ -79,6 +80,7 @@ const MapPage = () => {
   const clusterGroupRef = useRef<L.MarkerClusterGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
   const { properties, loading: propertiesLoading } = useProperties();
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -89,14 +91,45 @@ const MapPage = () => {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locatingUser, setLocatingUser] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [initialCountrySet, setInitialCountrySet] = useState(false);
 
   // Default center (Africa)
   const defaultCenter = { lat: 5.3600, lng: -4.0083 };
+
+  // Initialize country filter from user profile
+  useEffect(() => {
+    if (profile?.country && !initialCountrySet) {
+      const userCountry = africanCountries.find(c => c.code === profile.country);
+      if (userCountry) {
+        setCountryFilter(userCountry);
+        setInitialCountrySet(true);
+        
+        // Zoom to user's country when map is ready
+        if (mapRef.current) {
+          const coords = countryCoordinates[userCountry.code];
+          if (coords) {
+            mapRef.current.setView([coords.lat, coords.lng], coords.zoom);
+          }
+        }
+      }
+    }
+  }, [profile?.country, initialCountrySet]);
+
+  // Zoom to user's country when map loads
+  useEffect(() => {
+    if (mapLoaded && countryFilter && mapRef.current) {
+      const coords = countryCoordinates[countryFilter.code];
+      if (coords) {
+        mapRef.current.setView([coords.lat, coords.lng], coords.zoom);
+      }
+    }
+  }, [mapLoaded, countryFilter]);
 
   useEffect(() => {
     loadLeaflet();
     getUserLocation();
   }, []);
+
 
   const getUserLocation = () => {
     if (!navigator.geolocation) {
