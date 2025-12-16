@@ -1,9 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
-import L from 'leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, MapPin, Bed, Bath, Maximize, ChevronDown, Search, Loader2 } from 'lucide-react';
+import { Filter, X, MapPin, Bed, Bath, Maximize, Search, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import {
@@ -13,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import 'leaflet/dist/leaflet.css';
 
 interface Property {
   id: string;
@@ -31,35 +28,6 @@ interface Property {
   property_images: { url: string; is_primary: boolean }[];
 }
 
-// Custom price marker component
-const createPriceIcon = (price: number, type: string, isSelected: boolean) => {
-  const formattedPrice = formatPriceShort(price);
-  const bgColor = isSelected ? '#ea580c' : (type === 'sale' ? '#ea580c' : '#16a34a');
-  
-  return L.divIcon({
-    className: 'custom-price-marker',
-    html: `
-      <div style="
-        background: ${bgColor};
-        color: white;
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-weight: 600;
-        font-size: 12px;
-        white-space: nowrap;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        transform: translate(-50%, -50%);
-        cursor: pointer;
-        ${isSelected ? 'transform: translate(-50%, -50%) scale(1.1);' : ''}
-      ">
-        ${formattedPrice}
-      </div>
-    `,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0],
-  });
-};
-
 const formatPriceShort = (price: number) => {
   if (price >= 1000000) {
     return `${(price / 1000000).toFixed(1)}M`;
@@ -76,41 +44,43 @@ const formatPrice = (price: number) => {
   }).format(price) + ' FCFA';
 };
 
-// Map bounds controller
-const MapController = ({ properties }: { properties: Property[] }) => {
-  const map = useMap();
-  
-  useEffect(() => {
-    if (properties.length > 0) {
-      const validProperties = properties.filter(p => p.lat && p.lng);
-      if (validProperties.length > 0) {
-        const bounds = L.latLngBounds(
-          validProperties.map(p => [p.lat!, p.lng!] as [number, number])
-        );
-        map.fitBounds(bounds, { padding: [50, 50] });
-      }
-    }
-  }, [properties, map]);
-  
-  return null;
-};
-
 const MapPage = () => {
   const navigate = useNavigate();
+  const mapRef = useRef<any>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const markersRef = useRef<any[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mapLoaded, setMapLoaded] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>('all');
-  const [showFilters, setShowFilters] = useState(false);
 
   // Default center (Abidjan, Côte d'Ivoire)
-  const defaultCenter: [number, number] = [5.3600, -4.0083];
+  const defaultCenter = { lat: 5.3600, lng: -4.0083 };
 
   useEffect(() => {
     fetchProperties();
+    loadLeaflet();
   }, []);
+
+  const loadLeaflet = async () => {
+    // Dynamically load Leaflet
+    const L = await import('leaflet');
+    await import('leaflet/dist/leaflet.css');
+    
+    if (mapContainerRef.current && !mapRef.current) {
+      const map = L.map(mapContainerRef.current).setView([defaultCenter.lat, defaultCenter.lng], 13);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+      
+      mapRef.current = map;
+      setMapLoaded(true);
+    }
+  };
 
   const fetchProperties = async () => {
     setLoading(true);
@@ -128,8 +98,8 @@ const MapPage = () => {
       // Add random coordinates for properties without lat/lng (demo purposes)
       const propertiesWithCoords = (data || []).map(p => ({
         ...p,
-        lat: p.lat || defaultCenter[0] + (Math.random() - 0.5) * 0.1,
-        lng: p.lng || defaultCenter[1] + (Math.random() - 0.5) * 0.1,
+        lat: p.lat || defaultCenter.lat + (Math.random() - 0.5) * 0.1,
+        lng: p.lng || defaultCenter.lng + (Math.random() - 0.5) * 0.1,
       }));
       
       setProperties(propertiesWithCoords);
@@ -151,36 +121,97 @@ const MapPage = () => {
     });
   }, [properties, searchQuery, typeFilter, propertyTypeFilter]);
 
+  // Update markers when properties change
+  useEffect(() => {
+    const updateMarkers = async () => {
+      if (!mapRef.current || !mapLoaded) return;
+      
+      const L = await import('leaflet');
+      
+      // Clear existing markers
+      markersRef.current.forEach(marker => marker.remove());
+      markersRef.current = [];
+      
+      // Add new markers
+      filteredProperties.forEach((property) => {
+        if (property.lat && property.lng) {
+          const bgColor = property.type === 'sale' ? '#ea580c' : '#16a34a';
+          const priceText = formatPriceShort(property.price);
+          
+          const icon = L.divIcon({
+            className: 'custom-price-marker',
+            html: `
+              <div style="
+                background: ${bgColor};
+                color: white;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-weight: 600;
+                font-size: 12px;
+                white-space: nowrap;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                cursor: pointer;
+                display: inline-block;
+              ">
+                ${priceText}
+              </div>
+            `,
+            iconSize: [60, 30],
+            iconAnchor: [30, 15],
+          });
+          
+          const marker = L.marker([property.lat, property.lng], { icon })
+            .addTo(mapRef.current)
+            .on('click', () => {
+              setSelectedProperty(property);
+            });
+          
+          markersRef.current.push(marker);
+        }
+      });
+      
+      // Fit bounds if there are properties
+      if (filteredProperties.length > 0) {
+        const validProps = filteredProperties.filter(p => p.lat && p.lng);
+        if (validProps.length > 0) {
+          const bounds = L.latLngBounds(
+            validProps.map(p => [p.lat!, p.lng!] as [number, number])
+          );
+          mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+        }
+      }
+    };
+    
+    updateMarkers();
+  }, [filteredProperties, mapLoaded]);
+
   const getPrimaryImage = (images: { url: string; is_primary: boolean }[]) => {
     const primary = images?.find(img => img.is_primary);
     return primary?.url || images?.[0]?.url || '/placeholder.svg';
-  };
-
-  const handleMarkerClick = (property: Property) => {
-    setSelectedProperty(property);
   };
 
   const closePropertyCard = () => {
     setSelectedProperty(null);
   };
 
-  if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-muted/30">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const handleZoomIn = () => {
+    if (mapRef.current) {
+      mapRef.current.zoomIn();
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (mapRef.current) {
+      mapRef.current.zoomOut();
+    }
+  };
 
   return (
     <div className="h-screen flex flex-col relative">
       {/* Search and Filters Header */}
       <div className="absolute top-0 left-0 right-0 z-[1000] p-3">
         <div className="flex gap-2">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="p-3 bg-card rounded-xl shadow-md border"
-          >
+          <button className="p-3 bg-card rounded-xl shadow-md border">
             <Filter className="w-5 h-5" />
           </button>
           <div className="flex-1 relative">
@@ -229,55 +260,31 @@ const MapPage = () => {
         </div>
       </div>
 
-      {/* Map */}
-      <MapContainer
-        center={defaultCenter}
-        zoom={13}
+      {/* Map Container */}
+      <div 
+        ref={mapContainerRef} 
         className="flex-1 w-full z-0"
-        zoomControl={false}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        
-        <MapController properties={filteredProperties} />
-        
-        {filteredProperties.map((property) => (
-          property.lat && property.lng && (
-            <Marker
-              key={property.id}
-              position={[property.lat, property.lng]}
-              icon={createPriceIcon(property.price, property.type, selectedProperty?.id === property.id)}
-              eventHandlers={{
-                click: () => handleMarkerClick(property),
-              }}
-            />
-          )
-        ))}
-      </MapContainer>
+        style={{ minHeight: '100%' }}
+      />
+
+      {/* Loading Overlay */}
+      {(loading || !mapLoaded) && (
+        <div className="absolute inset-0 flex items-center justify-center bg-muted/50 z-[999]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      )}
 
       {/* Zoom Controls */}
       <div className="absolute right-3 top-32 z-[1000] flex flex-col gap-1">
         <button 
-          className="p-2 bg-card rounded-lg shadow-md border text-lg font-bold"
-          onClick={() => {
-            const map = document.querySelector('.leaflet-container');
-            if (map) {
-              (map as any)._leaflet_map?.zoomIn();
-            }
-          }}
+          className="p-3 bg-card rounded-lg shadow-md border text-lg font-bold"
+          onClick={handleZoomIn}
         >
           +
         </button>
         <button 
-          className="p-2 bg-card rounded-lg shadow-md border text-lg font-bold"
-          onClick={() => {
-            const map = document.querySelector('.leaflet-container');
-            if (map) {
-              (map as any)._leaflet_map?.zoomOut();
-            }
-          }}
+          className="p-3 bg-card rounded-lg shadow-md border text-lg font-bold"
+          onClick={handleZoomOut}
         >
           −
         </button>
