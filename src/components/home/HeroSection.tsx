@@ -20,7 +20,7 @@ export const HeroSection = () => {
             rotate: { duration: 20, repeat: Infinity, ease: 'linear' },
             scale: { duration: 4, repeat: Infinity, ease: 'easeInOut' }
           }}
-          className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-primary/20 blur-3xl"
+          className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-primary-foreground/20 blur-3xl"
         />
         <motion.div
           animate={{ 
@@ -31,7 +31,7 @@ export const HeroSection = () => {
             rotate: { duration: 25, repeat: Infinity, ease: 'linear' },
             scale: { duration: 5, repeat: Infinity, ease: 'easeInOut' }
           }}
-          className="absolute -bottom-20 -left-20 w-60 h-60 rounded-full bg-secondary/20 blur-3xl"
+          className="absolute -bottom-20 -left-20 w-60 h-60 rounded-full bg-primary-foreground/20 blur-3xl"
         />
       </div>
 
@@ -42,7 +42,7 @@ export const HeroSection = () => {
           transition={{ delay: 0.2 }}
           className="flex items-center gap-2 mb-3"
         >
-          <Sparkles className="w-4 h-4 text-secondary" />
+          <Sparkles className="w-4 h-4 text-primary-foreground/80" />
           <span className="text-sm text-primary-foreground/80 font-medium">
             Découvrez votre futur chez-vous
           </span>
@@ -56,7 +56,7 @@ export const HeroSection = () => {
         >
           Trouvez la propriété
           <br />
-          <span className="text-secondary">de vos rêves</span>
+          <span className="text-primary-foreground/90">de vos rêves</span>
         </motion.h1>
 
         <motion.p
