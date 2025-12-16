@@ -1,4 +1,5 @@
-import { Bell, User, Sparkles } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Bell, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SearchBar } from '@/components/home/SearchBar';
 import { FilterChips } from '@/components/home/FilterChips';
@@ -6,10 +7,22 @@ import { StatsSection } from '@/components/home/StatsSection';
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { useAppStore } from '@/stores/appStore';
 import logoLazone from '@/assets/logo-lazone.png';
-import heroBg from '@/assets/hero-bg.jpg';
+import heroBg1 from '@/assets/hero-bg.jpg';
+import heroBg2 from '@/assets/hero-bg-2.jpg';
+import heroBg3 from '@/assets/hero-bg-3.jpg';
+import heroBg4 from '@/assets/hero-bg-4.jpg';
+
+const heroImages = [heroBg1, heroBg2, heroBg3, heroBg4];
 
 const Index = () => {
   const { properties, activeFilter, searchQuery } = useAppStore();
+  const [currentBg, setCurrentBg] = useState(heroBg1);
+
+  useEffect(() => {
+    // Randomly select a background image on each visit
+    const randomIndex = Math.floor(Math.random() * heroImages.length);
+    setCurrentBg(heroImages[randomIndex]);
+  }, []);
 
   const filteredProperties = properties.filter((property) => {
     // Filter by search query
@@ -39,23 +52,23 @@ const Index = () => {
     <div className="min-h-screen pb-24">
       {/* Hero Section with Background */}
       <div 
-        className="relative px-4 pt-4 pb-6"
+        className="relative px-4 pt-4 pb-8"
         style={{
-          backgroundImage: `url(${heroBg})`,
+          backgroundImage: `url(${currentBg})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center top',
         }}
       >
         {/* Dark Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/80" />
 
         {/* Content */}
         <div className="relative z-10">
           {/* Header */}
           <header className="flex items-center justify-between mb-8">
-            <img src={logoLazone} alt="LaZone" className="h-10" />
+            <img src={logoLazone} alt="LaZone" className="h-14" />
             <div className="flex items-center gap-3">
-              <button className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform">
+              <button className="relative w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform">
                 <Bell className="w-5 h-5 text-white" />
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full" />
               </button>
@@ -65,21 +78,14 @@ const Index = () => {
             </div>
           </header>
 
-          {/* Hero Text */}
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="w-4 h-4 text-white/80" />
-              <span className="text-sm text-white/80 font-medium">
-                Découvrez votre futur chez-vous en Afrique
-              </span>
-            </div>
-
-            <h1 className="font-display text-3xl font-bold text-white mb-2">
-              Trouvez la propriété
+          {/* Hero Content with Logo */}
+          <div className="text-center mb-8">
+            <img src={logoLazone} alt="LaZone" className="h-24 mx-auto mb-4" />
+            <h1 className="font-display text-2xl font-bold text-white mb-2">
+              Trouvez votre chez vous
               <br />
-              <span className="text-white/90">de vos rêves</span>
+              <span className="text-white/90">dans votre Zone</span>
             </h1>
-
             <p className="text-white/70 text-sm">
               Des milliers de propriétés disponibles en Afrique
             </p>
@@ -92,16 +98,16 @@ const Index = () => {
           <div className="mt-4">
             <FilterChips variant="hero" />
           </div>
+
+          {/* Stats Section */}
+          <div className="mt-6">
+            <StatsSection variant="hero" />
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="px-4 pt-6">
-        {/* Stats Section */}
-        <div className="mb-6">
-          <StatsSection />
-        </div>
-
         {/* Properties Section */}
         <section>
           <div className="flex items-center justify-between mb-4">

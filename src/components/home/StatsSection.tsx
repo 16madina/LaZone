@@ -7,11 +7,24 @@ const stats = [
   { icon: TrendingUp, value: '+15%', label: 'Ce mois', color: 'text-primary' },
 ];
 
-export const StatsSection = () => {
+interface StatsSectionProps {
+  variant?: 'default' | 'hero';
+}
+
+export const StatsSection = ({ variant = 'default' }: StatsSectionProps) => {
+  const isHero = variant === 'hero';
+
   return (
     <div className="grid grid-cols-4 gap-2">
       {stats.map((stat) => (
-        <div key={stat.label} className="stat-card">
+        <div 
+          key={stat.label} 
+          className={`text-center p-3 rounded-2xl ${
+            isHero 
+              ? 'bg-white/90 backdrop-blur-sm shadow-sm' 
+              : 'stat-card'
+          }`}
+        >
           <stat.icon className={`w-5 h-5 mx-auto mb-1 ${stat.color}`} />
           <p className="font-display font-bold text-sm">{stat.value}</p>
           <p className="text-xs text-muted-foreground">{stat.label}</p>
