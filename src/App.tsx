@@ -3,7 +3,13 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BottomNavigation } from "@/components/layout/BottomNavigation";
 import Index from "./pages/Index";
+import MapPage from "./pages/MapPage";
+import PublishPage from "./pages/PublishPage";
+import MessagesPage from "./pages/MessagesPage";
+import ProfilePage from "./pages/ProfilePage";
+import PropertyDetail from "./pages/PropertyDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -14,11 +20,18 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <div className="dark min-h-screen bg-background">
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/map" element={<MapPage />} />
+            <Route path="/publish" element={<PublishPage />} />
+            <Route path="/messages" element={<MessagesPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/property/:id" element={<PropertyDetail />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <BottomNavigation />
+        </div>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
