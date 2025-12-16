@@ -63,37 +63,52 @@ const handler = async (req: Request): Promise<Response> => {
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f9fafb; padding: 40px 20px;">
-          <div style="max-width: 480px; margin: 0 auto; background: white; border-radius: 16px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-            <div style="text-align: center; margin-bottom: 32px;">
-              <div style="font-size: 48px; margin-bottom: 16px;">🏠</div>
-              <h1 style="color: #f97316; font-size: 28px; margin: 0;">LaZone</h1>
-              <p style="color: #6b7280; font-size: 14px; margin-top: 4px;">Immobilier en Afrique</p>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0fdf4 100%); padding: 40px 20px; margin: 0;">
+          <div style="max-width: 520px; margin: 0 auto; background: white; border-radius: 24px; padding: 48px 40px; box-shadow: 0 20px 60px rgba(34, 197, 94, 0.15), 0 4px 20px rgba(0,0,0,0.05);">
+            
+            <!-- Logo Header -->
+            <div style="text-align: center; margin-bottom: 40px;">
+              <img src="https://lazoneapp.com/images/logo-lazone.png" alt="LaZone" style="width: 180px; height: auto; margin-bottom: 8px;">
+              <p style="color: #16a34a; font-size: 14px; margin: 0; font-weight: 500; letter-spacing: 1px;">IMMOBILIER EN AFRIQUE</p>
             </div>
             
-            <h2 style="color: #1f2937; font-size: 20px; margin-bottom: 16px;">Bonjour ${firstName} 👋</h2>
+            <!-- Divider -->
+            <div style="height: 3px; background: linear-gradient(90deg, transparent, #22c55e, transparent); margin-bottom: 32px; border-radius: 2px;"></div>
             
-            <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
-              Bienvenue sur LaZone ! Pour activer votre compte et obtenir le badge vérifié, 
-              veuillez cliquer sur le bouton ci-dessous.
+            <!-- Greeting -->
+            <h2 style="color: #166534; font-size: 24px; margin: 0 0 20px 0; font-weight: 600;">Bonjour ${firstName} 👋</h2>
+            
+            <p style="color: #374151; font-size: 16px; line-height: 1.7; margin-bottom: 28px;">
+              Bienvenue sur <strong style="color: #16a34a;">LaZone</strong> ! Pour activer votre compte et obtenir le 
+              <span style="background: linear-gradient(135deg, #22c55e, #16a34a); color: white; padding: 2px 8px; border-radius: 6px; font-size: 14px;">badge vérifié</span>, 
+              cliquez sur le bouton ci-dessous.
             </p>
             
-            <div style="text-align: center; margin: 32px 0;">
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 36px 0;">
               <a href="${verificationUrl}" 
-                 style="display: inline-block; background: linear-gradient(135deg, #f97316, #fb923c); color: white; text-decoration: none; padding: 14px 32px; border-radius: 12px; font-weight: 600; font-size: 16px;">
-                Vérifier mon compte
+                 style="display: inline-block; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; text-decoration: none; padding: 16px 40px; border-radius: 14px; font-weight: 600; font-size: 16px; box-shadow: 0 8px 24px rgba(34, 197, 94, 0.35); transition: all 0.3s ease;">
+                ✓ Vérifier mon compte
               </a>
             </div>
             
-            <p style="color: #9ca3af; font-size: 14px; line-height: 1.5;">
-              Ce lien expire dans 24 heures. Si vous n'avez pas créé de compte sur LaZone, vous pouvez ignorer cet email.
-            </p>
+            <!-- Info Box -->
+            <div style="background: linear-gradient(135deg, #f0fdf4, #ecfdf5); border-radius: 12px; padding: 16px 20px; margin-top: 28px; border-left: 4px solid #22c55e;">
+              <p style="color: #166534; font-size: 14px; line-height: 1.5; margin: 0;">
+                <strong>⏰ Ce lien expire dans 24 heures.</strong><br>
+                <span style="color: #6b7280;">Si vous n'avez pas créé de compte sur LaZone, ignorez cet email.</span>
+              </p>
+            </div>
             
-            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;">
-            
-            <p style="color: #9ca3af; font-size: 12px; text-align: center;">
-              © ${new Date().getFullYear()} LaZone - Immobilier en Afrique
-            </p>
+            <!-- Footer -->
+            <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid #e5e7eb; text-align: center;">
+              <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                © ${new Date().getFullYear()} LaZone - Votre partenaire immobilier en Afrique
+              </p>
+              <p style="color: #d1d5db; font-size: 11px; margin-top: 8px;">
+                Dakar • Abidjan • Lagos • Casablanca • Nairobi
+              </p>
+            </div>
           </div>
         </body>
         </html>
