@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -14,22 +14,130 @@ import {
   Calendar,
   Check,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from 'lucide-react';
-import { useAppStore } from '@/stores/appStore';
 import { useFavorites } from '@/hooks/useFavorites';
 import { ImageGallery } from '@/components/property/ImageGallery';
+import { supabase } from '@/integrations/supabase/client';
+import { formatPriceWithCurrency } from '@/data/currencies';
 
-const PropertyDetail = () => {
+interface PropertyDetail {
+  id: string;
+  title: string;
+  price: number;
+  type: 'sale' | 'rent';
+  propertyType: 'house' | 'apartment' | 'land' | 'commercial';
+  address: string;
+  city: string;
+  country: string | null;
+  bedrooms: number;
+  bathrooms: number;
+  area: number;
+  images: string[];
+  description: string;
+  features: string[];
+  userId: string;
+}
+
+const PropertyDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { properties } = useAppStore();
   const { isFavorite, toggleFavorite } = useFavorites();
   const [showGallery, setShowGallery] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [property, setProperty] = useState<PropertyDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [ownerInfo, setOwnerInfo] = useState<{ full_name: string | null; phone: string | null; avatar_url: string | null } | null>(null);
   
-  const property = properties.find(p => p.id === id);
   const favorite = isFavorite(id || '');
+
+  useEffect(() => {
+    const fetchProperty = async () => {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        
+        // Fetch property with images
+        const { data: propertyData, error: propertyError } = await supabase
+          .from('properties')
+          .select(`
+            *,
+            property_images (
+              url,
+              is_primary,
+              display_order
+            )
+          `)
+          .eq('id', id)
+          .maybeSingle();
+
+        if (propertyError) throw propertyError;
+        
+        if (!propertyData) {
+          setProperty(null);
+          setLoading(false);
+          return;
+        }
+
+        // Sort images: primary first, then by display_order
+        const sortedImages = (propertyData.property_images || [])
+          .sort((a: any, b: any) => {
+            if (a.is_primary && !b.is_primary) return -1;
+            if (!a.is_primary && b.is_primary) return 1;
+            return (a.display_order || 0) - (b.display_order || 0);
+          })
+          .map((img: any) => img.url);
+
+        const formattedProperty: PropertyDetail = {
+          id: propertyData.id,
+          title: propertyData.title,
+          price: Number(propertyData.price),
+          type: propertyData.type as 'sale' | 'rent',
+          propertyType: propertyData.property_type as 'house' | 'apartment' | 'land' | 'commercial',
+          address: propertyData.address,
+          city: propertyData.city,
+          country: propertyData.country,
+          bedrooms: propertyData.bedrooms || 0,
+          bathrooms: propertyData.bathrooms || 0,
+          area: Number(propertyData.area),
+          images: sortedImages.length > 0 ? sortedImages : ['/placeholder.svg'],
+          description: propertyData.description || '',
+          features: propertyData.features || [],
+          userId: propertyData.user_id,
+        };
+
+        setProperty(formattedProperty);
+
+        // Fetch owner info
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('full_name, phone, avatar_url')
+          .eq('user_id', propertyData.user_id)
+          .maybeSingle();
+
+        if (profileData) {
+          setOwnerInfo(profileData);
+        }
+      } catch (err) {
+        console.error('Error fetching property:', err);
+        setProperty(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProperty();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="page-container flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!property) {
     return (
@@ -49,11 +157,12 @@ const PropertyDetail = () => {
     );
   }
 
-  const formatPrice = (price: number, type: 'sale' | 'rent') => {
+  const formatPrice = (price: number, type: 'sale' | 'rent', country: string | null) => {
+    const formattedPrice = formatPriceWithCurrency(price, country);
     if (type === 'rent') {
-      return `${price.toLocaleString('fr-CA')} $/mois`;
+      return `${formattedPrice}/mois`;
     }
-    return `${price.toLocaleString('fr-CA')} $`;
+    return formattedPrice;
   };
 
   const handlePrevImage = () => {
@@ -83,6 +192,9 @@ const PropertyDetail = () => {
             alt={property.title}
             className="w-full h-full object-cover cursor-pointer"
             onClick={() => setShowGallery(true)}
+            onError={(e) => {
+              e.currentTarget.src = '/placeholder.svg';
+            }}
           />
         </motion.div>
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
@@ -183,7 +295,7 @@ const PropertyDetail = () => {
         >
           <h1 className="font-display text-2xl font-bold mb-2">{property.title}</h1>
           <p className="gradient-text font-display font-bold text-3xl mb-3">
-            {formatPrice(property.price, property.type)}
+            {formatPrice(property.price, property.type, property.country)}
           </p>
           
           <div className="flex items-center gap-2 text-muted-foreground mb-4">
@@ -229,54 +341,65 @@ const PropertyDetail = () => {
         </motion.div>
 
         {/* Description */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="glass-card p-5 mb-4"
-        >
-          <h3 className="font-display font-semibold mb-3">Description</h3>
-          <p className="text-muted-foreground leading-relaxed">{property.description}</p>
-        </motion.div>
+        {property.description && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="glass-card p-5 mb-4"
+          >
+            <h3 className="font-display font-semibold mb-3">Description</h3>
+            <p className="text-muted-foreground leading-relaxed">{property.description}</p>
+          </motion.div>
+        )}
 
         {/* Features */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="glass-card p-5 mb-4"
-        >
-          <h3 className="font-display font-semibold mb-3">Caractéristiques</h3>
-          <div className="grid grid-cols-2 gap-2">
-            {property.features.map((feature) => (
-              <div key={feature} className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-primary" />
-                <span className="text-sm">{feature}</span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Agent */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="glass-card p-5 mb-4"
-        >
-          <h3 className="font-display font-semibold mb-3">Agent immobilier</h3>
-          <div className="flex items-center gap-3">
-            <img
-              src={property.agent.avatar}
-              alt={property.agent.name}
-              className="w-12 h-12 rounded-full object-cover"
-            />
-            <div className="flex-1">
-              <p className="font-semibold">{property.agent.name}</p>
-              <p className="text-sm text-muted-foreground">{property.agent.phone}</p>
+        {property.features.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="glass-card p-5 mb-4"
+          >
+            <h3 className="font-display font-semibold mb-3">Caractéristiques</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {property.features.map((feature) => (
+                <div key={feature} className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-primary" />
+                  <span className="text-sm">{feature}</span>
+                </div>
+              ))}
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        )}
+
+        {/* Owner/Agent */}
+        {ownerInfo && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="glass-card p-5 mb-4"
+          >
+            <h3 className="font-display font-semibold mb-3">Propriétaire</h3>
+            <div className="flex items-center gap-3">
+              <img
+                src={ownerInfo.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop'}
+                alt={ownerInfo.full_name || 'Propriétaire'}
+                className="w-12 h-12 rounded-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
+                }}
+              />
+              <div className="flex-1">
+                <p className="font-semibold">{ownerInfo.full_name || 'Propriétaire'}</p>
+                {ownerInfo.phone && (
+                  <p className="text-sm text-muted-foreground">{ownerInfo.phone}</p>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* Fixed Bottom Actions */}
@@ -326,4 +449,4 @@ const PropertyDetail = () => {
   );
 };
 
-export default PropertyDetail;
+export default PropertyDetailPage;
