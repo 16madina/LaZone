@@ -201,7 +201,13 @@ export default function LocationMapPicker({ position, onPositionChange, countryC
       draggable: true,
     }).addTo(map);
 
-    // Update position when marker is dragged
+    // Update position in real-time while dragging
+    marker.on('drag', () => {
+      const latLng = marker.getLatLng();
+      setPendingPosition({ lat: latLng.lat, lng: latLng.lng });
+    });
+
+    // Update position when marker drag ends
     marker.on('dragend', () => {
       const latLng = marker.getLatLng();
       setPendingPosition({ lat: latLng.lat, lng: latLng.lng });
@@ -303,6 +309,15 @@ export default function LocationMapPicker({ position, onPositionChange, countryC
           className="h-64 w-full rounded-xl overflow-hidden border border-border"
           style={{ minHeight: '256px' }}
         />
+        
+        {/* Real-time coordinates display */}
+        {pendingPosition && (
+          <div className="absolute top-3 left-3 z-[1000] bg-background/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-border shadow-sm">
+            <p className="text-xs font-mono text-foreground">
+              {pendingPosition.lat.toFixed(6)}, {pendingPosition.lng.toFixed(6)}
+            </p>
+          </div>
+        )}
         
         {/* Validate button overlay */}
         {pendingPosition && (
