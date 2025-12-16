@@ -16,7 +16,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  Flag
+  Flag,
+  Ban,
+  ChevronRight as ChevronRightIcon
 } from 'lucide-react';
 import { useFavorites } from '@/hooks/useFavorites';
 import { ImageGallery } from '@/components/property/ImageGallery';
@@ -42,6 +44,14 @@ interface PropertyDetail {
   userId: string;
 }
 
+interface OtherProperty {
+  id: string;
+  title: string;
+  price: number;
+  country: string | null;
+  image: string;
+}
+
 const PropertyDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -51,6 +61,8 @@ const PropertyDetailPage = () => {
   const [property, setProperty] = useState<PropertyDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [ownerInfo, setOwnerInfo] = useState<{ full_name: string | null; phone: string | null; avatar_url: string | null } | null>(null);
+  const [ownerListingsCount, setOwnerListingsCount] = useState(0);
+  const [otherProperties, setOtherProperties] = useState<OtherProperty[]>([]);
   
   const favorite = isFavorite(id || '');
 
@@ -122,6 +134,40 @@ const PropertyDetailPage = () => {
         if (profileData) {
           setOwnerInfo(profileData);
         }
+
+        // Fetch owner's listings count
+        const { count } = await supabase
+          .from('properties')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', propertyData.user_id)
+          .eq('is_active', true);
+
+        setOwnerListingsCount(count || 0);
+
+        // Fetch other properties from same owner
+        const { data: otherProps } = await supabase
+          .from('properties')
+          .select(`
+            id,
+            title,
+            price,
+            country,
+            property_images (url, is_primary)
+          `)
+          .eq('user_id', propertyData.user_id)
+          .eq('is_active', true)
+          .neq('id', id)
+          .limit(5);
+
+        if (otherProps) {
+          setOtherProperties(otherProps.map((p: any) => ({
+            id: p.id,
+            title: p.title,
+            price: p.price,
+            country: p.country,
+            image: p.property_images?.find((img: any) => img.is_primary)?.url || p.property_images?.[0]?.url || '/placeholder.svg'
+          })));
+        }
       } catch (err) {
         console.error('Error fetching property:', err);
         setProperty(null);
@@ -167,6 +213,17 @@ const PropertyDetailPage = () => {
     return formattedPrice;
   };
 
+  const formatShortPrice = (price: number, country: string | null) => {
+    if (price >= 1000000000) {
+      return `${(price / 1000000000).toFixed(0)}B FCFA`;
+    } else if (price >= 1000000) {
+      return `${(price / 1000000).toFixed(0)}M FCFA`;
+    } else if (price >= 1000) {
+      return `${(price / 1000).toFixed(0)}K FCFA`;
+    }
+    return formatPriceWithCurrency(price, country);
+  };
+
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => 
       prev === 0 ? property.images.length - 1 : prev - 1
@@ -177,6 +234,20 @@ const PropertyDetailPage = () => {
     setCurrentImageIndex((prev) => 
       prev === property.images.length - 1 ? 0 : prev + 1
     );
+  };
+
+  const handleWhatsAppContact = () => {
+    if (ownerInfo?.phone) {
+      const phone = ownerInfo.phone.replace(/\s/g, '').replace(/^\+/, '');
+      const message = encodeURIComponent(`Bonjour, je suis intéressé par votre annonce "${property.title}"`);
+      window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+    }
+  };
+
+  const handleCall = () => {
+    if (ownerInfo?.phone) {
+      window.location.href = `tel:${ownerInfo.phone}`;
+    }
   };
 
   return (
@@ -251,17 +322,6 @@ const PropertyDetailPage = () => {
           </motion.button>
           
           <div className="flex gap-2">
-            <ReportDialog 
-              propertyId={property.id} 
-              trigger={
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  className="glass w-10 h-10 rounded-full flex items-center justify-center"
-                >
-                  <Flag className="w-5 h-5" />
-                </motion.button>
-              }
-            />
             <motion.button
               whileTap={{ scale: 0.9 }}
               className="glass w-10 h-10 rounded-full flex items-center justify-center"
@@ -386,7 +446,7 @@ const PropertyDetailPage = () => {
           </motion.div>
         )}
 
-        {/* Owner/Agent */}
+        {/* Owner/Agent Section */}
         {ownerInfo && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -394,59 +454,120 @@ const PropertyDetailPage = () => {
             transition={{ delay: 0.3 }}
             className="glass-card p-5 mb-4"
           >
-            <h3 className="font-display font-semibold mb-3">Propriétaire</h3>
-            <div className="flex items-center gap-3">
-              <img
-                src={ownerInfo.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop'}
-                alt={ownerInfo.full_name || 'Propriétaire'}
-                className="w-12 h-12 rounded-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
-                }}
-              />
-              <div className="flex-1">
-                <p className="font-semibold">{ownerInfo.full_name || 'Propriétaire'}</p>
-                {ownerInfo.phone && (
-                  <p className="text-sm text-muted-foreground">{ownerInfo.phone}</p>
-                )}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <img
+                  src={ownerInfo.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop'}
+                  alt={ownerInfo.full_name || 'Propriétaire'}
+                  className="w-12 h-12 rounded-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
+                  }}
+                />
+                <div>
+                  <p className="font-semibold">{ownerInfo.full_name || 'Propriétaire'}</p>
+                  <p className="text-sm text-muted-foreground">{ownerListingsCount} annonce{ownerListingsCount > 1 ? 's' : ''}</p>
+                </div>
               </div>
+              <button className="px-4 py-2 border border-border rounded-xl text-sm font-medium hover:bg-muted transition-colors">
+                Voir profil
+              </button>
+            </div>
+
+            {/* Contact Buttons */}
+            <div className="space-y-3">
+              <button className="w-full py-3 rounded-xl gradient-primary text-primary-foreground font-medium flex items-center justify-center gap-2">
+                <MessageCircle className="w-5 h-5" />
+                Contacter le vendeur
+              </button>
+              
+              <button className="w-full py-3 rounded-xl border border-border hover:bg-muted transition-colors font-medium flex items-center justify-center gap-2">
+                <Calendar className="w-5 h-5" />
+                Prendre rendez-vous pour une visite
+              </button>
+              
+              <button 
+                onClick={handleCall}
+                className="w-full py-3 rounded-xl border border-border hover:bg-muted transition-colors font-medium flex items-center justify-center gap-2"
+              >
+                <Phone className="w-5 h-5" />
+                Appeler le vendeur
+              </button>
+              
+              <button 
+                onClick={handleWhatsAppContact}
+                className="w-full py-3 rounded-xl border border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-950 transition-colors font-medium flex items-center justify-center gap-2"
+              >
+                <MessageCircle className="w-5 h-5" />
+                Contacter via WhatsApp
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Report and Block Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="flex items-center justify-center gap-8 py-4 mb-4"
+        >
+          <ReportDialog 
+            propertyId={property.id} 
+            trigger={
+              <button className="flex items-center gap-2 text-destructive hover:text-destructive/80 transition-colors">
+                <Flag className="w-4 h-4" />
+                <span className="text-sm font-medium">Signaler l'annonce</span>
+              </button>
+            }
+          />
+          <button className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+            <Ban className="w-4 h-4" />
+            <span className="text-sm font-medium">Bloquer</span>
+          </button>
+        </motion.div>
+
+        {/* Other Properties from Same Owner */}
+        {otherProperties.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="mb-8"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-display font-semibold">Autres annonces</h3>
+              <button className="text-primary text-sm font-medium flex items-center gap-1">
+                Voir tout
+                <ChevronRightIcon className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
+              {otherProperties.map((prop) => (
+                <button
+                  key={prop.id}
+                  onClick={() => navigate(`/property/${prop.id}`)}
+                  className="flex-shrink-0 w-28"
+                >
+                  <div className="w-28 h-20 rounded-xl overflow-hidden mb-2">
+                    <img 
+                      src={prop.image} 
+                      alt={prop.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder.svg';
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs font-medium truncate">{prop.title}</p>
+                  <p className="text-xs text-primary font-semibold">{formatShortPrice(prop.price, prop.country)}</p>
+                </button>
+              ))}
             </div>
           </motion.div>
         )}
       </div>
-
-      {/* Fixed Bottom Actions */}
-      <motion.div
-        initial={{ y: 100 }}
-        animate={{ y: 0 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="fixed bottom-20 left-0 right-0 p-4 glass border-t border-glass-border"
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)' }}
-      >
-        <div className="flex gap-3 max-w-lg mx-auto">
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            className="flex-1 glass-button flex items-center justify-center gap-2"
-          >
-            <Phone className="w-5 h-5" />
-            <span>Appeler</span>
-          </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            className="flex-1 glass-button flex items-center justify-center gap-2"
-          >
-            <Calendar className="w-5 h-5" />
-            <span>Visite</span>
-          </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            className="flex-1 gradient-primary rounded-xl py-3 flex items-center justify-center gap-2 text-primary-foreground font-medium"
-          >
-            <MessageCircle className="w-5 h-5" />
-            <span>Message</span>
-          </motion.button>
-        </div>
-      </motion.div>
 
       {/* Image Gallery Modal */}
       <AnimatePresence>
