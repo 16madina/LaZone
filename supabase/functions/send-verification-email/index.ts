@@ -53,7 +53,7 @@ const handler = async (req: Request): Promise<Response> => {
     const verificationUrl = `${baseUrl}/verify-email?token=${newToken}`;
 
     const emailResponse = await resend.emails.send({
-      from: "LaZone <onboarding@resend.dev>",
+      from: "LaZone <noreply@lazoneapp.com>",
       to: [email],
       subject: "Vérifiez votre compte LaZone",
       html: `
