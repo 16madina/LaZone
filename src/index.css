@@ -4,6 +4,18 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
+/* LaZone Theme Colors */
+:root {
+  --lazone-dark: 25 30% 12%;
+  --lazone-card: 25 25% 18%;
+  --lazone-input: 25 20% 22%;
+  --lazone-border: 25 15% 30%;
+  --lazone-text: 30 20% 90%;
+  --lazone-muted: 25 15% 55%;
+  --lazone-accent: 35 95% 55%;
+  --lazone-accent-light: 30 90% 60%;
+}
+
 @layer base {
   :root {
     --background: 30 30% 98%;

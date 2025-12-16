@@ -61,6 +61,17 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // LaZone theme colors
+        lazone: {
+          dark: "hsl(var(--lazone-dark))",
+          card: "hsl(var(--lazone-card))",
+          input: "hsl(var(--lazone-input))",
+          border: "hsl(var(--lazone-border))",
+          text: "hsl(var(--lazone-text))",
+          muted: "hsl(var(--lazone-muted))",
+          accent: "hsl(var(--lazone-accent))",
+          "accent-light": "hsl(var(--lazone-accent-light))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
