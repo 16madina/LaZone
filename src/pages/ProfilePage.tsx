@@ -354,7 +354,7 @@ const ProfilePage = () => {
     return (
       <div className="min-h-screen bg-gradient-to-b from-primary/20 to-background">
         <div className="h-32 bg-gradient-to-r from-primary to-primary/80" />
-        <div className="px-4 -mt-16 pb-24">
+        <div className="px-4 -mt-16 pb-32">
           <div className="bg-card rounded-2xl shadow-lg p-6 text-center">
             <div className="w-24 h-24 mx-auto rounded-full bg-muted flex items-center justify-center mb-4">
               <span className="text-4xl">👤</span>
@@ -377,7 +377,7 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 pb-24">
+    <div className="min-h-screen bg-muted/30 pb-32">
       {/* Hidden file input for avatar upload */}
       <input
         ref={fileInputRef}

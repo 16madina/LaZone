@@ -68,7 +68,7 @@ const Index = () => {
   });
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-32">
       {/* Hero Section with Background */}
       <div 
         className="relative px-4 pt-4 pb-8"
