@@ -247,4 +247,27 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* Leaflet custom styles */
+  .leaflet-container {
+    font-family: 'Inter', sans-serif;
+  }
+
+  .custom-price-marker {
+    background: transparent;
+    border: none;
+  }
+
+  .leaflet-marker-icon {
+    background: transparent;
+    border: none;
+  }
+
+  .leaflet-popup-content-wrapper {
+    @apply rounded-xl;
+  }
+
+  .leaflet-control-zoom {
+    display: none;
+  }
 }
