@@ -1,7 +1,14 @@
-import { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+
+// Fix for default marker icons in Leaflet
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 // Custom orange marker icon
 const orangeIcon = new L.Icon({
@@ -77,76 +84,93 @@ interface LocationMapPickerProps {
   countryCode?: string;
 }
 
-// Component to handle map click events
-function MapClickHandler({ onPositionChange }: { onPositionChange: (lat: number, lng: number) => void }) {
-  useMapEvents({
-    click: (e) => {
-      onPositionChange(e.latlng.lat, e.latlng.lng);
-    },
-  });
-  return null;
-}
-
-// Component to recenter map when country changes
-function MapCenterUpdater({ center, zoom }: { center: [number, number]; zoom: number }) {
-  const map = useMap();
-  
-  useEffect(() => {
-    map.setView(center, zoom);
-  }, [center, zoom, map]);
-  
-  return null;
-}
-
-// Draggable marker component
-function DraggableMarker({ position, onPositionChange }: { 
-  position: { lat: number; lng: number };
-  onPositionChange: (lat: number, lng: number) => void;
-}) {
-  const markerRef = useRef<L.Marker>(null);
-
-  const eventHandlers = {
-    dragend() {
-      const marker = markerRef.current;
-      if (marker) {
-        const newPos = marker.getLatLng();
-        onPositionChange(newPos.lat, newPos.lng);
-      }
-    },
-  };
-
-  return (
-    <Marker 
-      position={[position.lat, position.lng]} 
-      icon={orangeIcon}
-      draggable={true}
-      eventHandlers={eventHandlers}
-      ref={markerRef}
-    />
-  );
-}
-
 export default function LocationMapPicker({ position, onPositionChange, countryCode }: LocationMapPickerProps) {
-  const coords = countryCode ? countryCoordinates[countryCode] : { lat: 5.3600, lng: -4.0083, zoom: 12 };
-  const center: [number, number] = [coords?.lat || 5.3600, coords?.lng || -4.0083];
-  const zoom = coords?.zoom || 12;
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
+  const [isMapReady, setIsMapReady] = useState(false);
+
+  // Initialize map
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    const coords = countryCode ? countryCoordinates[countryCode] : { lat: 5.3600, lng: -4.0083, zoom: 12 };
+    const center: [number, number] = [coords?.lat || 5.3600, coords?.lng || -4.0083];
+    const zoom = coords?.zoom || 12;
+
+    // Create map
+    const map = L.map(mapContainerRef.current, {
+      center,
+      zoom,
+      scrollWheelZoom: true,
+    });
+
+    // Add tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Create draggable marker
+    const marker = L.marker([position.lat, position.lng], {
+      icon: orangeIcon,
+      draggable: true,
+    }).addTo(map);
+
+    // Update position when marker is dragged
+    marker.on('dragend', () => {
+      const latLng = marker.getLatLng();
+      onPositionChange(latLng.lat, latLng.lng);
+    });
+
+    // Update marker position when map is clicked
+    map.on('click', (e) => {
+      marker.setLatLng(e.latlng);
+      onPositionChange(e.latlng.lat, e.latlng.lng);
+    });
+
+    mapRef.current = map;
+    markerRef.current = marker;
+    setIsMapReady(true);
+
+    // Cleanup
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      markerRef.current = null;
+    };
+  }, []); // Only run once on mount
+
+  // Update map center when country changes
+  useEffect(() => {
+    if (!mapRef.current || !isMapReady) return;
+    
+    if (countryCode && countryCoordinates[countryCode]) {
+      const coords = countryCoordinates[countryCode];
+      mapRef.current.setView([coords.lat, coords.lng], coords.zoom);
+      
+      // Update marker position
+      if (markerRef.current) {
+        markerRef.current.setLatLng([coords.lat, coords.lng]);
+        onPositionChange(coords.lat, coords.lng);
+      }
+    }
+  }, [countryCode, isMapReady]);
+
+  // Update marker when position prop changes externally
+  useEffect(() => {
+    if (!markerRef.current || !isMapReady) return;
+    
+    const currentPos = markerRef.current.getLatLng();
+    if (currentPos.lat !== position.lat || currentPos.lng !== position.lng) {
+      markerRef.current.setLatLng([position.lat, position.lng]);
+    }
+  }, [position.lat, position.lng, isMapReady]);
 
   return (
-    <div className="h-64 w-full rounded-xl overflow-hidden border border-border">
-      <MapContainer
-        center={center}
-        zoom={zoom}
-        className="h-full w-full"
-        scrollWheelZoom={true}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <MapClickHandler onPositionChange={onPositionChange} />
-        <MapCenterUpdater center={center} zoom={zoom} />
-        <DraggableMarker position={position} onPositionChange={onPositionChange} />
-      </MapContainer>
-    </div>
+    <div 
+      ref={mapContainerRef}
+      className="h-64 w-full rounded-xl overflow-hidden border border-border"
+      style={{ minHeight: '256px' }}
+    />
   );
 }
