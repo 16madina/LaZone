@@ -1,5 +1,4 @@
 import { Heart, Bed, Bath, Maximize, MapPin } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { Property } from '@/stores/appStore';
 import { useAppStore } from '@/stores/appStore';
 import { Link } from 'react-router-dom';
@@ -9,7 +8,7 @@ interface PropertyCardProps {
   index?: number;
 }
 
-export const PropertyCard = ({ property, index = 0 }: PropertyCardProps) => {
+export const PropertyCard = ({ property }: PropertyCardProps) => {
   const { favorites, toggleFavorite } = useAppStore();
   const isFavorite = favorites.includes(property.id);
 
@@ -21,20 +20,13 @@ export const PropertyCard = ({ property, index = 0 }: PropertyCardProps) => {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.1 }}
-      className="property-card"
-    >
+    <div className="property-card">
       <Link to={`/property/${property.id}`}>
         <div className="relative aspect-[4/3] overflow-hidden">
-          <motion.img
+          <img
             src={property.images[0]}
             alt={property.title}
-            className="w-full h-full object-cover"
-            whileHover={{ scale: 1.05 }}
-            transition={{ duration: 0.4 }}
+            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent" />
           
@@ -62,21 +54,19 @@ export const PropertyCard = ({ property, index = 0 }: PropertyCardProps) => {
       </Link>
 
       {/* Favorite Button */}
-      <motion.button
+      <button
         onClick={(e) => {
           e.preventDefault();
           toggleFavorite(property.id);
         }}
-        className="absolute top-3 right-3 glass w-8 h-8 rounded-full flex items-center justify-center"
-        whileTap={{ scale: 0.9 }}
-        whileHover={{ scale: 1.1 }}
+        className="absolute top-3 right-3 glass w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform"
       >
         <Heart 
-          className={`w-4 h-4 transition-colors duration-300 ${
+          className={`w-4 h-4 transition-colors duration-200 ${
             isFavorite ? 'fill-destructive text-destructive' : 'text-foreground'
           }`} 
         />
-      </motion.button>
+      </button>
 
       <div className="p-4">
         <div className="flex items-start justify-between mb-2">
@@ -115,6 +105,6 @@ export const PropertyCard = ({ property, index = 0 }: PropertyCardProps) => {
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 };
