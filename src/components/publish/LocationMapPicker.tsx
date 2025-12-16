@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { Input } from '@/components/ui/input';
+import { Search, Loader2 } from 'lucide-react';
 
 // Fix for default marker icons in Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -19,6 +21,13 @@ const orangeIcon = new L.Icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41]
 });
+
+interface NominatimResult {
+  place_id: number;
+  display_name: string;
+  lat: string;
+  lon: string;
+}
 
 // Country coordinates for centering the map
 export const countryCoordinates: Record<string, { lat: number; lng: number; zoom: number }> = {
@@ -89,6 +98,71 @@ export default function LocationMapPicker({ position, onPositionChange, countryC
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<NominatimResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced search function
+  const searchAddress = useCallback(async (query: string) => {
+    if (query.length < 3) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const countryFilter = countryCode ? `&countrycodes=${countryCode.toLowerCase()}` : '';
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}${countryFilter}&limit=5`,
+        {
+          headers: {
+            'Accept-Language': 'fr',
+          },
+        }
+      );
+      const data: NominatimResult[] = await response.json();
+      setSearchResults(data);
+      setShowResults(data.length > 0);
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [countryCode]);
+
+  // Handle search input change with debounce
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      searchAddress(value);
+    }, 300);
+  };
+
+  // Handle selecting a search result
+  const handleSelectResult = (result: NominatimResult) => {
+    const lat = parseFloat(result.lat);
+    const lng = parseFloat(result.lon);
+    
+    onPositionChange(lat, lng);
+    
+    if (mapRef.current && markerRef.current) {
+      mapRef.current.setView([lat, lng], 15);
+      markerRef.current.setLatLng([lat, lng]);
+    }
+    
+    setSearchQuery(result.display_name.split(',')[0]);
+    setShowResults(false);
+    setSearchResults([]);
+  };
 
   // Initialize map
   useEffect(() => {
@@ -166,11 +240,57 @@ export default function LocationMapPicker({ position, onPositionChange, countryC
     }
   }, [position.lat, position.lng, isMapReady]);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
-    <div 
-      ref={mapContainerRef}
-      className="h-64 w-full rounded-xl overflow-hidden border border-border"
-      style={{ minHeight: '256px' }}
-    />
+    <div className="space-y-3">
+      {/* Search input */}
+      <div className="relative">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Rechercher une adresse..."
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            onFocus={() => searchResults.length > 0 && setShowResults(true)}
+            className="pl-9 pr-9"
+          />
+          {isSearching && (
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+          )}
+        </div>
+        
+        {/* Search results dropdown */}
+        {showResults && searchResults.length > 0 && (
+          <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-lg shadow-lg max-h-60 overflow-auto">
+            {searchResults.map((result) => (
+              <button
+                key={result.place_id}
+                type="button"
+                onClick={() => handleSelectResult(result)}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors border-b border-border last:border-b-0"
+              >
+                <span className="line-clamp-2">{result.display_name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Map */}
+      <div 
+        ref={mapContainerRef}
+        className="h-64 w-full rounded-xl overflow-hidden border border-border"
+        style={{ minHeight: '256px' }}
+      />
+    </div>
   );
 }
