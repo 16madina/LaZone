@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, BadgeCheck, MapPin, Calendar, 
@@ -8,7 +8,9 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { PropertyCard } from '@/components/property/PropertyCard';
+import { CompactPropertyCard } from '@/components/property/CompactPropertyCard';
+import { ReviewCard } from '@/components/review/ReviewCard';
+import { ReviewForm } from '@/components/review/ReviewForm';
 import { useAuth } from '@/hooks/useAuth';
 import { africanCountries } from '@/data/africanCountries';
 import { Property } from '@/hooks/useProperties';
@@ -23,6 +25,18 @@ interface UserProfile {
   created_at: string;
 }
 
+interface Review {
+  id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  reviewer_id: string;
+  reviewer: {
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
+}
+
 const PublicProfilePage = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
@@ -30,15 +44,27 @@ const PublicProfilePage = () => {
   
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [userReview, setUserReview] = useState<Review | null>(null);
   const [loading, setLoading] = useState(true);
   const [propertiesLoading, setPropertiesLoading] = useState(true);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [averageRating, setAverageRating] = useState(0);
 
   useEffect(() => {
     if (userId) {
       fetchProfile();
       fetchUserProperties();
+      fetchReviews();
     }
   }, [userId]);
+
+  useEffect(() => {
+    if (user && userId && reviews.length >= 0) {
+      const existing = reviews.find(r => r.reviewer_id === user.id);
+      setUserReview(existing || null);
+    }
+  }, [user, userId, reviews]);
 
   const fetchProfile = async () => {
     try {
@@ -71,7 +97,6 @@ const PublicProfilePage = () => {
 
       if (error) throw error;
       
-      // Transform to Property interface
       const transformedProperties: Property[] = (data || []).map((p: any) => {
         const sortedImages = (p.property_images || [])
           .sort((a: any, b: any) => (a.display_order || 0) - (b.display_order || 0))
@@ -107,6 +132,50 @@ const PublicProfilePage = () => {
     }
   };
 
+  const fetchReviews = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_reviews')
+        .select(`
+          id,
+          rating,
+          comment,
+          created_at,
+          reviewer_id
+        `)
+        .eq('reviewed_user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Fetch reviewer profiles separately
+      const reviewerIds = [...new Set((data || []).map(r => r.reviewer_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, avatar_url')
+        .in('user_id', reviewerIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+      const reviewsWithProfiles: Review[] = (data || []).map(r => ({
+        ...r,
+        reviewer: profileMap.get(r.reviewer_id) || null
+      }));
+
+      setReviews(reviewsWithProfiles);
+
+      // Calculate average rating
+      if (reviewsWithProfiles.length > 0) {
+        const avg = reviewsWithProfiles.reduce((sum, r) => sum + r.rating, 0) / reviewsWithProfiles.length;
+        setAverageRating(Math.round(avg * 10) / 10);
+      }
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
   const getCountryName = (code: string | null) => {
     if (!code) return null;
     return africanCountries.find(c => c.code === code)?.name || code;
@@ -124,7 +193,6 @@ const PublicProfilePage = () => {
       navigate('/auth');
       return;
     }
-    // Navigate to messages with this user
     navigate('/messages', { state: { recipientId: userId } });
   };
 
@@ -243,13 +311,13 @@ const PublicProfilePage = () => {
               <p className="text-xs text-muted-foreground">Annonces</p>
             </div>
             <div className="text-center">
-              <p className="font-display font-bold text-2xl text-primary">-</p>
+              <p className="font-display font-bold text-2xl text-primary">{reviews.length}</p>
               <p className="text-xs text-muted-foreground">Avis</p>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
                 <Star className="w-5 h-5 text-primary fill-primary" />
-                <span className="font-display font-bold text-2xl">-</span>
+                <span className="font-display font-bold text-2xl">{averageRating || '-'}</span>
               </div>
               <p className="text-xs text-muted-foreground">Note</p>
             </div>
@@ -268,22 +336,60 @@ const PublicProfilePage = () => {
         </div>
       </motion.div>
 
+      {/* Review Form (only for logged in users who aren't viewing their own profile) */}
+      {user && user.id !== userId && (
+        <div className="px-4 mb-4">
+          <ReviewForm
+            reviewedUserId={userId!}
+            currentUserId={user.id}
+            existingReview={userReview}
+            onReviewSubmitted={fetchReviews}
+          />
+        </div>
+      )}
+
+      {/* Reviews Section */}
+      <div className="px-4 mb-6">
+        <h3 className="font-display font-semibold text-lg mb-4">
+          Avis ({reviews.length})
+        </h3>
+
+        {reviewsLoading ? (
+          <div className="space-y-3">
+            {[1, 2].map((i) => (
+              <Skeleton key={i} className="h-24 rounded-xl" />
+            ))}
+          </div>
+        ) : reviews.length > 0 ? (
+          <div className="space-y-3">
+            {reviews.map((review) => (
+              <ReviewCard key={review.id} review={review} />
+            ))}
+          </div>
+        ) : (
+          <div className="glass-card p-6 text-center">
+            <Star className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
+            <p className="text-muted-foreground text-sm">Aucun avis pour le moment</p>
+          </div>
+        )}
+      </div>
+
       {/* User's Properties */}
-      <div className="px-4 mt-2">
+      <div className="px-4">
         <h3 className="font-display font-semibold text-lg mb-4">
           Annonces de {profile.full_name?.split(' ')[0] || 'cet utilisateur'}
         </h3>
 
         {propertiesLoading ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {[1, 2].map((i) => (
-              <Skeleton key={i} className="h-48 rounded-xl" />
+              <Skeleton key={i} className="h-24 rounded-xl" />
             ))}
           </div>
         ) : properties.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {properties.map((property) => (
-              <PropertyCard
+              <CompactPropertyCard
                 key={property.id}
                 property={property}
               />
