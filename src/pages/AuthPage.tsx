@@ -4,6 +4,7 @@ import { Mail, Lock, User, ArrowLeft, Eye, EyeOff, Phone, MapPin, ChevronDown, C
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { africanCountries, Country } from '@/data/africanCountries';
+import logoLazone from '@/assets/logo-lazone.png';
 import {
   Dialog,
   DialogContent,
@@ -321,8 +322,7 @@ const AuthPage = () => {
       <div className="flex-1 overflow-y-auto px-6 pb-8">
         {/* Logo */}
         <div className="text-center mb-6">
-          <div className="text-5xl mb-2">🏠</div>
-          <h1 className="font-display text-2xl font-bold gradient-text">LaZone</h1>
+          <img src={logoLazone} alt="LaZone" className="h-16 mx-auto mb-2" />
           <p className="text-muted-foreground text-sm mt-1">
             {isLogin ? 'Connectez-vous à votre compte' : 'Créez votre compte'}
           </p>
