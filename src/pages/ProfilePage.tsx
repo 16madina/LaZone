@@ -48,6 +48,7 @@ import {
   Edit
 } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
+import { useFavorites } from '@/hooks/useFavorites';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { supabase } from '@/integrations/supabase/client';
@@ -76,7 +77,7 @@ interface Property {
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const { favorites, toggleFavorite } = useAppStore();
+  const { favorites, toggleFavorite, loading: loadingFavoritesHook } = useFavorites();
   const { user, profile, signOut, loading, isEmailVerified, resendVerificationEmail, refreshVerificationStatus } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [sendingEmail, setSendingEmail] = useState(false);
@@ -167,8 +168,8 @@ const ProfilePage = () => {
     }
   };
 
-  const handleRemoveFavorite = (propertyId: string) => {
-    toggleFavorite(propertyId);
+  const handleRemoveFavorite = async (propertyId: string) => {
+    await toggleFavorite(propertyId);
   };
 
   const handleAvatarClick = () => {
