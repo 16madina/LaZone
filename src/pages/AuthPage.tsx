@@ -35,6 +35,7 @@ const AuthPage = () => {
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -160,11 +161,34 @@ const AuthPage = () => {
         toast({ title: 'Erreur', description: 'L\'image ne doit pas dépasser 5 Mo', variant: 'destructive' });
         return;
       }
+      setAvatarFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setAvatarPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadAvatar = async (userId: string, file: File): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${userId}/avatar.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+      
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      return null;
     }
   };
 
@@ -232,6 +256,18 @@ const AuthPage = () => {
           },
         });
         if (error) throw error;
+        
+        // Upload avatar if selected
+        if (data.user && avatarFile) {
+          const avatarUrl = await uploadAvatar(data.user.id, avatarFile);
+          if (avatarUrl) {
+            // Update profile with avatar URL
+            await supabase
+              .from('profiles')
+              .update({ avatar_url: avatarUrl })
+              .eq('user_id', data.user.id);
+          }
+        }
         
         // Send verification email via Resend
         if (data.user) {

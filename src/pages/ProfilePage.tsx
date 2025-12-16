@@ -34,7 +34,7 @@ const menuItems = [
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { favorites } = useAppStore();
-  const { user, signOut, loading, isEmailVerified, resendVerificationEmail } = useAuth();
+  const { user, profile, signOut, loading, isEmailVerified, resendVerificationEmail } = useAuth();
   const [sendingEmail, setSendingEmail] = useState(false);
 
   const handleSignOut = async () => {
@@ -77,9 +77,9 @@ const ProfilePage = () => {
         >
           <div className="w-24 h-24 rounded-full gradient-primary p-1">
             <div className="w-full h-full rounded-full bg-background flex items-center justify-center overflow-hidden">
-              {user?.user_metadata?.avatar_url ? (
+              {profile?.avatar_url ? (
                 <img 
-                  src={user.user_metadata.avatar_url} 
+                  src={profile.avatar_url} 
                   alt="Avatar" 
                   className="w-full h-full object-cover"
                 />
