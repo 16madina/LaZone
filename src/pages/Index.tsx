@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Bell, User } from 'lucide-react';
+import { Bell, User, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SearchBar } from '@/components/home/SearchBar';
 import { FilterChips } from '@/components/home/FilterChips';
 import { StatsSection } from '@/components/home/StatsSection';
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { useAppStore } from '@/stores/appStore';
+import { useProperties, Property } from '@/hooks/useProperties';
 import logoLazone from '@/assets/logo-lazone.png';
 import heroBg1 from '@/assets/hero-bg.jpg';
 import heroBg2 from '@/assets/hero-bg-2.jpg';
@@ -15,17 +16,16 @@ import heroBg4 from '@/assets/hero-bg-4.jpg';
 const heroImages = [heroBg1, heroBg2, heroBg3, heroBg4];
 
 const Index = () => {
-  const { properties, activeFilter, searchQuery } = useAppStore();
+  const { activeFilter, searchQuery } = useAppStore();
+  const { properties, loading } = useProperties();
   const [currentBg, setCurrentBg] = useState(heroBg1);
 
   useEffect(() => {
-    // Randomly select a background image on each visit
     const randomIndex = Math.floor(Math.random() * heroImages.length);
     setCurrentBg(heroImages[randomIndex]);
   }, []);
 
   const filteredProperties = properties.filter((property) => {
-    // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       if (
@@ -37,7 +37,6 @@ const Index = () => {
       }
     }
 
-    // Filter by type
     if (activeFilter === 'all') return true;
     if (activeFilter === 'sale') return property.type === 'sale';
     if (activeFilter === 'rent') return property.type === 'rent';
@@ -117,13 +116,19 @@ const Index = () => {
             </button>
           </div>
 
-          <div className="grid gap-4">
-            {filteredProperties.map((property) => (
-              <PropertyCard key={property.id} property={property} />
-            ))}
-          </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {filteredProperties.map((property) => (
+                <PropertyCard key={property.id} property={property} />
+              ))}
+            </div>
+          )}
 
-          {filteredProperties.length === 0 && (
+          {!loading && filteredProperties.length === 0 && (
             <div className="glass-card p-8 text-center">
               <p className="text-4xl mb-2">🔍</p>
               <p className="text-muted-foreground">Aucune propriété trouvée</p>

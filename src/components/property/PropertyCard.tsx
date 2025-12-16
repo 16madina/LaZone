@@ -1,5 +1,5 @@
 import { Heart, Bed, Bath, Maximize, MapPin } from 'lucide-react';
-import { Property } from '@/stores/appStore';
+import { Property } from '@/hooks/useProperties';
 import { useFavorites } from '@/hooks/useFavorites';
 import { Link } from 'react-router-dom';
 

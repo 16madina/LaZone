@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Filter, X, MapPin, Bed, Bath, Maximize, Search, Loader2, Navigation } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { useAppStore, Property as StoreProperty } from '@/stores/appStore';
+import { useProperties, Property } from '@/hooks/useProperties';
 import {
   Select,
   SelectContent,
@@ -40,10 +40,10 @@ const MapPage = () => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const clusterGroupRef = useRef<L.MarkerClusterGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
-  const { properties, searchQuery: storeSearchQuery, activeFilter } = useAppStore();
+  const { properties, loading: propertiesLoading } = useProperties();
   const [loading, setLoading] = useState(true);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [selectedProperty, setSelectedProperty] = useState<StoreProperty | null>(null);
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>('all');
