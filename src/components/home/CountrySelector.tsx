@@ -28,7 +28,15 @@ export const CountrySelector = ({ selectedCountry, onCountryChange }: CountrySel
         onClick={() => setIsOpen(true)}
         className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-white/20 backdrop-blur-sm active:scale-95 transition-transform"
       >
-        <span className="text-xl">{selectedCountry?.flag || '🌍'}</span>
+        {selectedCountry ? (
+          <img 
+            src={`https://flagcdn.com/w40/${selectedCountry.code.toLowerCase()}.png`}
+            alt={selectedCountry.name}
+            className="w-6 h-4 rounded object-cover"
+          />
+        ) : (
+          <span className="text-xl">🌍</span>
+        )}
         <ChevronDown className="w-4 h-4 text-white" />
       </button>
 
@@ -49,7 +57,11 @@ export const CountrySelector = ({ selectedCountry, onCountryChange }: CountrySel
                       : 'hover:bg-muted'
                   }`}
                 >
-                  <span className="text-2xl">{country.flag}</span>
+                  <img 
+                    src={`https://flagcdn.com/w40/${country.code.toLowerCase()}.png`}
+                    alt={country.name}
+                    className="w-8 h-6 rounded object-cover"
+                  />
                   <span className="flex-1 text-left font-medium">{country.name}</span>
                   {selectedCountry?.code === country.code && (
                     <Check className="w-5 h-5 text-primary" />
