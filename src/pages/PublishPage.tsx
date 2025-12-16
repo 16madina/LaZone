@@ -112,6 +112,9 @@ const PublishPage = () => {
   const [leaseDuration, setLeaseDuration] = useState('12');
   const [depositMonths, setDepositMonths] = useState('2');
 
+  // Contact options
+  const [whatsappEnabled, setWhatsappEnabled] = useState(false);
+
   // Popover states
   const [amenitiesOpen, setAmenitiesOpen] = useState(false);
   const [documentsOpen, setDocumentsOpen] = useState(false);
@@ -286,6 +289,7 @@ const PublishPage = () => {
           bedrooms: showBedroomsBathrooms ? parseInt(bedrooms) || 0 : null,
           bathrooms: showBedroomsBathrooms ? parseInt(bathrooms) || 0 : null,
           features: [...selectedAmenities, ...selectedDocuments.map(d => DOCUMENTS.find(doc => doc.id === d)?.label || d)],
+          whatsapp_enabled: whatsappEnabled,
         })
         .select()
         .single();
@@ -853,6 +857,30 @@ const PublishPage = () => {
             </div>
           </motion.div>
         )}
+
+        {/* Contact Options */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-card rounded-2xl p-4 shadow-sm"
+        >
+          <h3 className="font-semibold mb-3 flex items-center gap-2">
+            📱 Options de contact
+          </h3>
+          <label className="flex items-center justify-between p-3 rounded-xl border bg-background cursor-pointer hover:bg-muted/50 transition-colors">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">💬</span>
+              <div>
+                <p className="font-medium text-sm">Autoriser WhatsApp</p>
+                <p className="text-xs text-muted-foreground">Les acheteurs pourront vous contacter via WhatsApp</p>
+              </div>
+            </div>
+            <Checkbox
+              checked={whatsappEnabled}
+              onCheckedChange={(checked) => setWhatsappEnabled(checked === true)}
+            />
+          </label>
+        </motion.div>
 
         {/* Submit Button */}
         <motion.button

@@ -25,6 +25,8 @@ import { ImageGallery } from '@/components/property/ImageGallery';
 import { ReportDialog } from '@/components/property/ReportDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { formatPriceWithCurrency } from '@/data/currencies';
+import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 interface PropertyDetail {
   id: string;
@@ -42,6 +44,7 @@ interface PropertyDetail {
   description: string;
   features: string[];
   userId: string;
+  whatsappEnabled: boolean;
 }
 
 interface OtherProperty {
@@ -55,6 +58,7 @@ interface OtherProperty {
 const PropertyDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const [showGallery, setShowGallery] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -120,6 +124,7 @@ const PropertyDetailPage = () => {
           description: propertyData.description || '',
           features: propertyData.features || [],
           userId: propertyData.user_id,
+          whatsappEnabled: propertyData.whatsapp_enabled || false,
         };
 
         setProperty(formattedProperty);
@@ -247,7 +252,47 @@ const PropertyDetailPage = () => {
   const handleCall = () => {
     if (ownerInfo?.phone) {
       window.location.href = `tel:${ownerInfo.phone}`;
+    } else {
+      toast({
+        title: 'Numéro non disponible',
+        description: 'Le vendeur n\'a pas renseigné son numéro de téléphone.',
+        variant: 'destructive',
+      });
     }
+  };
+
+  const handleContactSeller = () => {
+    if (!user) {
+      toast({
+        title: 'Connexion requise',
+        description: 'Veuillez vous connecter pour contacter le vendeur.',
+        variant: 'destructive',
+      });
+      navigate('/auth');
+      return;
+    }
+    // Navigate to messages with this property context
+    navigate('/messages', { state: { propertyId: property.id, ownerId: property.userId } });
+    toast({
+      title: 'Messagerie',
+      description: 'Fonctionnalité de messagerie en cours de développement.',
+    });
+  };
+
+  const handleScheduleVisit = () => {
+    if (!user) {
+      toast({
+        title: 'Connexion requise',
+        description: 'Veuillez vous connecter pour prendre rendez-vous.',
+        variant: 'destructive',
+      });
+      navigate('/auth');
+      return;
+    }
+    toast({
+      title: 'Demande envoyée',
+      description: 'Votre demande de visite a été envoyée au vendeur.',
+    });
   };
 
   return (
@@ -476,12 +521,18 @@ const PropertyDetailPage = () => {
 
             {/* Contact Buttons */}
             <div className="space-y-3">
-              <button className="w-full py-3 rounded-xl gradient-primary text-primary-foreground font-medium flex items-center justify-center gap-2">
+              <button 
+                onClick={handleContactSeller}
+                className="w-full py-3 rounded-xl gradient-primary text-primary-foreground font-medium flex items-center justify-center gap-2"
+              >
                 <MessageCircle className="w-5 h-5" />
                 Contacter le vendeur
               </button>
               
-              <button className="w-full py-3 rounded-xl border border-border hover:bg-muted transition-colors font-medium flex items-center justify-center gap-2">
+              <button 
+                onClick={handleScheduleVisit}
+                className="w-full py-3 rounded-xl border border-border hover:bg-muted transition-colors font-medium flex items-center justify-center gap-2"
+              >
                 <Calendar className="w-5 h-5" />
                 Prendre rendez-vous pour une visite
               </button>
@@ -494,13 +545,15 @@ const PropertyDetailPage = () => {
                 Appeler le vendeur
               </button>
               
-              <button 
-                onClick={handleWhatsAppContact}
-                className="w-full py-3 rounded-xl border border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-950 transition-colors font-medium flex items-center justify-center gap-2"
-              >
-                <MessageCircle className="w-5 h-5" />
-                Contacter via WhatsApp
-              </button>
+              {property.whatsappEnabled && ownerInfo?.phone && (
+                <button 
+                  onClick={handleWhatsAppContact}
+                  className="w-full py-3 rounded-xl border border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-950 transition-colors font-medium flex items-center justify-center gap-2"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  Contacter via WhatsApp
+                </button>
+              )}
             </div>
           </motion.div>
         )}
