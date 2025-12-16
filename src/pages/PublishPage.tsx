@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   Camera, MapPin, Home, DollarSign, Upload, Plus, X, 
   Bed, Bath, Maximize, FileText, Clock, Wallet, Check,
-  Loader2, AlertCircle, ChevronDown
+  Loader2, AlertCircle, ChevronDown, Map
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -26,6 +27,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { z } from 'zod';
+import { africanCountries } from '@/data/africanCountries';
+import LocationMapPicker, { countryCoordinates } from '@/components/publish/LocationMapPicker';
 
 type PropertyType = 'house' | 'apartment' | 'land' | 'commercial';
 type TransactionType = 'sale' | 'rent';
@@ -82,7 +85,7 @@ const createValidationSchema = (propertyType: PropertyType, transactionType: Tra
 
 const PublishPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
@@ -99,6 +102,14 @@ const PublishPage = () => {
   const [postalCode, setPostalCode] = useState('');
   const [price, setPrice] = useState('');
   const [area, setArea] = useState('');
+  
+  // Country and city selection
+  const [selectedCountry, setSelectedCountry] = useState('');
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
+  
+  // Map state
+  const [showMap, setShowMap] = useState(false);
+  const [markerPosition, setMarkerPosition] = useState({ lat: 5.3600, lng: -4.0083 });
   
   // House/Apartment specific
   const [bedrooms, setBedrooms] = useState('');
@@ -118,6 +129,43 @@ const PublishPage = () => {
   // Popover states
   const [amenitiesOpen, setAmenitiesOpen] = useState(false);
   const [documentsOpen, setDocumentsOpen] = useState(false);
+
+  // Pre-fill country from user profile
+  useEffect(() => {
+    if (profile?.country) {
+      const country = africanCountries.find(c => c.name === profile.country || c.code === profile.country);
+      if (country) {
+        setSelectedCountry(country.code);
+        setAvailableCities(country.cities);
+        
+        // Set initial marker position based on country
+        const coords = countryCoordinates[country.code];
+        if (coords) {
+          setMarkerPosition({ lat: coords.lat, lng: coords.lng });
+        }
+      }
+    }
+  }, [profile?.country]);
+
+  // Update available cities when country changes
+  useEffect(() => {
+    if (selectedCountry) {
+      const country = africanCountries.find(c => c.code === selectedCountry);
+      if (country) {
+        setAvailableCities(country.cities);
+        // Reset city if not in new country's cities
+        if (city && !country.cities.includes(city)) {
+          setCity('');
+        }
+        
+        // Update marker position to country center
+        const coords = countryCoordinates[selectedCountry];
+        if (coords) {
+          setMarkerPosition({ lat: coords.lat, lng: coords.lng });
+        }
+      }
+    }
+  }, [selectedCountry]);
 
   const showBedroomsBathrooms = propertyType === 'house' || propertyType === 'apartment';
   const showAmenities = propertyType !== 'land';
@@ -215,6 +263,10 @@ const PublishPage = () => {
     );
   };
 
+  const handleMarkerPositionChange = (lat: number, lng: number) => {
+    setMarkerPosition({ lat, lng });
+  };
+
   const validateForm = () => {
     const newErrors: FormErrors = {};
     
@@ -270,9 +322,12 @@ const PublishPage = () => {
       return;
     }
 
+    // Get country name from code
+    const countryName = africanCountries.find(c => c.code === selectedCountry)?.name || selectedCountry;
+
     setLoading(true);
     try {
-      // Create property
+      // Create property with coordinates and country
       const { data: property, error: propertyError } = await supabase
         .from('properties')
         .insert({
@@ -290,6 +345,9 @@ const PublishPage = () => {
           bathrooms: showBedroomsBathrooms ? parseInt(bathrooms) || 0 : null,
           features: [...selectedAmenities, ...selectedDocuments.map(d => DOCUMENTS.find(doc => doc.id === d)?.label || d)],
           whatsapp_enabled: whatsappEnabled,
+          country: countryName,
+          lat: markerPosition.lat,
+          lng: markerPosition.lng,
         })
         .select()
         .single();
@@ -553,7 +611,7 @@ const PublishPage = () => {
           )}
         </motion.div>
 
-        {/* Location */}
+        {/* Location with Country and City Selection */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -565,6 +623,51 @@ const PublishPage = () => {
             Localisation
           </h3>
           <div className="space-y-3">
+            {/* Country Selector */}
+            <div>
+              <Label>Pays</Label>
+              <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Sélectionner un pays" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border shadow-lg z-50 max-h-64">
+                  {africanCountries.map(country => (
+                    <SelectItem key={country.code} value={country.code}>
+                      <div className="flex items-center gap-2">
+                        <img 
+                          src={`https://flagcdn.com/w40/${country.code.toLowerCase()}.png`}
+                          alt={country.name}
+                          className="w-5 h-4 object-cover rounded-sm"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                        <span>{country.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* City Selector */}
+            <div>
+              <Label htmlFor="city">Ville <span className="text-destructive">*</span></Label>
+              <Select value={city} onValueChange={setCity} disabled={!selectedCountry}>
+                <SelectTrigger className={`mt-1 ${errors.city && touched.city ? 'border-destructive' : ''}`}>
+                  <SelectValue placeholder={selectedCountry ? "Sélectionner une ville" : "Sélectionnez d'abord un pays"} />
+                </SelectTrigger>
+                <SelectContent className="bg-card border shadow-lg z-50 max-h-64">
+                  {availableCities.map(cityName => (
+                    <SelectItem key={cityName} value={cityName}>
+                      {cityName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {touched.city && <ErrorMessage message={errors.city} />}
+            </div>
+
             <div>
               <Label htmlFor="address">Adresse <span className="text-destructive">*</span></Label>
               <Input
@@ -583,36 +686,45 @@ const PublishPage = () => {
               />
               {touched.address && <ErrorMessage message={errors.address} />}
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label htmlFor="city">Ville <span className="text-destructive">*</span></Label>
-                <Input
-                  id="city"
-                  value={city}
-                  onChange={(e) => {
-                    setCity(e.target.value);
-                    if (touched.city) validateField('city', e.target.value);
-                  }}
-                  onBlur={() => {
-                    handleBlur('city');
-                    validateField('city', city);
-                  }}
-                  placeholder="Ville"
-                  className={`mt-1 ${errors.city && touched.city ? 'border-destructive' : ''}`}
-                />
-                {touched.city && <ErrorMessage message={errors.city} />}
-              </div>
-              <div>
-                <Label htmlFor="postalCode">Code postal</Label>
-                <Input
-                  id="postalCode"
-                  value={postalCode}
-                  onChange={(e) => setPostalCode(e.target.value)}
-                  placeholder="Code postal"
-                  className="mt-1"
-                />
-              </div>
+            
+            <div>
+              <Label htmlFor="postalCode">Code postal</Label>
+              <Input
+                id="postalCode"
+                value={postalCode}
+                onChange={(e) => setPostalCode(e.target.value)}
+                placeholder="Code postal"
+                className="mt-1"
+              />
             </div>
+
+            {/* Map Toggle Button */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowMap(!showMap)}
+              className="w-full flex items-center gap-2"
+            >
+              <Map className="w-4 h-4" />
+              {showMap ? 'Masquer la carte' : 'Sélectionner sur la carte'}
+            </Button>
+
+            {/* Interactive Map */}
+            {showMap && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Cliquez ou glissez le marqueur pour définir la position exacte
+                </p>
+                <LocationMapPicker
+                  position={markerPosition}
+                  onPositionChange={handleMarkerPositionChange}
+                  countryCode={selectedCountry}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Position: {markerPosition.lat.toFixed(4)}, {markerPosition.lng.toFixed(4)}
+                </p>
+              </div>
+            )}
           </div>
         </motion.div>
 
