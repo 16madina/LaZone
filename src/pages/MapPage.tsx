@@ -12,6 +12,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
 const formatPriceShort = (price: number) => {
   if (price >= 1000000) {
@@ -31,10 +36,10 @@ const formatPrice = (price: number) => {
 
 const MapPage = () => {
   const navigate = useNavigate();
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const markersRef = useRef<any[]>([]);
-  const userMarkerRef = useRef<any>(null);
+  const clusterGroupRef = useRef<L.MarkerClusterGroup | null>(null);
+  const userMarkerRef = useRef<L.Marker | null>(null);
   const { properties, searchQuery: storeSearchQuery, activeFilter } = useAppStore();
   const [loading, setLoading] = useState(true);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -81,10 +86,8 @@ const MapPage = () => {
     );
   };
 
-  const addUserMarker = async (lat: number, lng: number) => {
+  const addUserMarker = (lat: number, lng: number) => {
     if (!mapRef.current) return;
-    
-    const L = await import('leaflet');
     
     // Remove existing user marker
     if (userMarkerRef.current) {
@@ -113,8 +116,8 @@ const MapPage = () => {
           animation: pulse 2s infinite;
         "></div>
       `,
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
+      iconSize: L.point(20, 20),
+      iconAnchor: L.point(10, 10),
     });
     
     userMarkerRef.current = L.marker([lat, lng], { icon: userIcon }).addTo(mapRef.current);
@@ -128,16 +131,45 @@ const MapPage = () => {
     }
   };
 
-  const loadLeaflet = async () => {
-    const L = await import('leaflet');
-    await import('leaflet/dist/leaflet.css');
-    
+  const loadLeaflet = () => {
     if (mapContainerRef.current && !mapRef.current) {
       const map = L.map(mapContainerRef.current).setView([defaultCenter.lat, defaultCenter.lng], 13);
       
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
+      
+      // Create marker cluster group with custom styling
+      const clusterGroup = L.markerClusterGroup({
+        maxClusterRadius: 50,
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+        zoomToBoundsOnClick: true,
+        iconCreateFunction: (cluster) => {
+          const count = cluster.getChildCount();
+          return L.divIcon({
+            html: `<div style="
+              background: linear-gradient(135deg, #ea580c, #f97316);
+              color: white;
+              width: 40px;
+              height: 40px;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 700;
+              font-size: 14px;
+              box-shadow: 0 4px 12px rgba(234, 88, 12, 0.4);
+              border: 3px solid white;
+            ">${count}</div>`,
+            className: 'custom-cluster-icon',
+            iconSize: L.point(40, 40),
+          });
+        }
+      });
+      
+      map.addLayer(clusterGroup);
+      clusterGroupRef.current = clusterGroup;
       
       mapRef.current = map;
       setMapLoaded(true);
@@ -158,69 +190,61 @@ const MapPage = () => {
 
   // Update markers when properties change
   useEffect(() => {
-    const updateMarkers = async () => {
-      if (!mapRef.current || !mapLoaded) return;
-      
-      const L = await import('leaflet');
-      
-      // Clear existing markers
-      markersRef.current.forEach(marker => marker.remove());
-      markersRef.current = [];
-      
-      // Add new markers
-      filteredProperties.forEach((property) => {
-        if (property.lat && property.lng) {
-          const bgColor = property.type === 'sale' ? '#ea580c' : '#16a34a';
-          const priceText = formatPriceShort(property.price);
-          const isSelected = selectedProperty?.id === property.id;
-          
-          const icon = L.divIcon({
-            className: 'custom-price-marker',
-            html: `
-              <div style="
-                background: ${isSelected ? '#1d4ed8' : bgColor};
-                color: white;
-                padding: 6px 12px;
-                border-radius: 20px;
-                font-weight: 600;
-                font-size: 12px;
-                white-space: nowrap;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                cursor: pointer;
-                display: inline-block;
-                transform: ${isSelected ? 'scale(1.2)' : 'scale(1)'};
-                transition: transform 0.2s;
-              ">
-                ${priceText}
-              </div>
-            `,
-            iconSize: [60, 30],
-            iconAnchor: [30, 15],
-          });
-          
-          const marker = L.marker([property.lat, property.lng], { icon })
-            .addTo(mapRef.current)
-            .on('click', () => {
-              setSelectedProperty(property);
-            });
-          
-          markersRef.current.push(marker);
-        }
-      });
-      
-      // Fit bounds if there are properties and no user location
-      if (filteredProperties.length > 0 && !userLocation) {
-        const validProps = filteredProperties.filter(p => p.lat && p.lng);
-        if (validProps.length > 0) {
-          const bounds = L.latLngBounds(
-            validProps.map(p => [p.lat, p.lng] as [number, number])
-          );
-          mapRef.current.fitBounds(bounds, { padding: [50, 50] });
-        }
-      }
-    };
+    if (!mapRef.current || !mapLoaded || !clusterGroupRef.current) return;
     
-    updateMarkers();
+    // Clear existing markers from cluster group
+    clusterGroupRef.current.clearLayers();
+    
+    // Add new markers to cluster group
+    filteredProperties.forEach((property) => {
+      if (property.lat && property.lng) {
+        const bgColor = property.type === 'sale' ? '#ea580c' : '#16a34a';
+        const priceText = formatPriceShort(property.price);
+        const isSelected = selectedProperty?.id === property.id;
+        
+        const icon = L.divIcon({
+          className: 'custom-price-marker',
+          html: `
+            <div style="
+              background: ${isSelected ? '#1d4ed8' : bgColor};
+              color: white;
+              padding: 6px 12px;
+              border-radius: 20px;
+              font-weight: 600;
+              font-size: 12px;
+              white-space: nowrap;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+              cursor: pointer;
+              display: inline-block;
+              transform: ${isSelected ? 'scale(1.2)' : 'scale(1)'};
+              transition: transform 0.2s;
+            ">
+              ${priceText}
+            </div>
+          `,
+          iconSize: L.point(60, 30),
+          iconAnchor: L.point(30, 15),
+        });
+        
+        const marker = L.marker([property.lat, property.lng], { icon })
+          .on('click', () => {
+            setSelectedProperty(property);
+          });
+        
+        clusterGroupRef.current?.addLayer(marker);
+      }
+    });
+    
+    // Fit bounds if there are properties and no user location
+    if (filteredProperties.length > 0 && !userLocation) {
+      const validProps = filteredProperties.filter(p => p.lat && p.lng);
+      if (validProps.length > 0) {
+        const bounds = L.latLngBounds(
+          validProps.map(p => [p.lat, p.lng] as L.LatLngTuple)
+        );
+        mapRef.current?.fitBounds(bounds, { padding: [50, 50] });
+      }
+    }
   }, [filteredProperties, mapLoaded, selectedProperty]);
 
   const getPrimaryImage = (images: string[]) => {
