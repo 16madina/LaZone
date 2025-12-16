@@ -1,4 +1,5 @@
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -11,14 +12,19 @@ import {
   Phone, 
   MessageCircle,
   Calendar,
-  Check
+  Check,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
+import { ImageGallery } from '@/components/property/ImageGallery';
 
 const PropertyDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { properties, favorites, toggleFavorite } = useAppStore();
+  const [showGallery, setShowGallery] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   const property = properties.find(p => p.id === id);
   const isFavorite = favorites.includes(id || '');
@@ -48,19 +54,71 @@ const PropertyDetail = () => {
     return `${price.toLocaleString('fr-CA')} $`;
   };
 
+  const handlePrevImage = () => {
+    setCurrentImageIndex((prev) => 
+      prev === 0 ? property.images.length - 1 : prev - 1
+    );
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prev) => 
+      prev === property.images.length - 1 ? 0 : prev + 1
+    );
+  };
+
   return (
     <div className="min-h-screen pb-32">
-      {/* Header Image */}
-      <div className="relative h-72">
-        <motion.img
-          initial={{ scale: 1.1 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.6 }}
-          src={property.images[0]}
-          alt={property.title}
-          className="w-full h-full object-cover"
-        />
+      {/* Header Image Carousel */}
+      <div className="relative h-80">
+        <motion.div
+          key={currentImageIndex}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="absolute inset-0"
+        >
+          <img
+            src={property.images[currentImageIndex]}
+            alt={property.title}
+            className="w-full h-full object-cover cursor-pointer"
+            onClick={() => setShowGallery(true)}
+          />
+        </motion.div>
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+        
+        {/* Image Navigation */}
+        {property.images.length > 1 && (
+          <>
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handlePrevImage}
+              className="absolute left-4 top-1/2 -translate-y-1/2 glass w-10 h-10 rounded-full flex items-center justify-center"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleNextImage}
+              className="absolute right-4 top-1/2 -translate-y-1/2 glass w-10 h-10 rounded-full flex items-center justify-center"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </motion.button>
+            
+            {/* Image Indicators */}
+            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-1.5">
+              {property.images.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentImageIndex(idx)}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    idx === currentImageIndex 
+                      ? 'bg-primary w-6' 
+                      : 'bg-foreground/30'
+                  }`}
+                />
+              ))}
+            </div>
+          </>
+        )}
         
         {/* Header Actions */}
         <motion.div
@@ -94,7 +152,7 @@ const PropertyDetail = () => {
         </motion.div>
 
         {/* Type Badge */}
-        <div className="absolute bottom-4 left-4">
+        <div className="absolute bottom-20 left-4">
           <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
             property.type === 'sale' 
               ? 'gradient-primary text-primary-foreground' 
@@ -103,6 +161,15 @@ const PropertyDetail = () => {
             {property.type === 'sale' ? 'À vendre' : 'À louer'}
           </span>
         </div>
+
+        {/* Photo Count */}
+        <motion.button
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setShowGallery(true)}
+          className="absolute bottom-20 right-4 glass px-3 py-1.5 rounded-full text-sm font-medium"
+        >
+          📷 {property.images.length} photos
+        </motion.button>
       </div>
 
       {/* Content */}
@@ -242,6 +309,17 @@ const PropertyDetail = () => {
           </motion.button>
         </div>
       </motion.div>
+
+      {/* Image Gallery Modal */}
+      <AnimatePresence>
+        {showGallery && (
+          <ImageGallery
+            images={property.images}
+            initialIndex={currentImageIndex}
+            onClose={() => setShowGallery(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
