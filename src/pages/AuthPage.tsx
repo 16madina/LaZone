@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, ArrowLeft, Eye, EyeOff, Phone, MapPin, Camera, ChevronDown, Check, Globe } from 'lucide-react';
+import { Mail, Lock, User, ArrowLeft, Eye, EyeOff, Phone, MapPin, Camera, ChevronDown, Check, Globe, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { africanCountries, Country } from '@/data/africanCountries';
@@ -10,6 +10,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+
+interface FormErrors {
+  firstName?: string;
+  lastName?: string;
+  country?: string;
+  city?: string;
+  phone?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+  terms?: string;
+}
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -23,6 +35,8 @@ const AuthPage = () => {
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -38,9 +52,97 @@ const AuthPage = () => {
 
   const availableCities = formData.country?.cities || [];
 
+  const validateField = (field: string, value: any): string | undefined => {
+    switch (field) {
+      case 'firstName':
+        if (!value || value.trim().length < 2) return 'Le prénom doit contenir au moins 2 caractères';
+        if (!/^[a-zA-ZÀ-ÿ\s-]+$/.test(value)) return 'Le prénom ne doit contenir que des lettres';
+        break;
+      case 'lastName':
+        if (!value || value.trim().length < 2) return 'Le nom doit contenir au moins 2 caractères';
+        if (!/^[a-zA-ZÀ-ÿ\s-]+$/.test(value)) return 'Le nom ne doit contenir que des lettres';
+        break;
+      case 'email':
+        if (!value) return 'L\'email est requis';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Format d\'email invalide';
+        break;
+      case 'password':
+        if (!value) return 'Le mot de passe est requis';
+        if (value.length < 6) return 'Le mot de passe doit contenir au moins 6 caractères';
+        if (!/(?=.*[0-9])/.test(value)) return 'Le mot de passe doit contenir au moins un chiffre';
+        break;
+      case 'confirmPassword':
+        if (!value) return 'Veuillez confirmer le mot de passe';
+        if (value !== formData.password) return 'Les mots de passe ne correspondent pas';
+        break;
+      case 'phone':
+        if (!value) return 'Le numéro de téléphone est requis';
+        if (value.length < 8) return 'Numéro de téléphone trop court';
+        if (value.length > 15) return 'Numéro de téléphone trop long';
+        break;
+      case 'country':
+        if (!value) return 'Veuillez sélectionner un pays';
+        break;
+      case 'city':
+        if (!value) return 'Veuillez sélectionner une ville';
+        break;
+    }
+    return undefined;
+  };
+
+  const handleBlur = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    const error = validateField(field, formData[field as keyof typeof formData]);
+    setErrors(prev => ({ ...prev, [field]: error }));
+  };
+
+  const handleFieldChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (touched[field]) {
+      const error = validateField(field, value);
+      setErrors(prev => ({ ...prev, [field]: error }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+    
+    if (!isLogin) {
+      newErrors.firstName = validateField('firstName', formData.firstName);
+      newErrors.lastName = validateField('lastName', formData.lastName);
+      newErrors.country = validateField('country', formData.country);
+      newErrors.city = validateField('city', formData.city);
+      newErrors.phone = validateField('phone', formData.phone);
+      newErrors.confirmPassword = validateField('confirmPassword', formData.confirmPassword);
+      if (!acceptedTerms) newErrors.terms = 'Veuillez accepter les conditions d\'utilisation';
+    }
+    
+    newErrors.email = validateField('email', formData.email);
+    newErrors.password = validateField('password', formData.password);
+    
+    setErrors(newErrors);
+    setTouched({
+      firstName: true,
+      lastName: true,
+      country: true,
+      city: true,
+      phone: true,
+      email: true,
+      password: true,
+      confirmPassword: true,
+      terms: true,
+    });
+    
+    return !Object.values(newErrors).some(error => error);
+  };
+
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({ title: 'Erreur', description: 'L\'image ne doit pas dépasser 5 Mo', variant: 'destructive' });
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
         setAvatarPreview(reader.result as string);
@@ -50,31 +152,27 @@ const AuthPage = () => {
   };
 
   const handleCountrySelect = (country: Country) => {
-    setFormData({ ...formData, country, city: '' });
+    setFormData(prev => ({ ...prev, country, city: '' }));
     setShowCountryDropdown(false);
+    if (touched.country) {
+      setErrors(prev => ({ ...prev, country: undefined, city: 'Veuillez sélectionner une ville' }));
+    }
   };
 
   const handleCitySelect = (city: string) => {
-    setFormData({ ...formData, city });
+    setFormData(prev => ({ ...prev, city }));
     setShowCityDropdown(false);
+    if (touched.city) {
+      setErrors(prev => ({ ...prev, city: undefined }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!isLogin) {
-      if (formData.password !== formData.confirmPassword) {
-        toast({ title: 'Erreur', description: 'Les mots de passe ne correspondent pas', variant: 'destructive' });
-        return;
-      }
-      if (!acceptedTerms) {
-        toast({ title: 'Erreur', description: 'Veuillez accepter les conditions d\'utilisation', variant: 'destructive' });
-        return;
-      }
-      if (!formData.country) {
-        toast({ title: 'Erreur', description: 'Veuillez sélectionner un pays', variant: 'destructive' });
-        return;
-      }
+    if (!validateForm()) {
+      toast({ title: 'Erreur', description: 'Veuillez corriger les erreurs du formulaire', variant: 'destructive' });
+      return;
     }
 
     setLoading(true);
@@ -89,6 +187,7 @@ const AuthPage = () => {
         toast({ title: 'Connexion réussie', description: 'Bienvenue sur LaZone!' });
         navigate('/');
       } else {
+        const fullPhoneNumber = `${formData.country?.phoneCode}${formData.phone}`;
         const { error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
@@ -96,10 +195,11 @@ const AuthPage = () => {
             data: { 
               first_name: formData.firstName,
               last_name: formData.lastName,
+              full_name: `${formData.firstName} ${formData.lastName}`,
               country: formData.country?.name,
               country_code: formData.country?.code,
               city: formData.city,
-              phone: `${formData.country?.phoneCode}${formData.phone}`,
+              phone: fullPhoneNumber,
             },
             emailRedirectTo: `${window.location.origin}/`,
           },
@@ -121,6 +221,16 @@ const AuthPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const InputError = ({ message }: { message?: string }) => {
+    if (!message) return null;
+    return (
+      <div className="flex items-center gap-1 mt-1 text-destructive text-xs">
+        <AlertCircle className="w-3 h-3" />
+        <span>{message}</span>
+      </div>
+    );
   };
 
   return (
@@ -177,31 +287,37 @@ const AuthPage = () => {
 
               {/* First Name & Last Name */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="glass-card p-1">
-                  <div className="flex items-center gap-2 px-3 py-2.5">
-                    <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                    <input
-                      type="text"
-                      placeholder="Prénom"
-                      value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      className="flex-1 bg-transparent outline-none text-sm"
-                      required={!isLogin}
-                    />
+                <div>
+                  <div className={`glass-card p-1 ${errors.firstName && touched.firstName ? 'border border-destructive' : ''}`}>
+                    <div className="flex items-center gap-2 px-3 py-2.5">
+                      <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <input
+                        type="text"
+                        placeholder="Prénom"
+                        value={formData.firstName}
+                        onChange={(e) => handleFieldChange('firstName', e.target.value)}
+                        onBlur={() => handleBlur('firstName')}
+                        className="flex-1 bg-transparent outline-none text-sm"
+                      />
+                    </div>
                   </div>
+                  <InputError message={touched.firstName ? errors.firstName : undefined} />
                 </div>
-                <div className="glass-card p-1">
-                  <div className="flex items-center gap-2 px-3 py-2.5">
-                    <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                    <input
-                      type="text"
-                      placeholder="Nom"
-                      value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      className="flex-1 bg-transparent outline-none text-sm"
-                      required={!isLogin}
-                    />
+                <div>
+                  <div className={`glass-card p-1 ${errors.lastName && touched.lastName ? 'border border-destructive' : ''}`}>
+                    <div className="flex items-center gap-2 px-3 py-2.5">
+                      <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <input
+                        type="text"
+                        placeholder="Nom"
+                        value={formData.lastName}
+                        onChange={(e) => handleFieldChange('lastName', e.target.value)}
+                        onBlur={() => handleBlur('lastName')}
+                        className="flex-1 bg-transparent outline-none text-sm"
+                      />
+                    </div>
                   </div>
+                  <InputError message={touched.lastName ? errors.lastName : undefined} />
                 </div>
               </div>
 
@@ -209,8 +325,11 @@ const AuthPage = () => {
               <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-                  className="w-full glass-card p-1"
+                  onClick={() => {
+                    setShowCountryDropdown(!showCountryDropdown);
+                    setShowCityDropdown(false);
+                  }}
+                  className={`w-full glass-card p-1 ${errors.country && touched.country ? 'border border-destructive' : ''}`}
                 >
                   <div className="flex items-center gap-2 px-3 py-2.5">
                     <Globe className="w-4 h-4 text-muted-foreground flex-shrink-0" />
@@ -225,6 +344,7 @@ const AuthPage = () => {
                     <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showCountryDropdown ? 'rotate-180' : ''}`} />
                   </div>
                 </button>
+                <InputError message={touched.country ? errors.country : undefined} />
                 
                 {showCountryDropdown && (
                   <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-xl shadow-lg max-h-60 overflow-y-auto">
@@ -252,8 +372,11 @@ const AuthPage = () => {
                 <div className="relative">
                   <button
                     type="button"
-                    onClick={() => setShowCityDropdown(!showCityDropdown)}
-                    className="w-full glass-card p-1"
+                    onClick={() => {
+                      setShowCityDropdown(!showCityDropdown);
+                      setShowCountryDropdown(false);
+                    }}
+                    className={`w-full glass-card p-1 ${errors.city && touched.city ? 'border border-destructive' : ''}`}
                   >
                     <div className="flex items-center gap-2 px-3 py-2.5">
                       <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0" />
@@ -263,6 +386,7 @@ const AuthPage = () => {
                       <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showCityDropdown ? 'rotate-180' : ''}`} />
                     </div>
                   </button>
+                  <InputError message={touched.city ? errors.city : undefined} />
                   
                   {showCityDropdown && (
                     <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-xl shadow-lg max-h-60 overflow-y-auto">
@@ -284,121 +408,150 @@ const AuthPage = () => {
                 </div>
               )}
 
-              {/* Phone */}
-              <div className="glass-card p-1">
-                <div className="flex items-center gap-2 px-3 py-2.5">
-                  <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  {formData.country && (
-                    <span className="text-sm text-muted-foreground font-medium">
-                      {formData.country.phoneCode}
-                    </span>
-                  )}
-                  <input
-                    type="tel"
-                    placeholder="Numéro de téléphone"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
-                    className="flex-1 bg-transparent outline-none text-sm"
-                    required={!isLogin}
-                  />
+              {/* Phone with Country Code */}
+              <div>
+                <div className={`glass-card p-1 ${errors.phone && touched.phone ? 'border border-destructive' : ''}`}>
+                  <div className="flex items-center gap-2 px-3 py-2.5">
+                    <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    {formData.country ? (
+                      <div className="flex items-center gap-1 px-2 py-1 bg-muted rounded-lg">
+                        <span className="text-sm">{formData.country.flag}</span>
+                        <span className="text-sm font-medium text-foreground">
+                          {formData.country.phoneCode}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Sélectionnez un pays</span>
+                    )}
+                    <input
+                      type="tel"
+                      placeholder="Numéro de téléphone"
+                      value={formData.phone}
+                      onChange={(e) => handleFieldChange('phone', e.target.value.replace(/\D/g, ''))}
+                      onBlur={() => handleBlur('phone')}
+                      className="flex-1 bg-transparent outline-none text-sm"
+                      disabled={!formData.country}
+                    />
+                  </div>
                 </div>
+                <InputError message={touched.phone ? errors.phone : undefined} />
+                {formData.country && formData.phone && (
+                  <p className="text-xs text-muted-foreground mt-1 pl-1">
+                    Numéro complet: {formData.country.phoneCode}{formData.phone}
+                  </p>
+                )}
               </div>
             </>
           )}
 
           {/* Email */}
-          <div className="glass-card p-1">
-            <div className="flex items-center gap-2 px-3 py-2.5">
-              <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              <input
-                type="email"
-                placeholder="Email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="flex-1 bg-transparent outline-none text-sm"
-                required
-              />
+          <div>
+            <div className={`glass-card p-1 ${errors.email && touched.email ? 'border border-destructive' : ''}`}>
+              <div className="flex items-center gap-2 px-3 py-2.5">
+                <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={formData.email}
+                  onChange={(e) => handleFieldChange('email', e.target.value)}
+                  onBlur={() => handleBlur('email')}
+                  className="flex-1 bg-transparent outline-none text-sm"
+                />
+              </div>
             </div>
+            <InputError message={touched.email ? errors.email : undefined} />
           </div>
 
           {/* Password */}
-          <div className="glass-card p-1">
-            <div className="flex items-center gap-2 px-3 py-2.5">
-              <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Mot de passe"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="flex-1 bg-transparent outline-none text-sm"
-                required
-                minLength={6}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="text-muted-foreground"
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+          <div>
+            <div className={`glass-card p-1 ${errors.password && touched.password ? 'border border-destructive' : ''}`}>
+              <div className="flex items-center gap-2 px-3 py-2.5">
+                <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Mot de passe"
+                  value={formData.password}
+                  onChange={(e) => handleFieldChange('password', e.target.value)}
+                  onBlur={() => handleBlur('password')}
+                  className="flex-1 bg-transparent outline-none text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-muted-foreground"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
+            <InputError message={touched.password ? errors.password : undefined} />
           </div>
 
           {/* Confirm Password */}
           {!isLogin && (
-            <div className="glass-card p-1">
-              <div className="flex items-center gap-2 px-3 py-2.5">
-                <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  placeholder="Confirmer le mot de passe"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  className="flex-1 bg-transparent outline-none text-sm"
-                  required={!isLogin}
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="text-muted-foreground"
-                >
-                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+            <div>
+              <div className={`glass-card p-1 ${errors.confirmPassword && touched.confirmPassword ? 'border border-destructive' : ''}`}>
+                <div className="flex items-center gap-2 px-3 py-2.5">
+                  <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder="Confirmer le mot de passe"
+                    value={formData.confirmPassword}
+                    onChange={(e) => handleFieldChange('confirmPassword', e.target.value)}
+                    onBlur={() => handleBlur('confirmPassword')}
+                    className="flex-1 bg-transparent outline-none text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="text-muted-foreground"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
+              <InputError message={touched.confirmPassword ? errors.confirmPassword : undefined} />
             </div>
           )}
 
           {/* Terms Checkbox */}
           {!isLogin && (
-            <div className="flex items-start gap-3 py-2">
-              <button
-                type="button"
-                onClick={() => setAcceptedTerms(!acceptedTerms)}
-                className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors ${
-                  acceptedTerms ? 'bg-primary border-primary' : 'border-border'
-                }`}
-              >
-                {acceptedTerms && <Check className="w-3 h-3 text-primary-foreground" />}
-              </button>
-              <p className="text-xs text-muted-foreground">
-                J'accepte les{' '}
+            <div>
+              <div className="flex items-start gap-3 py-2">
                 <button
                   type="button"
-                  onClick={() => setShowTermsDialog(true)}
-                  className="text-primary underline"
+                  onClick={() => {
+                    setAcceptedTerms(!acceptedTerms);
+                    if (touched.terms) {
+                      setErrors(prev => ({ ...prev, terms: !acceptedTerms ? undefined : 'Veuillez accepter les conditions d\'utilisation' }));
+                    }
+                  }}
+                  className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors ${
+                    acceptedTerms ? 'bg-primary border-primary' : errors.terms && touched.terms ? 'border-destructive' : 'border-border'
+                  }`}
                 >
-                  conditions d'utilisation
+                  {acceptedTerms && <Check className="w-3 h-3 text-primary-foreground" />}
                 </button>
-                {' '}et la{' '}
-                <button
-                  type="button"
-                  onClick={() => setShowPrivacyDialog(true)}
-                  className="text-primary underline"
-                >
-                  politique de confidentialité
-                </button>
-              </p>
+                <p className="text-xs text-muted-foreground">
+                  J'accepte les{' '}
+                  <button
+                    type="button"
+                    onClick={() => setShowTermsDialog(true)}
+                    className="text-primary underline"
+                  >
+                    conditions d'utilisation
+                  </button>
+                  {' '}et la{' '}
+                  <button
+                    type="button"
+                    onClick={() => setShowPrivacyDialog(true)}
+                    className="text-primary underline"
+                  >
+                    politique de confidentialité
+                  </button>
+                </p>
+              </div>
+              <InputError message={touched.terms ? errors.terms : undefined} />
             </div>
           )}
 
@@ -406,7 +559,7 @@ const AuthPage = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full gradient-primary py-3.5 rounded-2xl text-primary-foreground font-display font-semibold shadow-lg disabled:opacity-50 active:scale-[0.98] transition-transform"
+            className="w-full gradient-primary py-3.5 rounded-2xl text-primary-foreground font-display font-semibold shadow-lg disabled:opacity-50 active:scale-[0.98] transition-transform mt-4"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -425,7 +578,11 @@ const AuthPage = () => {
         <div className="text-center mt-6">
           <button
             type="button"
-            onClick={() => setIsLogin(!isLogin)}
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setErrors({});
+              setTouched({});
+            }}
             className="text-muted-foreground text-sm"
           >
             {isLogin ? (
