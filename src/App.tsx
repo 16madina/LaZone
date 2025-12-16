@@ -27,6 +27,7 @@ import LegalPage from "./pages/settings/LegalPage";
 import LegalDetailPage from "./pages/settings/LegalDetailPage";
 import AccountManagementPage from "./pages/settings/AccountManagementPage";
 import AdminPage from "./pages/admin/AdminPage";
+import PublicProfilePage from "./pages/PublicProfilePage";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,7 @@ const App = () => (
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/my-listings" element={<MyListingsPage />} />
                 <Route path="/property/:id" element={<PropertyDetail />} />
+                <Route path="/user/:userId" element={<PublicProfilePage />} />
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/settings/edit-profile" element={<EditProfilePage />} />
                 <Route path="/settings/change-password" element={<ChangePasswordPage />} />
