@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { 
   Settings, 
   Heart, 
@@ -8,22 +9,31 @@ import {
   LogOut, 
   ChevronRight,
   Star,
-  Eye
+  Eye,
+  LogIn
 } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
+import { useAuth } from '@/hooks/useAuth';
 
 const menuItems = [
   { icon: Heart, label: 'Mes favoris', badge: null, color: 'text-destructive' },
-  { icon: Home, label: 'Mes annonces', badge: '3', color: 'text-primary' },
+  { icon: Home, label: 'Mes annonces', badge: '0', color: 'text-primary' },
   { icon: Eye, label: 'Vues récentes', badge: null, color: 'text-secondary' },
-  { icon: Bell, label: 'Notifications', badge: '5', color: 'text-accent' },
+  { icon: Bell, label: 'Notifications', badge: '0', color: 'text-accent' },
   { icon: Star, label: 'Avis reçus', badge: null, color: 'text-yellow-500' },
   { icon: Settings, label: 'Paramètres', badge: null, color: 'text-muted-foreground' },
   { icon: HelpCircle, label: 'Aide & Support', badge: null, color: 'text-muted-foreground' },
 ];
 
 const ProfilePage = () => {
+  const navigate = useNavigate();
   const { favorites } = useAppStore();
+  const { user, signOut, loading } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <div className="page-container">
@@ -40,28 +50,53 @@ const ProfilePage = () => {
           className="relative inline-block mb-4"
         >
           <div className="w-24 h-24 rounded-full gradient-primary p-1">
-            <div className="w-full h-full rounded-full bg-background flex items-center justify-center">
-              <span className="text-4xl">👤</span>
+            <div className="w-full h-full rounded-full bg-background flex items-center justify-center overflow-hidden">
+              {user ? (
+                <span className="text-4xl">👤</span>
+              ) : (
+                <span className="text-4xl">👤</span>
+              )}
             </div>
           </div>
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            className="absolute bottom-0 right-0 w-8 h-8 gradient-primary rounded-full flex items-center justify-center shadow-lg"
-          >
-            <Settings className="w-4 h-4 text-primary-foreground" />
-          </motion.button>
+          {user && (
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              className="absolute bottom-0 right-0 w-8 h-8 gradient-primary rounded-full flex items-center justify-center shadow-lg"
+            >
+              <Settings className="w-4 h-4 text-primary-foreground" />
+            </motion.button>
+          )}
         </motion.div>
 
-        <h2 className="font-display text-xl font-bold mb-1">Utilisateur</h2>
-        <p className="text-muted-foreground text-sm mb-4">Connectez-vous pour accéder à toutes les fonctionnalités</p>
-
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          whileHover={{ scale: 1.02 }}
-          className="gradient-primary px-6 py-3 rounded-xl text-primary-foreground font-medium w-full"
-        >
-          Se connecter
-        </motion.button>
+        {loading ? (
+          <div className="animate-pulse">
+            <div className="h-6 bg-muted rounded w-32 mx-auto mb-2" />
+            <div className="h-4 bg-muted rounded w-48 mx-auto" />
+          </div>
+        ) : user ? (
+          <>
+            <h2 className="font-display text-xl font-bold mb-1">
+              {user.user_metadata?.full_name || 'Utilisateur'}
+            </h2>
+            <p className="text-muted-foreground text-sm mb-4">{user.email}</p>
+          </>
+        ) : (
+          <>
+            <h2 className="font-display text-xl font-bold mb-1">Invité</h2>
+            <p className="text-muted-foreground text-sm mb-4">
+              Connectez-vous pour accéder à toutes les fonctionnalités
+            </p>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02 }}
+              onClick={() => navigate('/auth')}
+              className="gradient-primary px-6 py-3 rounded-xl text-primary-foreground font-medium w-full flex items-center justify-center gap-2"
+            >
+              <LogIn className="w-5 h-5" />
+              Se connecter
+            </motion.button>
+          </>
+        )}
       </motion.div>
 
       {/* Stats Cards */}
@@ -116,16 +151,19 @@ const ProfilePage = () => {
       </motion.div>
 
       {/* Logout Button */}
-      <motion.button
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        whileTap={{ scale: 0.98 }}
-        className="w-full mt-6 glass-card p-4 flex items-center justify-center gap-2 text-destructive font-medium"
-      >
-        <LogOut className="w-5 h-5" />
-        <span>Se déconnecter</span>
-      </motion.button>
+      {user && (
+        <motion.button
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={handleSignOut}
+          className="w-full mt-6 glass-card p-4 flex items-center justify-center gap-2 text-destructive font-medium"
+        >
+          <LogOut className="w-5 h-5" />
+          <span>Se déconnecter</span>
+        </motion.button>
+      )}
 
       {/* App Version */}
       <motion.p
