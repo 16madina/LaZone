@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -11,19 +12,45 @@ const corsHeaders = {
 interface VerificationEmailRequest {
   email: string;
   firstName: string;
-  verificationUrl: string;
+  userId: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { email, firstName, verificationUrl }: VerificationEmailRequest = await req.json();
+    const { email, firstName, userId }: VerificationEmailRequest = await req.json();
 
-    console.log(`Sending verification email to ${email}`);
+    console.log(`Sending verification email to ${email} for user ${userId}`);
+
+    // Get Supabase client to fetch/update verification token
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Generate new verification token
+    const newToken = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
+
+    // Update profile with new token
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({
+        verification_token: newToken,
+        verification_token_expires_at: expiresAt,
+      })
+      .eq("user_id", userId);
+
+    if (updateError) {
+      console.error("Error updating verification token:", updateError);
+      throw new Error("Failed to generate verification token");
+    }
+
+    // Build verification URL
+    const baseUrl = req.headers.get("origin") || "https://your-app.lovable.app";
+    const verificationUrl = `${baseUrl}/verify-email?token=${newToken}`;
 
     const emailResponse = await resend.emails.send({
       from: "LaZone <onboarding@resend.dev>",
@@ -47,8 +74,8 @@ const handler = async (req: Request): Promise<Response> => {
             <h2 style="color: #1f2937; font-size: 20px; margin-bottom: 16px;">Bonjour ${firstName} 👋</h2>
             
             <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 24px;">
-              Bienvenue sur LaZone ! Pour activer votre compte et accéder à toutes les fonctionnalités, 
-              veuillez cliquer sur le bouton ci-dessous pour vérifier votre adresse email.
+              Bienvenue sur LaZone ! Pour activer votre compte et obtenir le badge vérifié, 
+              veuillez cliquer sur le bouton ci-dessous.
             </p>
             
             <div style="text-align: center; margin: 32px 0;">
@@ -58,8 +85,8 @@ const handler = async (req: Request): Promise<Response> => {
               </a>
             </div>
             
-            <p style="color: #9ca3af; font-size: 14px; line-height: 1.5; margin-top: 32px;">
-              Si vous n'avez pas créé de compte sur LaZone, vous pouvez ignorer cet email.
+            <p style="color: #9ca3af; font-size: 14px; line-height: 1.5;">
+              Ce lien expire dans 24 heures. Si vous n'avez pas créé de compte sur LaZone, vous pouvez ignorer cet email.
             </p>
             
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;">

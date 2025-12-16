@@ -9,6 +9,7 @@ interface AuthContextType {
   isEmailVerified: boolean;
   signOut: () => Promise<void>;
   resendVerificationEmail: () => Promise<{ success: boolean; error?: string }>;
+  refreshVerificationStatus: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   isEmailVerified: false,
   signOut: async () => {},
   resendVerificationEmail: async () => ({ success: false }),
+  refreshVerificationStatus: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -26,8 +28,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
 
-  const isEmailVerified = !!user?.email_confirmed_at;
+  const fetchVerificationStatus = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('email_verified')
+        .eq('user_id', userId)
+        .single();
+
+      if (!error && data) {
+        setIsEmailVerified(data.email_verified || false);
+      }
+    } catch (error) {
+      console.error('Error fetching verification status:', error);
+    }
+  };
+
+  const refreshVerificationStatus = async () => {
+    if (user?.id) {
+      await fetchVerificationStatus(user.id);
+    }
+  };
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -36,6 +59,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Fetch verification status when user changes
+        if (session?.user?.id) {
+          setTimeout(() => {
+            fetchVerificationStatus(session.user.id);
+          }, 0);
+        } else {
+          setIsEmailVerified(false);
+        }
       }
     );
 
@@ -44,6 +76,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      if (session?.user?.id) {
+        fetchVerificationStatus(session.user.id);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -53,20 +89,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
+    setIsEmailVerified(false);
   };
 
   const resendVerificationEmail = async () => {
-    if (!user?.email) return { success: false, error: 'No email found' };
+    if (!user?.email || !user?.id) return { success: false, error: 'No user found' };
     
     try {
       const firstName = user.user_metadata?.first_name || 'Utilisateur';
-      const verificationUrl = `${window.location.origin}/verify-email?email=${encodeURIComponent(user.email)}`;
       
       const { error } = await supabase.functions.invoke('send-verification-email', {
         body: {
           email: user.email,
           firstName,
-          verificationUrl,
+          userId: user.id,
         },
       });
       
@@ -79,7 +115,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isEmailVerified, signOut, resendVerificationEmail }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      loading, 
+      isEmailVerified, 
+      signOut, 
+      resendVerificationEmail,
+      refreshVerificationStatus 
+    }}>
       {children}
     </AuthContext.Provider>
   );
