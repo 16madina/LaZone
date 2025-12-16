@@ -17,6 +17,7 @@ import {
   MessageCircle,
   Calendar,
   Check,
+  BadgeCheck,
   Loader2,
   Flag,
   Ban,
@@ -67,7 +68,7 @@ const PropertyDetailPage = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [property, setProperty] = useState<PropertyDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [ownerInfo, setOwnerInfo] = useState<{ full_name: string | null; phone: string | null; avatar_url: string | null } | null>(null);
+  const [ownerInfo, setOwnerInfo] = useState<{ full_name: string | null; phone: string | null; avatar_url: string | null; email_verified: boolean | null } | null>(null);
   const [ownerListingsCount, setOwnerListingsCount] = useState(0);
   const [otherProperties, setOtherProperties] = useState<OtherProperty[]>([]);
   
@@ -135,7 +136,7 @@ const PropertyDetailPage = () => {
         // Fetch owner info
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('full_name, phone, avatar_url')
+          .select('full_name, phone, avatar_url, email_verified')
           .eq('user_id', propertyData.user_id)
           .maybeSingle();
 
@@ -544,11 +545,22 @@ const PropertyDetailPage = () => {
                   }}
                 />
                 <div>
-                  <p className="font-semibold">{ownerInfo.full_name || 'Propriétaire'}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold">{ownerInfo.full_name || 'Propriétaire'}</p>
+                    {ownerInfo.email_verified && (
+                      <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <BadgeCheck className="w-3 h-3" />
+                        Vérifié
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground">{ownerListingsCount} annonce{ownerListingsCount > 1 ? 's' : ''}</p>
                 </div>
               </div>
-              <button className="px-4 py-2 border border-border rounded-xl text-sm font-medium hover:bg-muted transition-colors">
+              <button 
+                onClick={() => navigate(`/user/${property.userId}`)}
+                className="px-4 py-2 border border-border rounded-xl text-sm font-medium hover:bg-muted transition-colors"
+              >
                 Voir profil
               </button>
             </div>
