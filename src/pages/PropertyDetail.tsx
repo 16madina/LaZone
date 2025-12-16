@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Pagination } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/pagination';
 import { 
   ArrowLeft, 
   Heart, 
@@ -13,12 +17,11 @@ import {
   MessageCircle,
   Calendar,
   Check,
-  ChevronLeft,
-  ChevronRight,
   Loader2,
   Flag,
   Ban,
-  ChevronRight as ChevronRightIcon
+  ChevronRight as ChevronRightIcon,
+  Plus
 } from 'lucide-react';
 import { useFavorites } from '@/hooks/useFavorites';
 import { ImageGallery } from '@/components/property/ImageGallery';
@@ -229,17 +232,10 @@ const PropertyDetailPage = () => {
     return formatPriceWithCurrency(price, country);
   };
 
-  const handlePrevImage = () => {
-    setCurrentImageIndex((prev) => 
-      prev === 0 ? property.images.length - 1 : prev - 1
-    );
-  };
-
-  const handleNextImage = () => {
-    setCurrentImageIndex((prev) => 
-      prev === property.images.length - 1 ? 0 : prev + 1
-    );
-  };
+  const maxThumbnails = 4;
+  const hasMoreImages = property.images.length > maxThumbnails;
+  const visibleThumbnails = hasMoreImages ? property.images.slice(0, maxThumbnails) : property.images;
+  const remainingCount = property.images.length - maxThumbnails;
 
   const handleWhatsAppContact = () => {
     if (ownerInfo?.phone) {
@@ -299,64 +295,34 @@ const PropertyDetailPage = () => {
     <div className="min-h-screen pb-32">
       {/* Header Image Carousel */}
       <div className="relative h-80">
-        <motion.div
-          key={currentImageIndex}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="absolute inset-0"
+        <Swiper
+          modules={[Pagination]}
+          spaceBetween={0}
+          slidesPerView={1}
+          onSlideChange={(swiper) => setCurrentImageIndex(swiper.activeIndex)}
+          className="h-full"
         >
-          <img
-            src={property.images[currentImageIndex]}
-            alt={property.title}
-            className="w-full h-full object-cover cursor-pointer"
-            onClick={() => setShowGallery(true)}
-            onError={(e) => {
-              e.currentTarget.src = '/placeholder.svg';
-            }}
-          />
-        </motion.div>
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-        
-        {/* Image Navigation */}
-        {property.images.length > 1 && (
-          <>
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={handlePrevImage}
-              className="absolute left-4 top-1/2 -translate-y-1/2 glass w-10 h-10 rounded-full flex items-center justify-center"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={handleNextImage}
-              className="absolute right-4 top-1/2 -translate-y-1/2 glass w-10 h-10 rounded-full flex items-center justify-center"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </motion.button>
-            
-            {/* Image Indicators */}
-            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex gap-1.5">
-              {property.images.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentImageIndex(idx)}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    idx === currentImageIndex 
-                      ? 'bg-primary w-6' 
-                      : 'bg-foreground/30'
-                  }`}
-                />
-              ))}
-            </div>
-          </>
-        )}
+          {property.images.map((img, idx) => (
+            <SwiperSlide key={idx}>
+              <img
+                src={img}
+                alt={`${property.title} - ${idx + 1}`}
+                className="w-full h-full object-cover cursor-pointer"
+                onClick={() => setShowGallery(true)}
+                onError={(e) => {
+                  e.currentTarget.src = '/placeholder.svg';
+                }}
+              />
+            </SwiperSlide>
+          ))}
+        </Swiper>
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent pointer-events-none" />
         
         {/* Header Actions */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute top-4 left-4 right-4 flex justify-between"
+          className="absolute top-4 left-4 right-4 flex justify-between z-10"
         >
           <motion.button
             whileTap={{ scale: 0.9 }}
@@ -383,8 +349,59 @@ const PropertyDetailPage = () => {
           </div>
         </motion.div>
 
+        {/* Thumbnails */}
+        {property.images.length > 1 && (
+          <div className="absolute bottom-20 left-4 flex gap-1.5 z-10">
+            {visibleThumbnails.map((img, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentImageIndex(idx)}
+                className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${
+                  idx === currentImageIndex 
+                    ? 'border-primary' 
+                    : 'border-transparent opacity-70'
+                }`}
+              >
+                <img 
+                  src={img} 
+                  alt="" 
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = '/placeholder.svg';
+                  }}
+                />
+              </button>
+            ))}
+            {hasMoreImages && (
+              <button
+                onClick={() => setShowGallery(true)}
+                className="w-12 h-12 rounded-lg overflow-hidden border-2 border-transparent relative"
+              >
+                <img 
+                  src={property.images[maxThumbnails]} 
+                  alt="" 
+                  className="w-full h-full object-cover opacity-50"
+                  onError={(e) => {
+                    e.currentTarget.src = '/placeholder.svg';
+                  }}
+                />
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <span className="text-white font-semibold text-sm flex items-center">
+                    <Plus className="w-3 h-3" />{remainingCount}
+                  </span>
+                </div>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Image Counter */}
+        <div className="absolute bottom-20 right-4 glass px-3 py-1.5 rounded-full text-sm font-medium z-10">
+          {currentImageIndex + 1}/{property.images.length}
+        </div>
+
         {/* Type Badge */}
-        <div className="absolute bottom-20 left-4">
+        <div className="absolute bottom-6 left-4 z-10">
           <span className={`px-4 py-2 rounded-full text-sm font-semibold ${
             property.type === 'sale' 
               ? 'gradient-primary text-primary-foreground' 
@@ -393,15 +410,6 @@ const PropertyDetailPage = () => {
             {property.type === 'sale' ? 'À vendre' : 'À louer'}
           </span>
         </div>
-
-        {/* Photo Count */}
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setShowGallery(true)}
-          className="absolute bottom-20 right-4 glass px-3 py-1.5 rounded-full text-sm font-medium"
-        >
-          📷 {property.images.length} photos
-        </motion.button>
       </div>
 
       {/* Content */}
