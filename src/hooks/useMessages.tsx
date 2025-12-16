@@ -11,6 +11,9 @@ interface Message {
   property_id: string | null;
   is_read: boolean | null;
   created_at: string;
+  attachment_url?: string | null;
+  attachment_type?: string | null;
+  attachment_name?: string | null;
 }
 
 interface Conversation {
@@ -50,7 +53,7 @@ export const useMessages = () => {
       messages?.forEach(msg => {
         const otherUserId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
         const existing = conversationMap.get(otherUserId) || [];
-        existing.push(msg);
+        existing.push(msg as Message);
         conversationMap.set(otherUserId, existing);
       });
 
@@ -94,12 +97,17 @@ export const useMessages = () => {
         const unreadCount = msgs.filter(m => m.receiver_id === user.id && !m.is_read).length;
         totalUnreadCount += unreadCount;
 
+        let lastMessageText = lastMsg.content;
+        if (lastMsg.attachment_url && !lastMsg.content) {
+          lastMessageText = lastMsg.attachment_type === 'image' ? '📷 Image' : '📎 Fichier';
+        }
+
         convList.push({
           id: participantId,
           participantId,
           participantName: profile?.full_name || 'Utilisateur',
           participantAvatar: profile?.avatar_url || null,
-          lastMessage: lastMsg.content,
+          lastMessage: lastMessageText,
           lastMessageTime: lastMsg.created_at,
           unreadCount,
           propertyId: lastMsg.property_id || undefined,
@@ -194,7 +202,7 @@ export const useConversation = (participantId: string | null) => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setMessages(data || []);
+      setMessages((data as Message[]) || []);
 
       // Mark messages as read
       await supabase
@@ -269,7 +277,7 @@ export const useConversation = (participantId: string | null) => {
     }
   }, [user, participantId, fetchMessages]);
 
-  const sendMessage = async (content: string, propertyId?: string) => {
+  const sendMessage = async (content: string, propertyId?: string, attachment?: { url: string; type: 'image' | 'file'; name: string }) => {
     if (!user || !participantId) return { error: 'Not authenticated' };
 
     try {
@@ -279,7 +287,10 @@ export const useConversation = (participantId: string | null) => {
           content,
           sender_id: user.id,
           receiver_id: participantId,
-          property_id: propertyId || null
+          property_id: propertyId || null,
+          attachment_url: attachment?.url || null,
+          attachment_type: attachment?.type || null,
+          attachment_name: attachment?.name || null
         });
 
       if (error) throw error;
@@ -287,6 +298,40 @@ export const useConversation = (participantId: string | null) => {
     } catch (error: any) {
       console.error('Error sending message:', error);
       return { error: error.message };
+    }
+  };
+
+  const uploadAttachment = async (file: File): Promise<{ url: string; type: 'image' | 'file'; name: string } | null> => {
+    if (!user) return null;
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      const isImage = file.type.startsWith('image/');
+
+      const { data, error } = await supabase.storage
+        .from('property-images') // Reusing existing bucket
+        .upload(`messages/${fileName}`, file);
+
+      if (error) throw error;
+
+      const { data: urlData } = supabase.storage
+        .from('property-images')
+        .getPublicUrl(`messages/${fileName}`);
+
+      return {
+        url: urlData.publicUrl,
+        type: isImage ? 'image' : 'file',
+        name: file.name
+      };
+    } catch (error) {
+      console.error('Error uploading attachment:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'envoyer le fichier',
+        variant: 'destructive'
+      });
+      return null;
     }
   };
 
@@ -306,6 +351,7 @@ export const useConversation = (participantId: string | null) => {
     messages,
     loading,
     sendMessage,
+    uploadAttachment,
     refetch: fetchMessages,
     isTyping,
     setTyping

@@ -269,11 +269,7 @@ const PropertyDetailPage = () => {
       return;
     }
     // Navigate to messages with this property context
-    navigate('/messages', { state: { propertyId: property.id, ownerId: property.userId } });
-    toast({
-      title: 'Messagerie',
-      description: 'Fonctionnalité de messagerie en cours de développement.',
-    });
+    navigate('/messages', { state: { recipientId: property.userId, propertyId: property.id } });
   };
 
   const handleScheduleVisit = () => {
