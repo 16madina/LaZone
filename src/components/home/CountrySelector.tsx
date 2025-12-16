@@ -26,11 +26,9 @@ export const CountrySelector = ({ selectedCountry, onCountryChange }: CountrySel
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm active:scale-95 transition-transform"
+        className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-white/20 backdrop-blur-sm active:scale-95 transition-transform"
       >
-        <span className="text-sm font-bold text-white bg-primary/80 px-2 py-0.5 rounded">
-          {selectedCountry?.code || '🌍'}
-        </span>
+        <span className="text-xl">{selectedCountry?.flag || '🌍'}</span>
         <ChevronDown className="w-4 h-4 text-white" />
       </button>
 
@@ -51,9 +49,7 @@ export const CountrySelector = ({ selectedCountry, onCountryChange }: CountrySel
                       : 'hover:bg-muted'
                   }`}
                 >
-                  <span className="text-sm font-bold bg-muted px-2 py-1 rounded min-w-[40px]">
-                    {country.code}
-                  </span>
+                  <span className="text-2xl">{country.flag}</span>
                   <span className="flex-1 text-left font-medium">{country.name}</span>
                   {selectedCountry?.code === country.code && (
                     <Check className="w-5 h-5 text-primary" />
