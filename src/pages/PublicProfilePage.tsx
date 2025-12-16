@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, BadgeCheck, MapPin, Calendar, 
-  Building2, Star, MessageCircle
+  Building2, Star, MessageCircle, UserPlus, UserMinus, Users, Loader2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,6 +14,7 @@ import { ReviewForm } from '@/components/review/ReviewForm';
 import { useAuth } from '@/hooks/useAuth';
 import { africanCountries } from '@/data/africanCountries';
 import { Property } from '@/hooks/useProperties';
+import { toast } from '@/hooks/use-toast';
 
 interface UserProfile {
   id: string;
@@ -50,17 +51,22 @@ const PublicProfilePage = () => {
   const [propertiesLoading, setPropertiesLoading] = useState(true);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [averageRating, setAverageRating] = useState(0);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
     if (userId) {
       fetchProfile();
       fetchUserProperties();
       fetchReviews();
+      fetchFollowersCount();
     }
   }, [userId]);
 
   useEffect(() => {
-    if (user && userId && reviews.length >= 0) {
+    if (user && userId) {
+      checkIfFollowing();
       const existing = reviews.find(r => r.reviewer_id === user.id);
       setUserReview(existing || null);
     }
@@ -173,6 +179,79 @@ const PublicProfilePage = () => {
       console.error('Error fetching reviews:', error);
     } finally {
       setReviewsLoading(false);
+    }
+  };
+
+  const fetchFollowersCount = async () => {
+    try {
+      const { count } = await supabase
+        .from('user_follows')
+        .select('*', { count: 'exact', head: true })
+        .eq('following_id', userId);
+      setFollowersCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching followers count:', error);
+    }
+  };
+
+  const checkIfFollowing = async () => {
+    if (!user) return;
+    try {
+      const { data } = await supabase
+        .from('user_follows')
+        .select('id')
+        .eq('follower_id', user.id)
+        .eq('following_id', userId)
+        .maybeSingle();
+      setIsFollowing(!!data);
+    } catch (error) {
+      console.error('Error checking follow status:', error);
+    }
+  };
+
+  const handleFollow = async () => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    
+    setFollowLoading(true);
+    try {
+      if (isFollowing) {
+        // Unfollow
+        const { error } = await supabase
+          .from('user_follows')
+          .delete()
+          .eq('follower_id', user.id)
+          .eq('following_id', userId);
+
+        if (error) throw error;
+        setIsFollowing(false);
+        setFollowersCount(prev => prev - 1);
+        toast({ title: 'Vous ne suivez plus cet utilisateur' });
+      } else {
+        // Follow
+        const { error } = await supabase
+          .from('user_follows')
+          .insert({
+            follower_id: user.id,
+            following_id: userId
+          });
+
+        if (error) throw error;
+        setIsFollowing(true);
+        setFollowersCount(prev => prev + 1);
+        toast({ title: 'Vous suivez maintenant cet utilisateur' });
+      }
+    } catch (error: any) {
+      console.error('Error toggling follow:', error);
+      toast({
+        title: 'Erreur',
+        description: error.message || 'Une erreur est survenue',
+        variant: 'destructive'
+      });
+    } finally {
+      setFollowLoading(false);
     }
   };
 
@@ -305,33 +384,55 @@ const PublicProfilePage = () => {
           </div>
 
           {/* Stats Row */}
-          <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-border">
+          <div className="grid grid-cols-4 gap-3 mt-6 pt-6 border-t border-border">
             <div className="text-center">
-              <p className="font-display font-bold text-2xl text-primary">{properties.length}</p>
-              <p className="text-xs text-muted-foreground">Annonces</p>
+              <p className="font-display font-bold text-xl text-primary">{properties.length}</p>
+              <p className="text-[10px] text-muted-foreground">Annonces</p>
             </div>
             <div className="text-center">
-              <p className="font-display font-bold text-2xl text-primary">{reviews.length}</p>
-              <p className="text-xs text-muted-foreground">Avis</p>
+              <p className="font-display font-bold text-xl text-primary">{followersCount}</p>
+              <p className="text-[10px] text-muted-foreground">Followers</p>
+            </div>
+            <div className="text-center">
+              <p className="font-display font-bold text-xl text-primary">{reviews.length}</p>
+              <p className="text-[10px] text-muted-foreground">Avis</p>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
-                <Star className="w-5 h-5 text-primary fill-primary" />
-                <span className="font-display font-bold text-2xl">{averageRating || '-'}</span>
+                <Star className="w-4 h-4 text-primary fill-primary" />
+                <span className="font-display font-bold text-xl">{averageRating || '-'}</span>
               </div>
-              <p className="text-xs text-muted-foreground">Note</p>
+              <p className="text-[10px] text-muted-foreground">Note</p>
             </div>
           </div>
 
-          {/* Contact Button */}
+          {/* Action Buttons */}
           {user?.id !== userId && (
-            <Button 
-              onClick={handleContactUser}
-              className="w-full mt-6 gradient-primary"
-            >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              Contacter
-            </Button>
+            <div className="flex gap-3 mt-6">
+              <Button 
+                onClick={handleFollow}
+                disabled={followLoading}
+                variant={isFollowing ? "outline" : "default"}
+                className={`flex-1 ${!isFollowing ? 'gradient-primary' : ''}`}
+              >
+                {followLoading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : isFollowing ? (
+                  <UserMinus className="w-4 h-4 mr-2" />
+                ) : (
+                  <UserPlus className="w-4 h-4 mr-2" />
+                )}
+                {isFollowing ? 'Ne plus suivre' : 'Suivre'}
+              </Button>
+              <Button 
+                onClick={handleContactUser}
+                variant="outline"
+                className="flex-1"
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Contacter
+              </Button>
+            </div>
           )}
         </div>
       </motion.div>
