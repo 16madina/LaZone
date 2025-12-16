@@ -13,7 +13,7 @@ export const HeroSection = () => {
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="w-4 h-4 text-primary-foreground/80" />
           <span className="text-sm text-primary-foreground/80 font-medium">
-            Découvrez votre futur chez-vous
+            Découvrez votre futur chez-vous en Afrique
           </span>
         </div>
 
@@ -24,7 +24,7 @@ export const HeroSection = () => {
         </h1>
 
         <p className="text-primary-foreground/70 text-sm">
-          Plus de 2,000 propriétés disponibles au Québec
+          Des milliers de propriétés disponibles en Afrique
         </p>
       </div>
 
