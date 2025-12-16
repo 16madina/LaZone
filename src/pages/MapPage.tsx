@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, MapPin, Bed, Bath, Maximize, Search, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Filter, X, MapPin, Bed, Bath, Maximize, Search, Loader2, Navigation } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { useAppStore, Property as StoreProperty } from '@/stores/appStore';
 import {
   Select,
   SelectContent,
@@ -11,22 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-
-interface Property {
-  id: string;
-  title: string;
-  price: number;
-  type: string;
-  property_type: string;
-  address: string;
-  city: string;
-  bedrooms: number | null;
-  bathrooms: number | null;
-  area: number;
-  lat: number | null;
-  lng: number | null;
-  property_images: { url: string; is_primary: boolean }[];
-}
+import { toast } from 'sonner';
 
 const formatPriceShort = (price: number) => {
   if (price >= 1000000) {
@@ -49,24 +34,101 @@ const MapPage = () => {
   const mapRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<any[]>([]);
-  const [properties, setProperties] = useState<Property[]>([]);
+  const userMarkerRef = useRef<any>(null);
+  const { properties, searchQuery: storeSearchQuery, activeFilter } = useAppStore();
   const [loading, setLoading] = useState(true);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [selectedProperty, setSelectedProperty] = useState<StoreProperty | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>('all');
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locatingUser, setLocatingUser] = useState(false);
 
   // Default center (Abidjan, Côte d'Ivoire)
   const defaultCenter = { lat: 5.3600, lng: -4.0083 };
 
   useEffect(() => {
-    fetchProperties();
     loadLeaflet();
+    getUserLocation();
   }, []);
 
+  const getUserLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('La géolocalisation n\'est pas supportée par votre navigateur');
+      return;
+    }
+
+    setLocatingUser(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation({ lat: latitude, lng: longitude });
+        setLocatingUser(false);
+        
+        // Center map on user location
+        if (mapRef.current) {
+          mapRef.current.setView([latitude, longitude], 13);
+          addUserMarker(latitude, longitude);
+        }
+      },
+      (error) => {
+        console.error('Error getting location:', error);
+        setLocatingUser(false);
+        // Don't show error toast, just use default location
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  };
+
+  const addUserMarker = async (lat: number, lng: number) => {
+    if (!mapRef.current) return;
+    
+    const L = await import('leaflet');
+    
+    // Remove existing user marker
+    if (userMarkerRef.current) {
+      userMarkerRef.current.remove();
+    }
+    
+    const userIcon = L.divIcon({
+      className: 'user-location-marker',
+      html: `
+        <div style="
+          width: 20px;
+          height: 20px;
+          background: #3b82f6;
+          border: 3px solid white;
+          border-radius: 50%;
+          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.5);
+        "></div>
+        <div style="
+          position: absolute;
+          top: -5px;
+          left: -5px;
+          width: 30px;
+          height: 30px;
+          background: rgba(59, 130, 246, 0.2);
+          border-radius: 50%;
+          animation: pulse 2s infinite;
+        "></div>
+      `,
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+    });
+    
+    userMarkerRef.current = L.marker([lat, lng], { icon: userIcon }).addTo(mapRef.current);
+  };
+
+  const centerOnUser = () => {
+    if (userLocation && mapRef.current) {
+      mapRef.current.setView([userLocation.lat, userLocation.lng], 15);
+    } else {
+      getUserLocation();
+    }
+  };
+
   const loadLeaflet = async () => {
-    // Dynamically load Leaflet
     const L = await import('leaflet');
     await import('leaflet/dist/leaflet.css');
     
@@ -79,33 +141,6 @@ const MapPage = () => {
       
       mapRef.current = map;
       setMapLoaded(true);
-    }
-  };
-
-  const fetchProperties = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('properties')
-        .select(`
-          *,
-          property_images (url, is_primary)
-        `)
-        .eq('is_active', true);
-
-      if (error) throw error;
-      
-      // Add random coordinates for properties without lat/lng (demo purposes)
-      const propertiesWithCoords = (data || []).map(p => ({
-        ...p,
-        lat: p.lat || defaultCenter.lat + (Math.random() - 0.5) * 0.1,
-        lng: p.lng || defaultCenter.lng + (Math.random() - 0.5) * 0.1,
-      }));
-      
-      setProperties(propertiesWithCoords);
-    } catch (error) {
-      console.error('Error fetching properties:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -116,7 +151,7 @@ const MapPage = () => {
         p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.city.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType = typeFilter === 'all' || p.type === typeFilter;
-      const matchesPropertyType = propertyTypeFilter === 'all' || p.property_type === propertyTypeFilter;
+      const matchesPropertyType = propertyTypeFilter === 'all' || p.propertyType === propertyTypeFilter;
       return matchesSearch && matchesType && matchesPropertyType;
     });
   }, [properties, searchQuery, typeFilter, propertyTypeFilter]);
@@ -128,7 +163,7 @@ const MapPage = () => {
       
       const L = await import('leaflet');
       
-      // Clear existing markers
+      // Clear existing markers (not user marker)
       markersRef.current.forEach(marker => marker.remove());
       markersRef.current = [];
       
@@ -137,12 +172,13 @@ const MapPage = () => {
         if (property.lat && property.lng) {
           const bgColor = property.type === 'sale' ? '#ea580c' : '#16a34a';
           const priceText = formatPriceShort(property.price);
+          const isSelected = selectedProperty?.id === property.id;
           
           const icon = L.divIcon({
             className: 'custom-price-marker',
             html: `
               <div style="
-                background: ${bgColor};
+                background: ${isSelected ? '#1d4ed8' : bgColor};
                 color: white;
                 padding: 6px 12px;
                 border-radius: 20px;
@@ -152,6 +188,8 @@ const MapPage = () => {
                 box-shadow: 0 2px 8px rgba(0,0,0,0.3);
                 cursor: pointer;
                 display: inline-block;
+                transform: ${isSelected ? 'scale(1.2)' : 'scale(1)'};
+                transition: transform 0.2s;
               ">
                 ${priceText}
               </div>
@@ -170,12 +208,12 @@ const MapPage = () => {
         }
       });
       
-      // Fit bounds if there are properties
-      if (filteredProperties.length > 0) {
+      // Fit bounds if there are properties and no user location
+      if (filteredProperties.length > 0 && !userLocation) {
         const validProps = filteredProperties.filter(p => p.lat && p.lng);
         if (validProps.length > 0) {
           const bounds = L.latLngBounds(
-            validProps.map(p => [p.lat!, p.lng!] as [number, number])
+            validProps.map(p => [p.lat, p.lng] as [number, number])
           );
           mapRef.current.fitBounds(bounds, { padding: [50, 50] });
         }
@@ -183,11 +221,10 @@ const MapPage = () => {
     };
     
     updateMarkers();
-  }, [filteredProperties, mapLoaded]);
+  }, [filteredProperties, mapLoaded, selectedProperty]);
 
-  const getPrimaryImage = (images: { url: string; is_primary: boolean }[]) => {
-    const primary = images?.find(img => img.is_primary);
-    return primary?.url || images?.[0]?.url || '/placeholder.svg';
+  const getPrimaryImage = (images: string[]) => {
+    return images?.[0] || '/placeholder.svg';
   };
 
   const closePropertyCard = () => {
@@ -223,8 +260,16 @@ const MapPage = () => {
               className="pl-10 bg-card border shadow-md"
             />
           </div>
-          <button className="p-3 bg-card rounded-xl shadow-md border">
-            <Filter className="w-5 h-5" />
+          <button 
+            className={`p-3 rounded-xl shadow-md border ${userLocation ? 'bg-primary text-primary-foreground' : 'bg-card'}`}
+            onClick={centerOnUser}
+            disabled={locatingUser}
+          >
+            {locatingUser ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Navigation className="w-5 h-5" />
+            )}
           </button>
         </div>
 
@@ -321,7 +366,7 @@ const MapPage = () => {
                 {/* Image */}
                 <div className="w-28 h-28 flex-shrink-0 rounded-xl overflow-hidden">
                   <img
-                    src={getPrimaryImage(selectedProperty.property_images)}
+                    src={getPrimaryImage(selectedProperty.images)}
                     alt={selectedProperty.title}
                     className="w-full h-full object-cover"
                   />
@@ -362,15 +407,15 @@ const MapPage = () => {
                   </p>
 
                   {/* Features */}
-                  {selectedProperty.property_type !== 'land' && (
+                  {selectedProperty.propertyType !== 'land' && (
                     <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                      {selectedProperty.bedrooms && selectedProperty.bedrooms > 0 && (
+                      {selectedProperty.bedrooms > 0 && (
                         <span className="flex items-center gap-1">
                           <Bed className="w-3 h-3" />
                           {selectedProperty.bedrooms}
                         </span>
                       )}
-                      {selectedProperty.bathrooms && selectedProperty.bathrooms > 0 && (
+                      {selectedProperty.bathrooms > 0 && (
                         <span className="flex items-center gap-1">
                           <Bath className="w-3 h-3" />
                           {selectedProperty.bathrooms}
