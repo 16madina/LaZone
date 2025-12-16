@@ -44,7 +44,7 @@ export const HeroSection = () => {
         >
           <Sparkles className="w-4 h-4 text-primary-foreground/80" />
           <span className="text-sm text-primary-foreground/80 font-medium">
-            Bienvenue sur LaZone
+            Découvrez votre futur chez-vous
           </span>
         </motion.div>
 
@@ -65,7 +65,7 @@ export const HeroSection = () => {
           transition={{ delay: 0.4 }}
           className="text-primary-foreground/70 text-sm"
         >
-          Des milliers de propriétés en Afrique de l'Ouest
+          Plus de 2,000 propriétés disponibles au Québec
         </motion.p>
       </div>
 
