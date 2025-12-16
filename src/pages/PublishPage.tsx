@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Camera, MapPin, Home, DollarSign, Upload, Plus, X, 
   Bed, Bath, Maximize, FileText, Clock, Wallet, Check,
-  Loader2
+  Loader2, AlertCircle, ChevronDown
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,9 +20,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { z } from 'zod';
 
 type PropertyType = 'house' | 'apartment' | 'land' | 'commercial';
 type TransactionType = 'sale' | 'rent';
+
+interface FormErrors {
+  images?: string;
+  title?: string;
+  description?: string;
+  address?: string;
+  city?: string;
+  price?: string;
+  area?: string;
+  bedrooms?: string;
+  bathrooms?: string;
+}
 
 const AMENITIES = [
   'Piscine', 'Jardin', 'Garage', 'Terrasse', 'Balcon', 'Cave',
@@ -49,12 +67,27 @@ const LEASE_DURATIONS = [
   { value: 'indefini', label: 'Indéfini' },
 ];
 
+// Validation schema
+const createValidationSchema = (propertyType: PropertyType, transactionType: TransactionType) => {
+  const baseSchema = z.object({
+    title: z.string().min(5, 'Le titre doit contenir au moins 5 caractères').max(100, 'Le titre ne peut pas dépasser 100 caractères'),
+    address: z.string().min(3, 'L\'adresse doit contenir au moins 3 caractères'),
+    city: z.string().min(2, 'La ville doit contenir au moins 2 caractères'),
+    price: z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, 'Le prix doit être un nombre positif'),
+    area: z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, 'La superficie doit être un nombre positif'),
+  });
+
+  return baseSchema;
+};
+
 const PublishPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   
   // Form state
   const [propertyType, setPropertyType] = useState<PropertyType>('house');
@@ -77,13 +110,67 @@ const PublishPage = () => {
   
   // Rent specific
   const [leaseDuration, setLeaseDuration] = useState('12');
-  const [deposit, setDeposit] = useState('');
   const [depositMonths, setDepositMonths] = useState('2');
+
+  // Popover states
+  const [amenitiesOpen, setAmenitiesOpen] = useState(false);
+  const [documentsOpen, setDocumentsOpen] = useState(false);
 
   const showBedroomsBathrooms = propertyType === 'house' || propertyType === 'apartment';
   const showAmenities = propertyType !== 'land';
   const showDocuments = propertyType === 'land' || transactionType === 'sale';
   const showRentDetails = transactionType === 'rent' && propertyType !== 'land';
+
+  const validateField = (field: string, value: string) => {
+    const newErrors = { ...errors };
+    
+    switch (field) {
+      case 'title':
+        if (!value || value.length < 5) {
+          newErrors.title = 'Le titre doit contenir au moins 5 caractères';
+        } else if (value.length > 100) {
+          newErrors.title = 'Le titre ne peut pas dépasser 100 caractères';
+        } else {
+          delete newErrors.title;
+        }
+        break;
+      case 'address':
+        if (!value || value.length < 3) {
+          newErrors.address = 'L\'adresse doit contenir au moins 3 caractères';
+        } else {
+          delete newErrors.address;
+        }
+        break;
+      case 'city':
+        if (!value || value.length < 2) {
+          newErrors.city = 'La ville doit contenir au moins 2 caractères';
+        } else {
+          delete newErrors.city;
+        }
+        break;
+      case 'price':
+        if (!value || isNaN(Number(value)) || Number(value) <= 0) {
+          newErrors.price = 'Veuillez entrer un prix valide';
+        } else {
+          delete newErrors.price;
+        }
+        break;
+      case 'area':
+        if (!value || isNaN(Number(value)) || Number(value) <= 0) {
+          newErrors.area = 'Veuillez entrer une superficie valide';
+        } else {
+          delete newErrors.area;
+        }
+        break;
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleBlur = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -94,6 +181,13 @@ const PublishPage = () => {
     
     setImages(prev => [...prev, ...newFiles]);
     setImageUrls(prev => [...prev, ...newUrls]);
+    
+    if (newFiles.length > 0) {
+      setErrors(prev => {
+        const { images, ...rest } = prev;
+        return rest;
+      });
+    }
   };
 
   const removeImage = (index: number) => {
@@ -118,6 +212,45 @@ const PublishPage = () => {
     );
   };
 
+  const validateForm = () => {
+    const newErrors: FormErrors = {};
+    
+    if (images.length === 0) {
+      newErrors.images = 'Veuillez ajouter au moins une photo';
+    }
+    
+    if (!title || title.length < 5) {
+      newErrors.title = 'Le titre doit contenir au moins 5 caractères';
+    }
+    
+    if (!address || address.length < 3) {
+      newErrors.address = 'L\'adresse doit contenir au moins 3 caractères';
+    }
+    
+    if (!city || city.length < 2) {
+      newErrors.city = 'La ville doit contenir au moins 2 caractères';
+    }
+    
+    if (!price || isNaN(Number(price)) || Number(price) <= 0) {
+      newErrors.price = 'Veuillez entrer un prix valide';
+    }
+    
+    if (!area || isNaN(Number(area)) || Number(area) <= 0) {
+      newErrors.area = 'Veuillez entrer une superficie valide';
+    }
+    
+    setErrors(newErrors);
+    setTouched({
+      title: true,
+      address: true,
+      city: true,
+      price: true,
+      area: true,
+    });
+    
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async () => {
     if (!user) {
       toast({ title: 'Veuillez vous connecter', variant: 'destructive' });
@@ -125,13 +258,12 @@ const PublishPage = () => {
       return;
     }
 
-    if (!title || !address || !city || !price || !area) {
-      toast({ title: 'Veuillez remplir tous les champs obligatoires', variant: 'destructive' });
-      return;
-    }
-
-    if (images.length === 0) {
-      toast({ title: 'Veuillez ajouter au moins une photo', variant: 'destructive' });
+    if (!validateForm()) {
+      toast({ 
+        title: 'Formulaire incomplet', 
+        description: 'Veuillez corriger les erreurs avant de publier',
+        variant: 'destructive' 
+      });
       return;
     }
 
@@ -142,11 +274,11 @@ const PublishPage = () => {
         .from('properties')
         .insert({
           user_id: user.id,
-          title,
-          description,
-          address,
-          city,
-          postal_code: postalCode,
+          title: title.trim(),
+          description: description.trim(),
+          address: address.trim(),
+          city: city.trim(),
+          postal_code: postalCode.trim(),
           price: parseFloat(price),
           area: parseFloat(area),
           property_type: propertyType,
@@ -199,6 +331,16 @@ const PublishPage = () => {
     }
   };
 
+  const ErrorMessage = ({ message }: { message?: string }) => {
+    if (!message) return null;
+    return (
+      <div className="flex items-center gap-1 text-destructive text-sm mt-1">
+        <AlertCircle className="w-3 h-3" />
+        <span>{message}</span>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-muted/30 pb-32">
       {/* Header */}
@@ -238,7 +380,9 @@ const PublishPage = () => {
               </div>
             ))}
             {images.length < 6 && (
-              <label className="aspect-square rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer">
+              <label className={`aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${
+                errors.images ? 'border-destructive text-destructive' : 'border-border text-muted-foreground hover:border-primary hover:text-primary'
+              }`}>
                 <Plus className="w-6 h-6" />
                 <span className="text-xs">Ajouter</span>
                 <input
@@ -259,6 +403,7 @@ const PublishPage = () => {
               </div>
             ))}
           </div>
+          <ErrorMessage message={errors.images} />
         </motion.div>
 
         {/* Property Type */}
@@ -342,10 +487,18 @@ const PublishPage = () => {
             <Input
               id="title"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (touched.title) validateField('title', e.target.value);
+              }}
+              onBlur={() => {
+                handleBlur('title');
+                validateField('title', title);
+              }}
               placeholder="Ex: Belle villa avec piscine"
-              className="mt-1"
+              className={`mt-1 ${errors.title && touched.title ? 'border-destructive' : ''}`}
             />
+            {touched.title && <ErrorMessage message={errors.title} />}
           </div>
           <div>
             <Label htmlFor="description">Description</Label>
@@ -357,6 +510,43 @@ const PublishPage = () => {
               className="mt-1 min-h-[100px]"
             />
           </div>
+        </motion.div>
+
+        {/* Price - Moved up */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-card rounded-2xl p-4 shadow-sm"
+        >
+          <h3 className="font-semibold mb-3 flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-primary" />
+            Prix {transactionType === 'rent' ? 'du loyer mensuel' : ''} <span className="text-destructive">*</span>
+          </h3>
+          <div className="relative">
+            <Input
+              type="number"
+              value={price}
+              onChange={(e) => {
+                setPrice(e.target.value);
+                if (touched.price) validateField('price', e.target.value);
+              }}
+              onBlur={() => {
+                handleBlur('price');
+                validateField('price', price);
+              }}
+              placeholder="0"
+              className={`pr-16 text-lg font-bold ${errors.price && touched.price ? 'border-destructive' : ''}`}
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">
+              FCFA
+            </span>
+          </div>
+          {touched.price && <ErrorMessage message={errors.price} />}
+          {transactionType === 'rent' && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Prix par mois
+            </p>
+          )}
         </motion.div>
 
         {/* Location */}
@@ -376,10 +566,18 @@ const PublishPage = () => {
               <Input
                 id="address"
                 value={address}
-                onChange={(e) => setAddress(e.target.value)}
+                onChange={(e) => {
+                  setAddress(e.target.value);
+                  if (touched.address) validateField('address', e.target.value);
+                }}
+                onBlur={() => {
+                  handleBlur('address');
+                  validateField('address', address);
+                }}
                 placeholder="Quartier, rue..."
-                className="mt-1"
+                className={`mt-1 ${errors.address && touched.address ? 'border-destructive' : ''}`}
               />
+              {touched.address && <ErrorMessage message={errors.address} />}
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -387,10 +585,18 @@ const PublishPage = () => {
                 <Input
                   id="city"
                   value={city}
-                  onChange={(e) => setCity(e.target.value)}
+                  onChange={(e) => {
+                    setCity(e.target.value);
+                    if (touched.city) validateField('city', e.target.value);
+                  }}
+                  onBlur={() => {
+                    handleBlur('city');
+                    validateField('city', city);
+                  }}
                   placeholder="Ville"
-                  className="mt-1"
+                  className={`mt-1 ${errors.city && touched.city ? 'border-destructive' : ''}`}
                 />
+                {touched.city && <ErrorMessage message={errors.city} />}
               </div>
               <div>
                 <Label htmlFor="postalCode">Code postal</Label>
@@ -421,12 +627,20 @@ const PublishPage = () => {
             <Input
               type="number"
               value={area}
-              onChange={(e) => setArea(e.target.value)}
+              onChange={(e) => {
+                setArea(e.target.value);
+                if (touched.area) validateField('area', e.target.value);
+              }}
+              onBlur={() => {
+                handleBlur('area');
+                validateField('area', area);
+              }}
               placeholder="0"
-              className="pr-12"
+              className={`pr-12 ${errors.area && touched.area ? 'border-destructive' : ''}`}
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">m²</span>
           </div>
+          {touched.area && <ErrorMessage message={errors.area} />}
         </motion.div>
 
         {/* Bedrooms and Bathrooms - Only for house/apartment */}
@@ -475,7 +689,7 @@ const PublishPage = () => {
           </motion.div>
         )}
 
-        {/* Amenities - For house/apartment/commercial */}
+        {/* Amenities Dropdown - For house/apartment/commercial */}
         {showAmenities && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -486,25 +700,53 @@ const PublishPage = () => {
               <Check className="w-5 h-5 text-primary" />
               Commodités disponibles
             </h3>
-            <div className="flex flex-wrap gap-2">
-              {AMENITIES.map(amenity => (
-                <button
-                  key={amenity}
-                  onClick={() => toggleAmenity(amenity)}
-                  className={`px-3 py-1.5 rounded-full text-sm transition-all ${
-                    selectedAmenities.includes(amenity)
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted hover:bg-muted/80'
-                  }`}
-                >
-                  {amenity}
+            <Popover open={amenitiesOpen} onOpenChange={setAmenitiesOpen}>
+              <PopoverTrigger asChild>
+                <button className="w-full flex items-center justify-between p-3 rounded-xl border bg-background hover:bg-muted/50 transition-colors">
+                  <span className={selectedAmenities.length > 0 ? 'text-foreground' : 'text-muted-foreground'}>
+                    {selectedAmenities.length > 0 
+                      ? `${selectedAmenities.length} commodité(s) sélectionnée(s)`
+                      : 'Sélectionner les commodités'}
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${amenitiesOpen ? 'rotate-180' : ''}`} />
                 </button>
-              ))}
-            </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-[calc(100vw-2rem)] max-w-md p-0 bg-card border shadow-lg z-50" align="start">
+                <div className="max-h-64 overflow-y-auto p-2">
+                  {AMENITIES.map(amenity => (
+                    <label
+                      key={amenity}
+                      className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-muted transition-colors"
+                    >
+                      <Checkbox
+                        checked={selectedAmenities.includes(amenity)}
+                        onCheckedChange={() => toggleAmenity(amenity)}
+                      />
+                      <span className="text-sm">{amenity}</span>
+                    </label>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+            {selectedAmenities.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {selectedAmenities.map(amenity => (
+                  <span
+                    key={amenity}
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-full text-xs"
+                  >
+                    {amenity}
+                    <button onClick={() => toggleAmenity(amenity)}>
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </motion.div>
         )}
 
-        {/* Documents - For land or sale */}
+        {/* Documents Dropdown - For land or sale */}
         {showDocuments && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -515,20 +757,52 @@ const PublishPage = () => {
               <FileText className="w-5 h-5 text-primary" />
               Documents disponibles
             </h3>
-            <div className="space-y-2">
-              {DOCUMENTS.map(doc => (
-                <label
-                  key={doc.id}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
-                >
-                  <Checkbox
-                    checked={selectedDocuments.includes(doc.id)}
-                    onCheckedChange={() => toggleDocument(doc.id)}
-                  />
-                  <span className="text-sm">{doc.label}</span>
-                </label>
-              ))}
-            </div>
+            <Popover open={documentsOpen} onOpenChange={setDocumentsOpen}>
+              <PopoverTrigger asChild>
+                <button className="w-full flex items-center justify-between p-3 rounded-xl border bg-background hover:bg-muted/50 transition-colors">
+                  <span className={selectedDocuments.length > 0 ? 'text-foreground' : 'text-muted-foreground'}>
+                    {selectedDocuments.length > 0 
+                      ? `${selectedDocuments.length} document(s) sélectionné(s)`
+                      : 'Sélectionner les documents'}
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${documentsOpen ? 'rotate-180' : ''}`} />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[calc(100vw-2rem)] max-w-md p-0 bg-card border shadow-lg z-50" align="start">
+                <div className="max-h-64 overflow-y-auto p-2">
+                  {DOCUMENTS.map(doc => (
+                    <label
+                      key={doc.id}
+                      className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-muted transition-colors"
+                    >
+                      <Checkbox
+                        checked={selectedDocuments.includes(doc.id)}
+                        onCheckedChange={() => toggleDocument(doc.id)}
+                      />
+                      <span className="text-sm">{doc.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+            {selectedDocuments.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {selectedDocuments.map(docId => {
+                  const doc = DOCUMENTS.find(d => d.id === docId);
+                  return (
+                    <span
+                      key={docId}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-full text-xs"
+                    >
+                      {doc?.label.split(' ')[0]}
+                      <button onClick={() => toggleDocument(docId)}>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -579,35 +853,6 @@ const PublishPage = () => {
             </div>
           </motion.div>
         )}
-
-        {/* Price */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-card rounded-2xl p-4 shadow-sm"
-        >
-          <h3 className="font-semibold mb-3 flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-primary" />
-            Prix {transactionType === 'rent' ? 'du loyer mensuel' : ''} <span className="text-destructive">*</span>
-          </h3>
-          <div className="relative">
-            <Input
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="0"
-              className="pr-16 text-lg font-bold"
-            />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-              FCFA
-            </span>
-          </div>
-          {transactionType === 'rent' && (
-            <p className="text-xs text-muted-foreground mt-2">
-              Prix par mois
-            </p>
-          )}
-        </motion.div>
 
         {/* Submit Button */}
         <motion.button
