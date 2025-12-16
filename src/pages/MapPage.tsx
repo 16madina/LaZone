@@ -33,7 +33,7 @@ const MapPage = () => {
   const navigate = useNavigate();
   const mapRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const markersRef = useRef<any[]>([]);
+  const markersRef = useRef<any>(null); // MarkerClusterGroup
   const userMarkerRef = useRef<any>(null);
   const { properties, searchQuery: storeSearchQuery, activeFilter } = useAppStore();
   const [loading, setLoading] = useState(true);
@@ -131,6 +131,9 @@ const MapPage = () => {
   const loadLeaflet = async () => {
     const L = await import('leaflet');
     await import('leaflet/dist/leaflet.css');
+    await import('leaflet.markercluster');
+    await import('leaflet.markercluster/dist/MarkerCluster.css');
+    await import('leaflet.markercluster/dist/MarkerCluster.Default.css');
     
     if (mapContainerRef.current && !mapRef.current) {
       const map = L.map(mapContainerRef.current).setView([defaultCenter.lat, defaultCenter.lng], 13);
@@ -138,6 +141,38 @@ const MapPage = () => {
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
+      
+      // Create marker cluster group with custom styling
+      const clusterGroup = (L as any).markerClusterGroup({
+        maxClusterRadius: 50,
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+        zoomToBoundsOnClick: true,
+        iconCreateFunction: (cluster: any) => {
+          const count = cluster.getChildCount();
+          return L.divIcon({
+            html: `<div style="
+              background: linear-gradient(135deg, #ea580c, #f97316);
+              color: white;
+              width: 40px;
+              height: 40px;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 700;
+              font-size: 14px;
+              box-shadow: 0 4px 12px rgba(234, 88, 12, 0.4);
+              border: 3px solid white;
+            ">${count}</div>`,
+            className: 'custom-cluster-icon',
+            iconSize: L.point(40, 40),
+          });
+        }
+      });
+      
+      map.addLayer(clusterGroup);
+      markersRef.current = clusterGroup;
       
       mapRef.current = map;
       setMapLoaded(true);
@@ -159,15 +194,14 @@ const MapPage = () => {
   // Update markers when properties change
   useEffect(() => {
     const updateMarkers = async () => {
-      if (!mapRef.current || !mapLoaded) return;
+      if (!mapRef.current || !mapLoaded || !markersRef.current) return;
       
       const L = await import('leaflet');
       
-      // Clear existing markers (not user marker)
-      markersRef.current.forEach(marker => marker.remove());
-      markersRef.current = [];
+      // Clear existing markers from cluster group
+      markersRef.current.clearLayers();
       
-      // Add new markers
+      // Add new markers to cluster group
       filteredProperties.forEach((property) => {
         if (property.lat && property.lng) {
           const bgColor = property.type === 'sale' ? '#ea580c' : '#16a34a';
@@ -199,12 +233,11 @@ const MapPage = () => {
           });
           
           const marker = L.marker([property.lat, property.lng], { icon })
-            .addTo(mapRef.current)
             .on('click', () => {
               setSelectedProperty(property);
             });
           
-          markersRef.current.push(marker);
+          markersRef.current.addLayer(marker);
         }
       });
       
