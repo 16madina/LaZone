@@ -201,17 +201,23 @@ const AdminPage = () => {
   const fetchProperties = async () => {
     const { data, error } = await supabase
       .from('properties')
-      .select(`
-        id, title, price, city, is_active, is_sponsored, sponsored_until, created_at, user_id,
-        profiles:user_id (full_name)
-      `)
+      .select('id, title, price, city, is_active, is_sponsored, sponsored_until, created_at, user_id')
       .order('created_at', { ascending: false });
     
     if (error) throw error;
 
+    // Fetch owner names separately
+    const userIds = [...new Set((data || []).map(p => p.user_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, full_name')
+      .in('user_id', userIds);
+
+    const profileMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
+
     const propertiesWithOwner = (data || []).map((p: any) => ({
       ...p,
-      owner_name: p.profiles?.full_name || 'Inconnu',
+      owner_name: profileMap.get(p.user_id) || 'Inconnu',
     }));
 
     setProperties(propertiesWithOwner);
@@ -220,19 +226,27 @@ const AdminPage = () => {
   const fetchReports = async () => {
     const { data, error } = await supabase
       .from('property_reports')
-      .select(`
-        *,
-        properties:property_id (title),
-        profiles:reporter_id (full_name)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
     
     if (error) throw error;
 
+    // Fetch property titles and reporter names separately
+    const propertyIds = [...new Set((data || []).map(r => r.property_id))];
+    const reporterIds = [...new Set((data || []).map(r => r.reporter_id))];
+
+    const [{ data: properties }, { data: profiles }] = await Promise.all([
+      supabase.from('properties').select('id, title').in('id', propertyIds),
+      supabase.from('profiles').select('user_id, full_name').in('user_id', reporterIds)
+    ]);
+
+    const propertyMap = new Map((properties || []).map(p => [p.id, p.title]));
+    const profileMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
+
     const reportsWithDetails = (data || []).map((r: any) => ({
       ...r,
-      property_title: r.properties?.title || 'Annonce supprimée',
-      reporter_name: r.profiles?.full_name || 'Anonyme',
+      property_title: propertyMap.get(r.property_id) || 'Annonce supprimée',
+      reporter_name: profileMap.get(r.reporter_id) || 'Anonyme',
     }));
 
     setReports(reportsWithDetails);
@@ -241,17 +255,23 @@ const AdminPage = () => {
   const fetchAdmins = async () => {
     const { data, error } = await supabase
       .from('user_roles')
-      .select(`
-        *,
-        profiles:user_id (full_name)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
     
     if (error) throw error;
 
+    // Fetch profile names separately
+    const userIds = [...new Set((data || []).map(a => a.user_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, full_name')
+      .in('user_id', userIds);
+
+    const profileMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
+
     const adminsWithDetails = (data || []).map((a: any) => ({
       ...a,
-      full_name: a.profiles?.full_name || 'Inconnu',
+      full_name: profileMap.get(a.user_id) || 'Inconnu',
       email: '',
     }));
 
@@ -261,18 +281,24 @@ const AdminPage = () => {
   const fetchSponsoredProperties = async () => {
     const { data, error } = await supabase
       .from('properties')
-      .select(`
-        id, title, price, city, is_active, is_sponsored, sponsored_until, created_at, user_id,
-        profiles:user_id (full_name)
-      `)
+      .select('id, title, price, city, is_active, is_sponsored, sponsored_until, created_at, user_id')
       .eq('is_sponsored', true)
       .order('sponsored_until', { ascending: false });
     
     if (error) throw error;
 
+    // Fetch owner names separately
+    const userIds = [...new Set((data || []).map(p => p.user_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, full_name')
+      .in('user_id', userIds);
+
+    const profileMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
+
     const propertiesWithOwner = (data || []).map((p: any) => ({
       ...p,
-      owner_name: p.profiles?.full_name || 'Inconnu',
+      owner_name: profileMap.get(p.user_id) || 'Inconnu',
     }));
 
     setProperties(propertiesWithOwner);
