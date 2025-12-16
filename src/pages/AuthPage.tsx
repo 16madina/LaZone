@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, ArrowLeft, Eye, EyeOff, Phone, MapPin, Camera, ChevronDown, Check, Globe, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, ArrowLeft, Eye, EyeOff, Phone, MapPin, ChevronDown, Check, Globe, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { africanCountries, Country } from '@/data/africanCountries';
@@ -51,6 +51,23 @@ const AuthPage = () => {
   });
 
   const availableCities = formData.country?.cities || [];
+
+  const FlagImg = ({
+    code,
+    name,
+    className = '',
+  }: {
+    code: string;
+    name: string;
+    className?: string;
+  }) => (
+    <img
+      src={`https://flagcdn.com/w40/${code.toLowerCase()}.png`}
+      alt={`Drapeau ${name}`}
+      className={`h-4 w-6 rounded-sm object-cover ${className}`}
+      loading="lazy"
+    />
+  );
 
   const validateField = (field: string, value: any): string | undefined => {
     switch (field) {
@@ -355,7 +372,7 @@ const AuthPage = () => {
                     <span className={`flex-1 text-left text-sm ${formData.country ? 'text-foreground' : 'text-muted-foreground'}`}>
                       {formData.country ? (
                         <span className="flex items-center gap-2">
-                          <span>{formData.country.flag}</span>
+                          <FlagImg code={formData.country.code} name={formData.country.name} />
                           <span>{formData.country.name}</span>
                         </span>
                       ) : 'Sélectionner un pays'}
@@ -374,7 +391,7 @@ const AuthPage = () => {
                         onClick={() => handleCountrySelect(country)}
                         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
                       >
-                        <span className="text-xl">{country.flag}</span>
+                        <FlagImg code={country.code} name={country.name} className="h-5 w-7" />
                         <span className="flex-1 text-sm">{country.name}</span>
                         <span className="text-xs text-muted-foreground">{country.phoneCode}</span>
                         {formData.country?.code === country.code && (
@@ -433,8 +450,8 @@ const AuthPage = () => {
                   <div className="flex items-center gap-2 px-3 py-2.5">
                     <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                     {formData.country ? (
-                      <div className="flex items-center gap-1 px-2 py-1 bg-muted rounded-lg">
-                        <span className="text-sm">{formData.country.flag}</span>
+                      <div className="flex items-center gap-2 px-2 py-1 bg-muted rounded-lg">
+                        <FlagImg code={formData.country.code} name={formData.country.name} />
                         <span className="text-sm font-medium text-foreground">
                           {formData.country.phoneCode}
                         </span>
