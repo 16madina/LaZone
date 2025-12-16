@@ -322,12 +322,9 @@ const PublishPage = () => {
       return;
     }
 
-    // Get country name from code
-    const countryName = africanCountries.find(c => c.code === selectedCountry)?.name || selectedCountry;
-
     setLoading(true);
     try {
-      // Create property with coordinates and country
+      // Create property with coordinates and country code
       const { data: property, error: propertyError } = await supabase
         .from('properties')
         .insert({
@@ -345,7 +342,7 @@ const PublishPage = () => {
           bathrooms: showBedroomsBathrooms ? parseInt(bathrooms) || 0 : null,
           features: [...selectedAmenities, ...selectedDocuments.map(d => DOCUMENTS.find(doc => doc.id === d)?.label || d)],
           whatsapp_enabled: whatsappEnabled,
-          country: countryName,
+          country: selectedCountry, // Use country code for filtering consistency
           lat: markerPosition.lat,
           lng: markerPosition.lng,
         })
