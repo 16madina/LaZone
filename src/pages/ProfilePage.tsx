@@ -13,7 +13,9 @@ import {
   Loader2,
   LogIn,
   CalendarDays,
-  RefreshCw
+  RefreshCw,
+  Settings,
+  User
 } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,12 +24,15 @@ import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
+type TabType = 'profil' | 'annonces' | 'rdv' | 'favoris' | 'parametres';
+
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { favorites } = useAppStore();
   const { user, profile, signOut, loading, isEmailVerified, resendVerificationEmail } = useAuth();
   const [sendingEmail, setSendingEmail] = useState(false);
   const [propertiesCount, setPropertiesCount] = useState(0);
+  const [activeTab, setActiveTab] = useState<TabType>('profil');
 
   useEffect(() => {
     if (user) {
@@ -71,6 +76,14 @@ const ProfilePage = () => {
   const memberSince = user?.created_at 
     ? format(new Date(user.created_at), "MMMM yyyy", { locale: fr })
     : 'décembre 2025';
+
+  const tabs = [
+    { id: 'profil' as TabType, label: 'Profil', icon: User },
+    { id: 'annonces' as TabType, label: 'Annonces', icon: Home },
+    { id: 'rdv' as TabType, label: 'Mes RDV', icon: CalendarDays },
+    { id: 'favoris' as TabType, label: 'Favoris', icon: Heart },
+    { id: 'parametres' as TabType, label: 'Paramètres', icon: Settings },
+  ];
 
   if (loading) {
     return (
@@ -149,9 +162,13 @@ const ProfilePage = () => {
                   <h1 className="text-lg font-bold text-foreground truncate">
                     {user.user_metadata?.full_name || 'Utilisateur'}
                   </h1>
-                  <button className="flex-shrink-0 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium flex items-center gap-1.5">
-                    <CalendarDays className="w-4 h-4" />
-                    Mes RDV
+                  {/* Logout Button */}
+                  <button
+                    onClick={handleSignOut}
+                    className="flex-shrink-0 px-3 py-1.5 text-primary border border-primary rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-primary/10 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Déconnexion
                   </button>
                 </div>
 
@@ -165,9 +182,6 @@ const ProfilePage = () => {
                     <>
                       <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
                         ⚠ Email non vérifié
-                      </span>
-                      <span className="px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-xs font-medium">
-                        ⊘ Lien expiré
                       </span>
                       <button 
                         onClick={handleResendVerification}
@@ -212,6 +226,7 @@ const ProfilePage = () => {
             </div>
           </div>
 
+          {/* Stats Row */}
           <div className="grid grid-cols-4 border-t border-border">
             <button 
               onClick={() => navigate('/my-listings')}
@@ -247,15 +262,86 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Logout Link */}
-        <div className="flex justify-end mt-4">
-          <button
-            onClick={handleSignOut}
-            className="flex items-center gap-2 text-primary font-medium text-sm hover:underline"
-          >
-            <LogOut className="w-4 h-4" />
-            Déconnexion
-          </button>
+        {/* Tabs */}
+        <div className="mt-4 bg-card rounded-2xl shadow-sm overflow-hidden">
+          <div className="flex overflow-x-auto scrollbar-hide border-b border-border">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 min-w-max px-4 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                  activeTab === tab.id
+                    ? 'text-primary border-b-2 border-primary bg-primary/5'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab Content */}
+          <div className="p-4">
+            {activeTab === 'profil' && (
+              <div className="text-center py-8">
+                <User className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                <h3 className="font-semibold mb-1">Mon Profil</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Gérez vos informations personnelles
+                </p>
+                <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">
+                  Modifier le profil
+                </button>
+              </div>
+            )}
+
+            {activeTab === 'annonces' && (
+              <div className="text-center py-8">
+                <Home className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                <h3 className="font-semibold mb-1">Mes Annonces</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {propertiesCount} annonce{propertiesCount > 1 ? 's' : ''} publiée{propertiesCount > 1 ? 's' : ''}
+                </p>
+                <button 
+                  onClick={() => navigate('/my-listings')}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium"
+                >
+                  Voir mes annonces
+                </button>
+              </div>
+            )}
+
+            {activeTab === 'rdv' && (
+              <div className="text-center py-8">
+                <CalendarDays className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                <h3 className="font-semibold mb-1">Mes Rendez-vous</h3>
+                <p className="text-sm text-muted-foreground">
+                  Aucun rendez-vous prévu
+                </p>
+              </div>
+            )}
+
+            {activeTab === 'favoris' && (
+              <div className="text-center py-8">
+                <Heart className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                <h3 className="font-semibold mb-1">Mes Favoris</h3>
+                <p className="text-sm text-muted-foreground">
+                  {favorites.length} bien{favorites.length > 1 ? 's' : ''} sauvegardé{favorites.length > 1 ? 's' : ''}
+                </p>
+              </div>
+            )}
+
+            {activeTab === 'parametres' && (
+              <div className="text-center py-8">
+                <Settings className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                <h3 className="font-semibold mb-1">Paramètres</h3>
+                <p className="text-sm text-muted-foreground">
+                  Notifications, confidentialité, sécurité
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
