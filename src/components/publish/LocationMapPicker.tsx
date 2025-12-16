@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Input } from '@/components/ui/input';
-import { Search, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Search, Loader2, Check } from 'lucide-react';
 
 // Fix for default marker icons in Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -102,6 +103,7 @@ export default function LocationMapPicker({ position, onPositionChange, countryC
   const [searchResults, setSearchResults] = useState<NominatimResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [pendingPosition, setPendingPosition] = useState<{ lat: number; lng: number } | null>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Debounced search function
@@ -153,6 +155,7 @@ export default function LocationMapPicker({ position, onPositionChange, countryC
     const lng = parseFloat(result.lon);
     
     onPositionChange(lat, lng);
+    setPendingPosition(null);
     
     if (mapRef.current && markerRef.current) {
       mapRef.current.setView([lat, lng], 15);
@@ -162,6 +165,14 @@ export default function LocationMapPicker({ position, onPositionChange, countryC
     setSearchQuery(result.display_name.split(',')[0]);
     setShowResults(false);
     setSearchResults([]);
+  };
+
+  // Validate the pending position
+  const handleValidatePosition = () => {
+    if (pendingPosition) {
+      onPositionChange(pendingPosition.lat, pendingPosition.lng);
+      setPendingPosition(null);
+    }
   };
 
   // Initialize map
@@ -193,13 +204,13 @@ export default function LocationMapPicker({ position, onPositionChange, countryC
     // Update position when marker is dragged
     marker.on('dragend', () => {
       const latLng = marker.getLatLng();
-      onPositionChange(latLng.lat, latLng.lng);
+      setPendingPosition({ lat: latLng.lat, lng: latLng.lng });
     });
 
     // Update marker position when map is clicked
     map.on('click', (e) => {
       marker.setLatLng(e.latlng);
-      onPositionChange(e.latlng.lat, e.latlng.lng);
+      setPendingPosition({ lat: e.latlng.lat, lng: e.latlng.lng });
     });
 
     mapRef.current = map;
@@ -285,12 +296,28 @@ export default function LocationMapPicker({ position, onPositionChange, countryC
         )}
       </div>
 
-      {/* Map */}
-      <div 
-        ref={mapContainerRef}
-        className="h-64 w-full rounded-xl overflow-hidden border border-border"
-        style={{ minHeight: '256px' }}
-      />
+      {/* Map container */}
+      <div className="relative">
+        <div 
+          ref={mapContainerRef}
+          className="h-64 w-full rounded-xl overflow-hidden border border-border"
+          style={{ minHeight: '256px' }}
+        />
+        
+        {/* Validate button overlay */}
+        {pendingPosition && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[1000]">
+            <Button
+              type="button"
+              onClick={handleValidatePosition}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
+            >
+              <Check className="h-4 w-4 mr-2" />
+              Valider cette position
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
