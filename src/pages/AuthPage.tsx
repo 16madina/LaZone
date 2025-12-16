@@ -289,11 +289,11 @@ const AuthPage = () => {
                   {avatarPreview ? (
                     <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
-                    <Camera className="w-8 h-8 text-muted-foreground" />
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-3xl">📷</span>
+                      <span className="text-xs text-muted-foreground">Photo</span>
+                    </div>
                   )}
-                  <div className="absolute bottom-0 right-0 w-7 h-7 gradient-primary rounded-full flex items-center justify-center">
-                    <Camera className="w-3.5 h-3.5 text-primary-foreground" />
-                  </div>
                 </div>
                 <input
                   ref={fileInputRef}
