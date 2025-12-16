@@ -167,6 +167,17 @@ const AuthPage = () => {
     }
   };
 
+  const sendVerificationEmail = async (email: string, firstName: string) => {
+    try {
+      const verificationUrl = `${window.location.origin}/verify-email?email=${encodeURIComponent(email)}`;
+      await supabase.functions.invoke('send-verification-email', {
+        body: { email, firstName, verificationUrl },
+      });
+    } catch (error) {
+      console.error('Error sending verification email:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -185,10 +196,10 @@ const AuthPage = () => {
         });
         if (error) throw error;
         toast({ title: 'Connexion réussie', description: 'Bienvenue sur LaZone!' });
-        navigate('/');
+        navigate('/profile');
       } else {
         const fullPhoneNumber = `${formData.country?.phoneCode}${formData.phone}`;
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
@@ -201,12 +212,21 @@ const AuthPage = () => {
               city: formData.city,
               phone: fullPhoneNumber,
             },
-            emailRedirectTo: `${window.location.origin}/`,
+            emailRedirectTo: `${window.location.origin}/profile`,
           },
         });
         if (error) throw error;
-        toast({ title: 'Compte créé', description: 'Bienvenue sur LaZone!' });
-        navigate('/');
+        
+        // Send verification email via Resend
+        if (data.user) {
+          await sendVerificationEmail(formData.email, formData.firstName);
+        }
+        
+        toast({ 
+          title: 'Compte créé', 
+          description: 'Un email de vérification vous a été envoyé!' 
+        });
+        navigate('/profile');
       }
     } catch (error: any) {
       let message = 'Une erreur est survenue';

@@ -12,6 +12,7 @@ import MessagesPage from "./pages/MessagesPage";
 import ProfilePage from "./pages/ProfilePage";
 import PropertyDetail from "./pages/PropertyDetail";
 import AuthPage from "./pages/AuthPage";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/map" element={<MapPage />} />
               <Route path="/publish" element={<PublishPage />} />
               <Route path="/messages" element={<MessagesPage />} />
