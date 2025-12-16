@@ -2,9 +2,19 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
+interface Profile {
+  id: string;
+  user_id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  phone: string | null;
+  email_verified: boolean;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
+  profile: Profile | null;
   loading: boolean;
   isEmailVerified: boolean;
   signOut: () => Promise<void>;
@@ -15,6 +25,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
+  profile: null,
   loading: true,
   isEmailVerified: false,
   signOut: async () => {},
@@ -27,28 +38,30 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isEmailVerified, setIsEmailVerified] = useState(false);
 
-  const fetchVerificationStatus = async (userId: string) => {
+  const isEmailVerified = profile?.email_verified || false;
+
+  const fetchProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('email_verified')
+        .select('id, user_id, full_name, avatar_url, phone, email_verified')
         .eq('user_id', userId)
         .single();
 
       if (!error && data) {
-        setIsEmailVerified(data.email_verified || false);
+        setProfile(data as Profile);
       }
     } catch (error) {
-      console.error('Error fetching verification status:', error);
+      console.error('Error fetching profile:', error);
     }
   };
 
   const refreshVerificationStatus = async () => {
     if (user?.id) {
-      await fetchVerificationStatus(user.id);
+      await fetchProfile(user.id);
     }
   };
 
@@ -60,13 +73,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         setLoading(false);
 
-        // Fetch verification status when user changes
+        // Fetch profile when user changes
         if (session?.user?.id) {
           setTimeout(() => {
-            fetchVerificationStatus(session.user.id);
+            fetchProfile(session.user.id);
           }, 0);
         } else {
-          setIsEmailVerified(false);
+          setProfile(null);
         }
       }
     );
@@ -78,7 +91,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
 
       if (session?.user?.id) {
-        fetchVerificationStatus(session.user.id);
+        fetchProfile(session.user.id);
       }
     });
 
@@ -89,7 +102,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
-    setIsEmailVerified(false);
+    setProfile(null);
   };
 
   const resendVerificationEmail = async () => {
@@ -118,6 +131,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider value={{ 
       user, 
       session, 
+      profile,
       loading, 
       isEmailVerified, 
       signOut, 
