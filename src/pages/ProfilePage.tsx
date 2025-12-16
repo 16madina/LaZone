@@ -29,7 +29,23 @@ import {
   Bed,
   Bath,
   Maximize,
-  EyeOff
+  EyeOff,
+  Lock,
+  Fingerprint,
+  EyeIcon,
+  UserX,
+  CreditCard,
+  Award,
+  Database,
+  RotateCcw,
+  Coins,
+  Share2,
+  Star,
+  MessageCircle,
+  AlertTriangle,
+  ShieldCheck,
+  Baby,
+  Edit
 } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
 import { useAuth } from '@/hooks/useAuth';
@@ -755,78 +771,273 @@ const ProfilePage = () => {
             )}
 
             {activeTab === 'parametres' && (
-              <div className="space-y-4">
+              <div className="space-y-6">
+                {/* Compte */}
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Compte</h3>
+                  <div className="space-y-2">
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Edit className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Modifier le profil</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Trash2 className="w-5 h-5 text-destructive" />
+                        <span className="text-sm font-medium">Gestion du compte</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Sécurité & Confidentialité */}
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Sécurité & Confidentialité</h3>
+                  <div className="space-y-2">
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Lock className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Changer le mot de passe</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Shield className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Authentification 2FA</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Fingerprint className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Biométrie (Face ID/Touch ID)</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <EyeIcon className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Visibilité du profil</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <UserX className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Utilisateurs bloqués</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                  </div>
+                </div>
+
                 {/* Notifications */}
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <Bell className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="text-sm font-medium">Notifications</p>
-                      <p className="text-xs text-muted-foreground">Recevoir les alertes</p>
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Notifications</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <Bell className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Notifications push</span>
+                      </div>
+                      <Switch checked={notifications} onCheckedChange={setNotifications} />
                     </div>
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <MessageCircle className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Préférences de notifications</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
                   </div>
-                  <Switch checked={notifications} onCheckedChange={setNotifications} />
                 </div>
 
-                {/* Dark Mode */}
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <Moon className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="text-sm font-medium">Mode sombre</p>
-                      <p className="text-xs text-muted-foreground">Thème de l'application</p>
-                    </div>
+                {/* Paiements */}
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Paiements</h3>
+                  <div className="space-y-2">
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <CreditCard className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Historique des ventes</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
                   </div>
-                  <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
                 </div>
 
-                {/* Language */}
-                <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <Globe className="w-5 h-5 text-primary" />
-                    <div className="text-left">
-                      <p className="text-sm font-medium">Langue</p>
-                      <p className="text-xs text-muted-foreground">Français</p>
+                {/* Apparence */}
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Apparence</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <Moon className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Mode sombre</span>
+                      </div>
+                      <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
                     </div>
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Award className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Badges vendeur</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                </button>
+                </div>
 
-                {/* Security */}
-                <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <Shield className="w-5 h-5 text-primary" />
-                    <div className="text-left">
-                      <p className="text-sm font-medium">Sécurité</p>
-                      <p className="text-xs text-muted-foreground">Mot de passe, 2FA</p>
-                    </div>
+                {/* Stockage & Données */}
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Stockage & Données</h3>
+                  <div className="space-y-2">
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Database className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Vider le cache</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <RotateCcw className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Réinitialiser le tutoriel</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                </button>
+                </div>
 
-                {/* Help */}
-                <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <HelpCircle className="w-5 h-5 text-primary" />
-                    <div className="text-left">
-                      <p className="text-sm font-medium">Aide & Support</p>
-                      <p className="text-xs text-muted-foreground">FAQ, Contact</p>
-                    </div>
+                {/* Paramètres régionaux */}
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Paramètres régionaux</h3>
+                  <div className="space-y-2">
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Globe className="w-5 h-5 text-primary" />
+                        <div className="text-left">
+                          <span className="text-sm font-medium">Langue</span>
+                          <p className="text-xs text-muted-foreground">Français</p>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Coins className="w-5 h-5 text-primary" />
+                        <div className="text-left">
+                          <span className="text-sm font-medium">Devise</span>
+                          <p className="text-xs text-muted-foreground">FCFA</p>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                </button>
+                </div>
 
-                {/* Terms */}
-                <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-primary" />
-                    <div className="text-left">
-                      <p className="text-sm font-medium">Conditions d'utilisation</p>
-                      <p className="text-xs text-muted-foreground">Mentions légales</p>
-                    </div>
+                {/* Partager */}
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Application</h3>
+                  <div className="space-y-2">
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Share2 className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Partager l'application</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Star className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Noter l'application</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                </button>
+                </div>
+
+                {/* Centre d'aide */}
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Centre d'aide</h3>
+                  <div className="space-y-2">
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <HelpCircle className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">FAQ</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <MessageCircle className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Support</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <AlertTriangle className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Signaler un problème</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Légal */}
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Légal</h3>
+                  <div className="space-y-2">
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Conditions d'utilisation</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Shield className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Politique de confidentialité</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Users className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Règles de la communauté</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Baby className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Sécurité et protection (enfants)</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Déconnexion */}
+                <div className="pt-2">
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full flex items-center justify-center gap-2 p-4 bg-destructive/10 text-destructive rounded-xl font-medium hover:bg-destructive/20 transition-colors"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    Déconnexion
+                  </button>
+                </div>
+
+                {/* Version */}
+                <p className="text-center text-xs text-muted-foreground pt-4">
+                  Version 1.0.0 • LaZone © 2025
+                </p>
               </div>
             )}
           </div>
