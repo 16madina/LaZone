@@ -167,11 +167,10 @@ const AuthPage = () => {
     }
   };
 
-  const sendVerificationEmail = async (email: string, firstName: string) => {
+  const sendVerificationEmail = async (email: string, firstName: string, userId: string) => {
     try {
-      const verificationUrl = `${window.location.origin}/verify-email?email=${encodeURIComponent(email)}`;
       await supabase.functions.invoke('send-verification-email', {
-        body: { email, firstName, verificationUrl },
+        body: { email, firstName, userId },
       });
     } catch (error) {
       console.error('Error sending verification email:', error);
@@ -219,7 +218,7 @@ const AuthPage = () => {
         
         // Send verification email via Resend
         if (data.user) {
-          await sendVerificationEmail(formData.email, formData.firstName);
+          await sendVerificationEmail(formData.email, formData.firstName, data.user.id);
         }
         
         toast({ 
