@@ -84,6 +84,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          country: string | null
           created_at: string
           email_verified: boolean | null
           full_name: string | null
@@ -96,6 +97,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          country?: string | null
           created_at?: string
           email_verified?: boolean | null
           full_name?: string | null
@@ -108,6 +110,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          country?: string | null
           created_at?: string
           email_verified?: boolean | null
           full_name?: string | null
@@ -127,6 +130,7 @@ export type Database = {
           bathrooms: number | null
           bedrooms: number | null
           city: string
+          country: string | null
           created_at: string
           description: string | null
           features: string[] | null
@@ -148,6 +152,7 @@ export type Database = {
           bathrooms?: number | null
           bedrooms?: number | null
           city: string
+          country?: string | null
           created_at?: string
           description?: string | null
           features?: string[] | null
@@ -169,6 +174,7 @@ export type Database = {
           bathrooms?: number | null
           bedrooms?: number | null
           city?: string
+          country?: string | null
           created_at?: string
           description?: string | null
           features?: string[] | null

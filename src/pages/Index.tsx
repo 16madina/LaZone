@@ -5,8 +5,11 @@ import { SearchBar } from '@/components/home/SearchBar';
 import { FilterChips } from '@/components/home/FilterChips';
 import { StatsSection } from '@/components/home/StatsSection';
 import { PropertyCard } from '@/components/property/PropertyCard';
+import { CountrySelector } from '@/components/home/CountrySelector';
 import { useAppStore } from '@/stores/appStore';
-import { useProperties, Property } from '@/hooks/useProperties';
+import { useProperties } from '@/hooks/useProperties';
+import { useAuth } from '@/hooks/useAuth';
+import { africanCountries, Country } from '@/data/africanCountries';
 import logoLazone from '@/assets/logo-lazone.png';
 import heroBg1 from '@/assets/hero-bg.jpg';
 import heroBg2 from '@/assets/hero-bg-2.jpg';
@@ -18,7 +21,19 @@ const heroImages = [heroBg1, heroBg2, heroBg3, heroBg4];
 const Index = () => {
   const { activeFilter, searchQuery } = useAppStore();
   const { properties, loading } = useProperties();
+  const { profile } = useAuth();
   const [currentBg, setCurrentBg] = useState(heroBg1);
+  const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
+
+  // Initialize country from user profile
+  useEffect(() => {
+    if (profile?.country) {
+      const userCountry = africanCountries.find(c => c.code === profile.country);
+      if (userCountry) {
+        setSelectedCountry(userCountry);
+      }
+    }
+  }, [profile?.country]);
 
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * heroImages.length);
@@ -26,6 +41,11 @@ const Index = () => {
   }, []);
 
   const filteredProperties = properties.filter((property) => {
+    // Filter by country first
+    if (selectedCountry && property.country !== selectedCountry.code) {
+      return false;
+    }
+
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       if (
@@ -67,6 +87,10 @@ const Index = () => {
           <header className="flex items-center justify-between mb-8">
             <img src={logoLazone} alt="LaZone" className="h-14" />
             <div className="flex items-center gap-3">
+              <CountrySelector 
+                selectedCountry={selectedCountry} 
+                onCountryChange={setSelectedCountry} 
+              />
               <button className="relative w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform">
                 <Bell className="w-5 h-5 text-white" />
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full" />
@@ -86,7 +110,9 @@ const Index = () => {
               <span className="text-white/90">dans votre Zone</span>
             </h1>
             <p className="text-white/70 text-sm">
-              Des milliers de propriétés disponibles en Afrique
+              {selectedCountry 
+                ? `Propriétés disponibles en ${selectedCountry.name}` 
+                : 'Des milliers de propriétés disponibles en Afrique'}
             </p>
           </div>
 
@@ -110,7 +136,11 @@ const Index = () => {
         {/* Properties Section */}
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="section-title">Propriétés récentes</h3>
+            <h3 className="section-title">
+              {selectedCountry 
+                ? `Propriétés en ${selectedCountry.name}` 
+                : 'Propriétés récentes'}
+            </h3>
             <button className="text-sm text-primary font-medium active:scale-95 transition-transform">
               Voir tout
             </button>
@@ -123,7 +153,11 @@ const Index = () => {
           ) : (
             <div className="grid gap-4">
               {filteredProperties.map((property) => (
-                <PropertyCard key={property.id} property={property} />
+                <PropertyCard 
+                  key={property.id} 
+                  property={property} 
+                  userCountry={selectedCountry?.code}
+                />
               ))}
             </div>
           )}
@@ -131,7 +165,11 @@ const Index = () => {
           {!loading && filteredProperties.length === 0 && (
             <div className="glass-card p-8 text-center">
               <p className="text-4xl mb-2">🔍</p>
-              <p className="text-muted-foreground">Aucune propriété trouvée</p>
+              <p className="text-muted-foreground">
+                {selectedCountry 
+                  ? `Aucune propriété trouvée en ${selectedCountry.name}` 
+                  : 'Aucune propriété trouvée'}
+              </p>
             </div>
           )}
         </section>
