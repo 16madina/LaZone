@@ -17,17 +17,19 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
+import { useFavorites } from '@/hooks/useFavorites';
 import { ImageGallery } from '@/components/property/ImageGallery';
 
 const PropertyDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { properties, favorites, toggleFavorite } = useAppStore();
+  const { properties } = useAppStore();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const [showGallery, setShowGallery] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   const property = properties.find(p => p.id === id);
-  const isFavorite = favorites.includes(id || '');
+  const favorite = isFavorite(id || '');
 
   if (!property) {
     return (
@@ -146,7 +148,7 @@ const PropertyDetail = () => {
               onClick={() => toggleFavorite(property.id)}
               className="glass w-10 h-10 rounded-full flex items-center justify-center"
             >
-              <Heart className={`w-5 h-5 ${isFavorite ? 'fill-destructive text-destructive' : ''}`} />
+              <Heart className={`w-5 h-5 ${favorite ? 'fill-destructive text-destructive' : ''}`} />
             </motion.button>
           </div>
         </motion.div>

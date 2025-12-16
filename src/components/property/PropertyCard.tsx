@@ -1,6 +1,6 @@
 import { Heart, Bed, Bath, Maximize, MapPin } from 'lucide-react';
 import { Property } from '@/stores/appStore';
-import { useAppStore } from '@/stores/appStore';
+import { useFavorites } from '@/hooks/useFavorites';
 import { Link } from 'react-router-dom';
 
 interface PropertyCardProps {
@@ -9,8 +9,8 @@ interface PropertyCardProps {
 }
 
 export const PropertyCard = ({ property }: PropertyCardProps) => {
-  const { favorites, toggleFavorite } = useAppStore();
-  const isFavorite = favorites.includes(property.id);
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const favorite = isFavorite(property.id);
 
   const formatPrice = (price: number, type: 'sale' | 'rent') => {
     if (type === 'rent') {
@@ -63,7 +63,7 @@ export const PropertyCard = ({ property }: PropertyCardProps) => {
       >
         <Heart 
           className={`w-4 h-4 transition-colors duration-200 ${
-            isFavorite ? 'fill-destructive text-destructive' : 'text-foreground'
+            favorite ? 'fill-destructive text-destructive' : 'text-foreground'
           }`} 
         />
       </button>
