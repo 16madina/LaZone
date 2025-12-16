@@ -15,10 +15,12 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  Loader2
+  Loader2,
+  Flag
 } from 'lucide-react';
 import { useFavorites } from '@/hooks/useFavorites';
 import { ImageGallery } from '@/components/property/ImageGallery';
+import { ReportDialog } from '@/components/property/ReportDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { formatPriceWithCurrency } from '@/data/currencies';
 
@@ -249,6 +251,17 @@ const PropertyDetailPage = () => {
           </motion.button>
           
           <div className="flex gap-2">
+            <ReportDialog 
+              propertyId={property.id} 
+              trigger={
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  className="glass w-10 h-10 rounded-full flex items-center justify-center"
+                >
+                  <Flag className="w-5 h-5" />
+                </motion.button>
+              }
+            />
             <motion.button
               whileTap={{ scale: 0.9 }}
               className="glass w-10 h-10 rounded-full flex items-center justify-center"

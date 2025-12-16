@@ -136,11 +136,14 @@ export type Database = {
           features: string[] | null
           id: string
           is_active: boolean | null
+          is_sponsored: boolean | null
           lat: number | null
           lng: number | null
           postal_code: string | null
           price: number
           property_type: string
+          sponsored_by: string | null
+          sponsored_until: string | null
           title: string
           type: string
           updated_at: string
@@ -158,11 +161,14 @@ export type Database = {
           features?: string[] | null
           id?: string
           is_active?: boolean | null
+          is_sponsored?: boolean | null
           lat?: number | null
           lng?: number | null
           postal_code?: string | null
           price: number
           property_type: string
+          sponsored_by?: string | null
+          sponsored_until?: string | null
           title: string
           type: string
           updated_at?: string
@@ -180,11 +186,14 @@ export type Database = {
           features?: string[] | null
           id?: string
           is_active?: boolean | null
+          is_sponsored?: boolean | null
           lat?: number | null
           lng?: number | null
           postal_code?: string | null
           price?: number
           property_type?: string
+          sponsored_by?: string | null
+          sponsored_until?: string | null
           title?: string
           type?: string
           updated_at?: string
@@ -227,15 +236,152 @@ export type Database = {
           },
         ]
       }
+      property_reports: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          property_id: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          reporter_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          property_id: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          reporter_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          property_id?: string
+          reason?: Database["public"]["Enums"]["report_reason"]
+          reporter_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_reports_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_bans: {
+        Row: {
+          admin_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          is_permanent: boolean
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          is_permanent?: boolean
+          reason: string
+          user_id: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          is_permanent?: boolean
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_warnings: {
+        Row: {
+          admin_id: string
+          created_at: string
+          id: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          id?: string
+          reason: string
+          user_id: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          id?: string
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
+      report_reason:
+        | "spam"
+        | "inappropriate_content"
+        | "fraud"
+        | "false_info"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -362,6 +508,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+      report_reason: [
+        "spam",
+        "inappropriate_content",
+        "fraud",
+        "false_info",
+        "other",
+      ],
+    },
   },
 } as const
