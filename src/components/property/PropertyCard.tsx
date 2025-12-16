@@ -2,21 +2,25 @@ import { Heart, Bed, Bath, Maximize, MapPin } from 'lucide-react';
 import { Property } from '@/hooks/useProperties';
 import { useFavorites } from '@/hooks/useFavorites';
 import { Link } from 'react-router-dom';
+import { formatPriceWithCurrency } from '@/data/currencies';
 
 interface PropertyCardProps {
   property: Property;
   index?: number;
+  userCountry?: string | null;
 }
 
-export const PropertyCard = ({ property }: PropertyCardProps) => {
+export const PropertyCard = ({ property, userCountry }: PropertyCardProps) => {
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorite = isFavorite(property.id);
 
   const formatPrice = (price: number, type: 'sale' | 'rent') => {
+    const countryCode = property.country || userCountry;
+    const formattedPrice = formatPriceWithCurrency(price, countryCode);
     if (type === 'rent') {
-      return `${price.toLocaleString('fr-CA')} $/mois`;
+      return `${formattedPrice}/mois`;
     }
-    return `${price.toLocaleString('fr-CA')} $`;
+    return formattedPrice;
   };
 
   return (

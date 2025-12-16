@@ -9,6 +9,7 @@ export interface Property {
   propertyType: 'house' | 'apartment' | 'land' | 'commercial';
   address: string;
   city: string;
+  country: string | null;
   bedrooms: number;
   bathrooms: number;
   area: number;
@@ -69,6 +70,7 @@ export const useProperties = () => {
           propertyType: p.property_type as 'house' | 'apartment' | 'land' | 'commercial',
           address: p.address,
           city: p.city,
+          country: p.country || null,
           bedrooms: p.bedrooms || 0,
           bathrooms: p.bathrooms || 0,
           area: Number(p.area),
