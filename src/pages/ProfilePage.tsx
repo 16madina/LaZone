@@ -97,6 +97,18 @@ const AdminButton = () => {
   );
 };
 
+interface Review {
+  id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  reviewer_id: string;
+  reviewer: {
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
+}
+
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { favorites, toggleFavorite, loading: loadingFavoritesHook } = useFavorites();
@@ -114,10 +126,19 @@ const ProfilePage = () => {
   
   // Settings states
   const [notifications, setNotifications] = useState(true);
+  
+  // Reviews and follows states
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [averageRating, setAverageRating] = useState(0);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
 
   useEffect(() => {
     if (user) {
       fetchPropertiesCount();
+      fetchReviews();
+      fetchFollowCounts();
     }
   }, [user]);
 
@@ -187,6 +208,67 @@ const ProfilePage = () => {
       console.error('Error fetching favorite properties:', error);
     } finally {
       setLoadingFavorites(false);
+    }
+  };
+
+  const fetchReviews = async () => {
+    if (!user) return;
+    setReviewsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('user_reviews')
+        .select('id, rating, comment, created_at, reviewer_id')
+        .eq('reviewed_user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Fetch reviewer profiles
+      const reviewerIds = [...new Set((data || []).map(r => r.reviewer_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, avatar_url')
+        .in('user_id', reviewerIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+      const reviewsWithProfiles: Review[] = (data || []).map(r => ({
+        ...r,
+        reviewer: profileMap.get(r.reviewer_id) || null
+      }));
+
+      setReviews(reviewsWithProfiles);
+
+      if (reviewsWithProfiles.length > 0) {
+        const avg = reviewsWithProfiles.reduce((sum, r) => sum + r.rating, 0) / reviewsWithProfiles.length;
+        setAverageRating(Math.round(avg * 10) / 10);
+      }
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const fetchFollowCounts = async () => {
+    if (!user) return;
+    try {
+      // Fetch followers count
+      const { count: followers } = await supabase
+        .from('user_follows')
+        .select('*', { count: 'exact', head: true })
+        .eq('following_id', user.id);
+
+      // Fetch following count
+      const { count: following } = await supabase
+        .from('user_follows')
+        .select('*', { count: 'exact', head: true })
+        .eq('follower_id', user.id);
+
+      setFollowersCount(followers || 0);
+      setFollowingCount(following || 0);
+    } catch (error) {
+      console.error('Error fetching follow counts:', error);
     }
   };
 
@@ -508,40 +590,47 @@ const ProfilePage = () => {
           </div>
 
           {/* Stats Row */}
-          <div className="grid grid-cols-4 border-t border-border">
+          <div className="grid grid-cols-5 border-t border-border">
             <button 
               onClick={() => setActiveTab('annonces')}
-              className="p-4 text-center border-r border-border hover:bg-muted/50 transition-colors"
+              className="p-3 text-center border-r border-border hover:bg-muted/50 transition-colors"
             >
               <div className="flex items-center justify-center gap-1 text-foreground font-bold text-lg">
                 <Home className="w-4 h-4 text-muted-foreground" />
                 <span>{propertiesCount}</span>
               </div>
-              <p className="text-xs text-muted-foreground">Annonces</p>
+              <p className="text-[10px] text-muted-foreground">Annonces</p>
             </button>
             <button 
               onClick={() => setActiveTab('favoris')}
-              className="p-4 text-center border-r border-border hover:bg-muted/50 transition-colors"
+              className="p-3 text-center border-r border-border hover:bg-muted/50 transition-colors"
             >
               <div className="flex items-center justify-center gap-1 text-foreground font-bold text-lg">
                 <Heart className="w-4 h-4 text-muted-foreground" />
                 <span>{favorites.length}</span>
               </div>
-              <p className="text-xs text-muted-foreground">Favoris</p>
+              <p className="text-[10px] text-muted-foreground">Favoris</p>
             </button>
-            <div className="p-4 text-center border-r border-border bg-green-50 dark:bg-green-900/20">
+            <div className="p-3 text-center border-r border-border">
               <div className="flex items-center justify-center gap-1 text-foreground font-bold text-lg">
                 <Users className="w-4 h-4 text-muted-foreground" />
-                <span>0</span>
+                <span>{followersCount}</span>
               </div>
-              <p className="text-xs text-muted-foreground">Followers</p>
+              <p className="text-[10px] text-muted-foreground">Followers</p>
             </div>
-            <div className="p-4 text-center">
+            <div className="p-3 text-center border-r border-border">
               <div className="flex items-center justify-center gap-1 text-foreground font-bold text-lg">
-                <Eye className="w-4 h-4 text-muted-foreground" />
-                <span>0</span>
+                <Users className="w-4 h-4 text-muted-foreground" />
+                <span>{followingCount}</span>
               </div>
-              <p className="text-xs text-muted-foreground">Vues</p>
+              <p className="text-[10px] text-muted-foreground">Suivis</p>
+            </div>
+            <div className="p-3 text-center">
+              <div className="flex items-center justify-center gap-1 text-foreground font-bold text-lg">
+                <Star className="w-4 h-4 text-primary fill-primary" />
+                <span>{averageRating || '-'}</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground">Note</p>
             </div>
           </div>
         </div>
@@ -568,15 +657,7 @@ const ProfilePage = () => {
           {/* Tab Content */}
           <div className="p-4">
             {activeTab === 'profil' && (
-              <div className="space-y-4">
-                <div className="text-center py-4">
-                  <User className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                  <h3 className="font-semibold mb-1">Mon Profil</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Cliquez sur votre photo pour la modifier
-                  </p>
-                </div>
-                
+              <div className="space-y-6">
                 {/* Profile Info Cards */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
@@ -604,6 +685,62 @@ const ProfilePage = () => {
                         <p className="text-xs text-muted-foreground">Localisation</p>
                         <p className="text-sm font-medium">{user.user_metadata.city}, {user.user_metadata.country}</p>
                       </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Reviews Section */}
+                <div>
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Star className="w-5 h-5 text-primary" />
+                    Avis reçus ({reviews.length})
+                  </h3>
+                  
+                  {reviewsLoading ? (
+                    <div className="text-center py-4">
+                      <Loader2 className="w-6 h-6 mx-auto animate-spin text-primary" />
+                    </div>
+                  ) : reviews.length > 0 ? (
+                    <div className="space-y-3">
+                      {reviews.map((review) => (
+                        <div key={review.id} className="p-3 bg-muted/50 rounded-xl">
+                          <div className="flex items-start gap-3">
+                            <img
+                              src={review.reviewer?.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop'}
+                              alt={review.reviewer?.full_name || 'Utilisateur'}
+                              className="w-10 h-10 rounded-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop';
+                              }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <p className="font-medium text-sm">{review.reviewer?.full_name || 'Utilisateur'}</p>
+                                <div className="flex items-center gap-0.5">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <Star
+                                      key={star}
+                                      className={`w-3 h-3 ${
+                                        star <= review.rating 
+                                          ? 'text-primary fill-primary' 
+                                          : 'text-muted-foreground'
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                              {review.comment && (
+                                <p className="text-sm text-muted-foreground mt-1">{review.comment}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 bg-muted/30 rounded-xl">
+                      <Star className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">Aucun avis pour le moment</p>
                     </div>
                   )}
                 </div>
