@@ -53,6 +53,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { useAdmin } from '@/hooks/useAdmin';
+import { useNotifications } from '@/hooks/useNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -114,6 +115,7 @@ const ProfilePage = () => {
   const { favorites, toggleFavorite, loading: loadingFavoritesHook } = useFavorites();
   const { user, profile, signOut, loading, isEmailVerified, resendVerificationEmail, refreshVerificationStatus } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { unreadCount: notificationCount } = useNotifications();
   const [sendingEmail, setSendingEmail] = useState(false);
   const [propertiesCount, setPropertiesCount] = useState(0);
   const [properties, setProperties] = useState<Property[]>([]);
@@ -522,6 +524,18 @@ const ProfilePage = () => {
                     {user.user_metadata?.full_name || 'Utilisateur'}
                   </h1>
                   <div className="flex items-center gap-2">
+                    {/* Notifications Button */}
+                    <button
+                      onClick={() => navigate('/notifications')}
+                      className="relative flex-shrink-0 p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                    >
+                      <Bell className="w-5 h-5" />
+                      {notificationCount > 0 && (
+                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
+                          {notificationCount > 9 ? '9+' : notificationCount}
+                        </span>
+                      )}
+                    </button>
                     {/* Admin Button */}
                     <AdminButton />
                     {/* Logout Button */}
@@ -611,20 +625,26 @@ const ProfilePage = () => {
               </div>
               <p className="text-[10px] text-muted-foreground">Favoris</p>
             </button>
-            <div className="p-3 text-center border-r border-border">
+            <button 
+              onClick={() => navigate('/followers?tab=followers')}
+              className="p-3 text-center border-r border-border hover:bg-muted/50 transition-colors"
+            >
               <div className="flex items-center justify-center gap-1 text-foreground font-bold text-lg">
                 <Users className="w-4 h-4 text-muted-foreground" />
                 <span>{followersCount}</span>
               </div>
               <p className="text-[10px] text-muted-foreground">Followers</p>
-            </div>
-            <div className="p-3 text-center border-r border-border">
+            </button>
+            <button 
+              onClick={() => navigate('/followers?tab=following')}
+              className="p-3 text-center border-r border-border hover:bg-muted/50 transition-colors"
+            >
               <div className="flex items-center justify-center gap-1 text-foreground font-bold text-lg">
                 <Users className="w-4 h-4 text-muted-foreground" />
                 <span>{followingCount}</span>
               </div>
               <p className="text-[10px] text-muted-foreground">Suivis</p>
-            </div>
+            </button>
             <div className="p-3 text-center">
               <div className="flex items-center justify-center gap-1 text-foreground font-bold text-lg">
                 <Star className="w-4 h-4 text-primary fill-primary" />

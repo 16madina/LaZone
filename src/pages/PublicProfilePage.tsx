@@ -389,10 +389,13 @@ const PublicProfilePage = () => {
               <p className="font-display font-bold text-xl text-primary">{properties.length}</p>
               <p className="text-[10px] text-muted-foreground">Annonces</p>
             </div>
-            <div className="text-center">
+            <button 
+              onClick={() => navigate(`/followers/${userId}?tab=followers`)}
+              className="text-center hover:bg-muted/50 rounded-lg transition-colors py-1"
+            >
               <p className="font-display font-bold text-xl text-primary">{followersCount}</p>
               <p className="text-[10px] text-muted-foreground">Followers</p>
-            </div>
+            </button>
             <div className="text-center">
               <p className="font-display font-bold text-xl text-primary">{reviews.length}</p>
               <p className="text-[10px] text-muted-foreground">Avis</p>
