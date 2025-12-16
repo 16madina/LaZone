@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -10,10 +11,15 @@ import {
   ChevronRight,
   Star,
   Eye,
-  LogIn
+  LogIn,
+  BadgeCheck,
+  XCircle,
+  Mail,
+  Loader2
 } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/hooks/use-toast';
 
 const menuItems = [
   { icon: Heart, label: 'Mes favoris', badge: null, color: 'text-destructive' },
@@ -28,11 +34,31 @@ const menuItems = [
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { favorites } = useAppStore();
-  const { user, signOut, loading } = useAuth();
+  const { user, signOut, loading, isEmailVerified, resendVerificationEmail } = useAuth();
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
+  };
+
+  const handleResendVerification = async () => {
+    setSendingEmail(true);
+    const result = await resendVerificationEmail();
+    setSendingEmail(false);
+    
+    if (result.success) {
+      toast({
+        title: 'Email envoyé',
+        description: 'Un nouveau lien de vérification vous a été envoyé.',
+      });
+    } else {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'envoyer l\'email. Veuillez réessayer.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -51,8 +77,12 @@ const ProfilePage = () => {
         >
           <div className="w-24 h-24 rounded-full gradient-primary p-1">
             <div className="w-full h-full rounded-full bg-background flex items-center justify-center overflow-hidden">
-              {user ? (
-                <span className="text-4xl">👤</span>
+              {user?.user_metadata?.avatar_url ? (
+                <img 
+                  src={user.user_metadata.avatar_url} 
+                  alt="Avatar" 
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <span className="text-4xl">👤</span>
               )}
@@ -75,10 +105,53 @@ const ProfilePage = () => {
           </div>
         ) : user ? (
           <>
-            <h2 className="font-display text-xl font-bold mb-1">
-              {user.user_metadata?.full_name || 'Utilisateur'}
-            </h2>
-            <p className="text-muted-foreground text-sm mb-4">{user.email}</p>
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <h2 className="font-display text-xl font-bold">
+                {user.user_metadata?.full_name || 'Utilisateur'}
+              </h2>
+              {/* Verification Badge */}
+              {isEmailVerified ? (
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full text-xs font-medium">
+                  <BadgeCheck className="w-3.5 h-3.5" />
+                  <span>Vérifié</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full text-xs font-medium">
+                  <XCircle className="w-3.5 h-3.5" />
+                  <span>Non vérifié</span>
+                </div>
+              )}
+            </div>
+            <p className="text-muted-foreground text-sm mb-2">{user.email}</p>
+            
+            {/* User details */}
+            {user.user_metadata?.city && user.user_metadata?.country && (
+              <p className="text-muted-foreground text-xs mb-2">
+                📍 {user.user_metadata.city}, {user.user_metadata.country}
+              </p>
+            )}
+            {user.user_metadata?.phone && (
+              <p className="text-muted-foreground text-xs mb-4">
+                📱 {user.user_metadata.phone}
+              </p>
+            )}
+
+            {/* Resend Verification Email Button */}
+            {!isEmailVerified && (
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={handleResendVerification}
+                disabled={sendingEmail}
+                className="flex items-center justify-center gap-2 px-4 py-2 mx-auto bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl text-amber-600 dark:text-amber-400 text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                {sendingEmail ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Mail className="w-4 h-4" />
+                )}
+                <span>{sendingEmail ? 'Envoi en cours...' : 'Renvoyer l\'email de vérification'}</span>
+              </motion.button>
+            )}
           </>
         ) : (
           <>
@@ -172,7 +245,7 @@ const ProfilePage = () => {
         transition={{ delay: 0.6 }}
         className="text-center text-xs text-muted-foreground mt-6"
       >
-        ImmoQuébec v1.0.0
+        LaZone v1.0.0
       </motion.p>
     </div>
   );
