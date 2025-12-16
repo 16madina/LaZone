@@ -16,6 +16,16 @@ import AuthPage from "./pages/AuthPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
 import MyListingsPage from "./pages/MyListingsPage";
 import NotFound from "./pages/NotFound";
+import EditProfilePage from "./pages/settings/EditProfilePage";
+import ChangePasswordPage from "./pages/settings/ChangePasswordPage";
+import SecuritySettingsPage from "./pages/settings/SecuritySettingsPage";
+import NotificationSettingsPage from "./pages/settings/NotificationSettingsPage";
+import RegionalSettingsPage from "./pages/settings/RegionalSettingsPage";
+import HelpCenterPage from "./pages/settings/HelpCenterPage";
+import SupportPage from "./pages/settings/SupportPage";
+import LegalPage from "./pages/settings/LegalPage";
+import LegalDetailPage from "./pages/settings/LegalDetailPage";
+import AccountManagementPage from "./pages/settings/AccountManagementPage";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +48,16 @@ const App = () => (
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/my-listings" element={<MyListingsPage />} />
                 <Route path="/property/:id" element={<PropertyDetail />} />
+                <Route path="/settings/edit-profile" element={<EditProfilePage />} />
+                <Route path="/settings/change-password" element={<ChangePasswordPage />} />
+                <Route path="/settings/security" element={<SecuritySettingsPage />} />
+                <Route path="/settings/notifications" element={<NotificationSettingsPage />} />
+                <Route path="/settings/regional" element={<RegionalSettingsPage />} />
+                <Route path="/settings/help" element={<HelpCenterPage />} />
+                <Route path="/settings/support" element={<SupportPage />} />
+                <Route path="/settings/legal" element={<LegalPage />} />
+                <Route path="/settings/legal/:id" element={<LegalDetailPage />} />
+                <Route path="/settings/account" element={<AccountManagementPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <BottomNavigation />
