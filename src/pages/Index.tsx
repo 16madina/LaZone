@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { Bell } from 'lucide-react';
 import { HeroSection } from '@/components/home/HeroSection';
 import { SearchBar } from '@/components/home/SearchBar';
@@ -37,23 +36,16 @@ const Index = () => {
   return (
     <div className="page-container">
       {/* Header */}
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between mb-6"
-      >
+      <header className="flex items-center justify-between mb-6">
         <div>
           <p className="text-muted-foreground text-sm">Bonjour 👋</p>
           <h2 className="font-display text-xl font-bold">Bienvenue</h2>
         </div>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          className="icon-button relative"
-        >
+        <button className="icon-button relative active:scale-90 transition-transform">
           <Bell className="w-5 h-5" />
           <span className="absolute -top-1 -right-1 w-3 h-3 gradient-primary rounded-full" />
-        </motion.button>
-      </motion.header>
+        </button>
+      </header>
 
       {/* Hero Section */}
       <HeroSection />
@@ -70,38 +62,27 @@ const Index = () => {
       </div>
 
       {/* Properties Section */}
-      <motion.section
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 }}
-      >
+      <section>
         <div className="flex items-center justify-between mb-4">
           <h3 className="section-title">Propriétés récentes</h3>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            className="text-sm text-primary font-medium"
-          >
+          <button className="text-sm text-primary font-medium active:scale-95 transition-transform">
             Voir tout
-          </motion.button>
+          </button>
         </div>
 
         <div className="grid gap-4">
-          {filteredProperties.map((property, index) => (
-            <PropertyCard key={property.id} property={property} index={index} />
+          {filteredProperties.map((property) => (
+            <PropertyCard key={property.id} property={property} />
           ))}
         </div>
 
         {filteredProperties.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="glass-card p-8 text-center"
-          >
+          <div className="glass-card p-8 text-center">
             <p className="text-4xl mb-2">🔍</p>
             <p className="text-muted-foreground">Aucune propriété trouvée</p>
-          </motion.div>
+          </div>
         )}
-      </motion.section>
+      </section>
     </div>
   );
 };
