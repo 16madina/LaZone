@@ -776,14 +776,14 @@ const ProfilePage = () => {
                 <div>
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Compte</h3>
                   <div className="space-y-2">
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => navigate('/settings/edit-profile')} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <Edit className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Modifier le profil</span>
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground" />
                     </button>
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => navigate('/settings/account')} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <Trash2 className="w-5 h-5 text-destructive" />
                         <span className="text-sm font-medium">Gestion du compte</span>
@@ -797,7 +797,7 @@ const ProfilePage = () => {
                 <div>
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Sécurité & Confidentialité</h3>
                   <div className="space-y-2">
-                    <button className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => navigate('/settings/change-password')} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <Lock className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Changer le mot de passe</span>
