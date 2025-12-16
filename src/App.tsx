@@ -26,6 +26,7 @@ import SupportPage from "./pages/settings/SupportPage";
 import LegalPage from "./pages/settings/LegalPage";
 import LegalDetailPage from "./pages/settings/LegalDetailPage";
 import AccountManagementPage from "./pages/settings/AccountManagementPage";
+import AdminPage from "./pages/admin/AdminPage";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/my-listings" element={<MyListingsPage />} />
                 <Route path="/property/:id" element={<PropertyDetail />} />
+                <Route path="/admin" element={<AdminPage />} />
                 <Route path="/settings/edit-profile" element={<EditProfilePage />} />
                 <Route path="/settings/change-password" element={<ChangePasswordPage />} />
                 <Route path="/settings/security" element={<SecuritySettingsPage />} />

@@ -45,12 +45,14 @@ import {
   AlertTriangle,
   ShieldCheck,
   Baby,
-  Edit
+  Edit,
+  Crown
 } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
+import { useAdmin } from '@/hooks/useAdmin';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -74,6 +76,26 @@ interface Property {
   created_at: string;
   property_images: { url: string; is_primary: boolean }[];
 }
+
+// Admin Button Component
+const AdminButton = () => {
+  const navigate = useNavigate();
+  const { isAdmin, isModerator, loading } = useAdmin();
+
+  if (loading || (!isAdmin && !isModerator)) {
+    return null;
+  }
+
+  return (
+    <button
+      onClick={() => navigate('/admin')}
+      className="flex-shrink-0 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg text-sm font-medium flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+    >
+      <Crown className="w-4 h-4" />
+      Admin
+    </button>
+  );
+};
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -417,14 +439,18 @@ const ProfilePage = () => {
                   <h1 className="text-lg font-bold text-foreground truncate">
                     {user.user_metadata?.full_name || 'Utilisateur'}
                   </h1>
-                  {/* Logout Button */}
-                  <button
-                    onClick={handleSignOut}
-                    className="flex-shrink-0 px-3 py-1.5 text-primary border border-primary rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-primary/10 transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Déconnexion
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {/* Admin Button */}
+                    <AdminButton />
+                    {/* Logout Button */}
+                    <button
+                      onClick={handleSignOut}
+                      className="flex-shrink-0 px-3 py-1.5 text-primary border border-primary rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-primary/10 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Déconnexion
+                    </button>
+                  </div>
                 </div>
 
                 {/* Tags */}
