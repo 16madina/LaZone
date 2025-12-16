@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Search, MoreVertical, ArrowLeft, Send, Loader2, 
-  MessageCircle, Check, CheckCheck 
+  MessageCircle, Check, CheckCheck, Paperclip, Image, X, FileText
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useMessages, useConversation } from '@/hooks/useMessages';
@@ -17,18 +17,17 @@ const MessagesPage = () => {
   const location = useLocation();
   const { user } = useAuth();
   const { conversations, loading, totalUnread } = useMessages();
-  const [selectedConversation, setSelectedConversation] = useState<string | null>(
-    (location.state as any)?.recipientId || null
-  );
+  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Handle recipientId from navigation state
   useEffect(() => {
-    const recipientId = (location.state as any)?.recipientId;
-    if (recipientId) {
+    const state = location.state as any;
+    const recipientId = state?.recipientId;
+    if (recipientId && recipientId !== user?.id) {
       setSelectedConversation(recipientId);
     }
-  }, [location.state]);
+  }, [location.state, user?.id]);
 
   const filteredConversations = conversations.filter(c =>
     c.participantName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -167,11 +166,14 @@ interface ConversationViewProps {
 
 const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
   const { user } = useAuth();
-  const { messages, loading, sendMessage, isTyping, setTyping } = useConversation(participantId);
+  const { messages, loading, sendMessage, uploadAttachment, isTyping, setTyping } = useConversation(participantId);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [participant, setParticipant] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
+  const [pendingAttachment, setPendingAttachment] = useState<{ url: string; type: 'image' | 'file'; name: string } | null>(null);
+  const [uploading, setUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -214,16 +216,47 @@ const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
     };
   }, [setTyping]);
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Le fichier est trop volumineux (max 10MB)');
+      return;
+    }
+
+    setUploading(true);
+    const result = await uploadAttachment(file);
+    setUploading(false);
+
+    if (result) {
+      setPendingAttachment(result);
+    }
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSend = async () => {
-    if (!newMessage.trim() || sending) return;
+    if ((!newMessage.trim() && !pendingAttachment) || sending) return;
 
     setSending(true);
     setTyping(false);
-    const { error } = await sendMessage(newMessage.trim());
+    
+    const { error } = await sendMessage(
+      newMessage.trim(), 
+      undefined, 
+      pendingAttachment || undefined
+    );
+    
     setSending(false);
 
     if (!error) {
       setNewMessage('');
+      setPendingAttachment(null);
     }
   };
 
@@ -292,7 +325,34 @@ const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
                         : 'bg-muted rounded-bl-sm'
                     }`}
                   >
-                    <p className="text-sm">{message.content}</p>
+                    {/* Attachment */}
+                    {message.attachment_url && (
+                      <div className="mb-2">
+                        {message.attachment_type === 'image' ? (
+                          <img 
+                            src={message.attachment_url} 
+                            alt="Image" 
+                            className="max-w-full rounded-lg cursor-pointer"
+                            onClick={() => window.open(message.attachment_url!, '_blank')}
+                          />
+                        ) : (
+                          <a 
+                            href={message.attachment_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className={`flex items-center gap-2 p-2 rounded-lg ${isMe ? 'bg-primary-foreground/10' : 'bg-background/50'}`}
+                          >
+                            <FileText className="w-5 h-5" />
+                            <span className="text-sm truncate">{message.attachment_name || 'Fichier'}</span>
+                          </a>
+                        )}
+                      </div>
+                    )}
+                    
+                    {message.content && (
+                      <p className="text-sm">{message.content}</p>
+                    )}
+                    
                     <div className={`flex items-center gap-1 mt-1 ${isMe ? 'justify-end' : ''}`}>
                       <p className={`text-[10px] ${isMe ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                         {formatDistanceToNow(new Date(message.created_at), { addSuffix: true, locale: fr })}
@@ -331,9 +391,54 @@ const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
         )}
       </div>
 
+      {/* Pending attachment preview */}
+      {pendingAttachment && (
+        <div className="px-4 py-2 bg-muted/50 border-t border-border">
+          <div className="flex items-center gap-2">
+            {pendingAttachment.type === 'image' ? (
+              <img src={pendingAttachment.url} alt="Preview" className="h-16 w-16 object-cover rounded-lg" />
+            ) : (
+              <div className="h-16 w-16 bg-muted rounded-lg flex items-center justify-center">
+                <FileText className="w-8 h-8 text-muted-foreground" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{pendingAttachment.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {pendingAttachment.type === 'image' ? 'Image' : 'Fichier'}
+              </p>
+            </div>
+            <button 
+              onClick={() => setPendingAttachment(null)}
+              className="p-2 hover:bg-muted rounded-full"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <div className="p-4 bg-card border-t border-border">
         <div className="flex items-center gap-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+            className="hidden"
+            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="p-3 hover:bg-muted rounded-full transition-colors"
+          >
+            {uploading ? (
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            ) : (
+              <Paperclip className="w-5 h-5 text-muted-foreground" />
+            )}
+          </button>
           <input
             type="text"
             value={newMessage}
@@ -344,7 +449,7 @@ const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
           />
           <Button
             onClick={handleSend}
-            disabled={!newMessage.trim() || sending}
+            disabled={(!newMessage.trim() && !pendingAttachment) || sending}
             size="icon"
             className="rounded-full gradient-primary h-12 w-12"
           >
