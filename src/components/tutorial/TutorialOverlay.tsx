@@ -37,17 +37,20 @@ const TutorialOverlay = () => {
   if (!isActive) return null;
 
   const getTooltipPosition = () => {
+    const padding = 16;
+    
     if (!targetRect || step.position === 'center') {
       return {
         position: 'fixed' as const,
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
+        maxWidth: `calc(100vw - ${padding * 2}px)`,
+        width: '320px',
       };
     }
 
-    const padding = 16;
-    const tooltipWidth = 320;
+    const tooltipWidth = Math.min(320, window.innerWidth - padding * 2);
     const tooltipHeight = 200;
 
     switch (step.position) {
@@ -55,31 +58,45 @@ const TutorialOverlay = () => {
         return {
           position: 'fixed' as const,
           top: Math.max(padding, targetRect.top - tooltipHeight - padding),
-          left: Math.min(
-            Math.max(padding, targetRect.left + targetRect.width / 2 - tooltipWidth / 2),
+          left: Math.max(padding, Math.min(
+            targetRect.left + targetRect.width / 2 - tooltipWidth / 2,
             window.innerWidth - tooltipWidth - padding
-          ),
+          )),
+          maxWidth: `calc(100vw - ${padding * 2}px)`,
+          width: '320px',
         };
       case 'bottom':
         return {
           position: 'fixed' as const,
           top: Math.min(targetRect.bottom + padding, window.innerHeight - tooltipHeight - padding),
-          left: Math.min(
-            Math.max(padding, targetRect.left + targetRect.width / 2 - tooltipWidth / 2),
+          left: Math.max(padding, Math.min(
+            targetRect.left + targetRect.width / 2 - tooltipWidth / 2,
             window.innerWidth - tooltipWidth - padding
-          ),
+          )),
+          maxWidth: `calc(100vw - ${padding * 2}px)`,
+          width: '320px',
         };
       case 'left':
         return {
           position: 'fixed' as const,
-          top: targetRect.top + targetRect.height / 2 - tooltipHeight / 2,
+          top: Math.max(padding, Math.min(
+            targetRect.top + targetRect.height / 2 - tooltipHeight / 2,
+            window.innerHeight - tooltipHeight - padding
+          )),
           left: Math.max(padding, targetRect.left - tooltipWidth - padding),
+          maxWidth: `calc(100vw - ${padding * 2}px)`,
+          width: '320px',
         };
       case 'right':
         return {
           position: 'fixed' as const,
-          top: targetRect.top + targetRect.height / 2 - tooltipHeight / 2,
+          top: Math.max(padding, Math.min(
+            targetRect.top + targetRect.height / 2 - tooltipHeight / 2,
+            window.innerHeight - tooltipHeight - padding
+          )),
           left: Math.min(targetRect.right + padding, window.innerWidth - tooltipWidth - padding),
+          maxWidth: `calc(100vw - ${padding * 2}px)`,
+          width: '320px',
         };
       default:
         return {
@@ -87,6 +104,8 @@ const TutorialOverlay = () => {
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
+          maxWidth: `calc(100vw - ${padding * 2}px)`,
+          width: '320px',
         };
     }
   };
@@ -128,7 +147,7 @@ const TutorialOverlay = () => {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: -20 }}
           transition={{ type: 'spring', duration: 0.5 }}
-          className="bg-card rounded-2xl shadow-2xl w-[320px] overflow-hidden border border-border"
+          className="bg-card rounded-2xl shadow-2xl overflow-hidden border border-border"
           style={getTooltipPosition()}
         >
           {/* Progress bar */}
