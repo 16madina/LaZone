@@ -687,8 +687,8 @@ const ConversationView = ({ participantId, propertyId, onBack }: ConversationVie
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-card border-border z-50">
-              {/* Prendre RDV */}
-              {propertyInfo && propertyInfo.ownerId !== user?.id && (
+              {/* Prendre RDV - toujours visible pour prendre RDV avec le vendeur */}
+              {propertyInfo && (
                 <DropdownMenuItem onClick={() => setShowAppointmentDialog(true)} className="cursor-pointer">
                   <Calendar className="w-4 h-4 mr-2" />
                   Prendre RDV
