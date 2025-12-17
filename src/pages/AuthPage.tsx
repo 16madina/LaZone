@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User, ArrowLeft, Eye, EyeOff, Phone, MapPin, ChevronDown, Check, Globe, AlertCircle, Moon, Sun, ArrowRight } from 'lucide-react';
@@ -47,6 +47,7 @@ const AuthPage = () => {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
+  const [otpCooldown, setOtpCooldown] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loginCountry, setLoginCountry] = useState<Country | null>(africanCountries[0]);
   const [loginPhone, setLoginPhone] = useState('');
@@ -63,6 +64,15 @@ const AuthPage = () => {
   });
 
   const availableCities = formData.country?.cities || [];
+
+  // OTP cooldown timer
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setOtpCooldown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [otpCooldown]);
 
   const FlagImg = ({
     code,
@@ -246,6 +256,7 @@ const AuthPage = () => {
       if (data?.error) throw new Error(data.error);
       
       setOtpSent(true);
+      setOtpCooldown(60);
       toast({ title: 'Code envoyé', description: 'Un code de vérification a été envoyé à votre téléphone' });
     } catch (error: any) {
       console.error('Error sending OTP:', error);
@@ -776,9 +787,10 @@ const AuthPage = () => {
                   <button
                     type="button"
                     onClick={() => { setOtpSent(false); setOtp(''); }}
-                    className="w-full text-sm text-primary hover:underline mt-2"
+                    disabled={otpCooldown > 0}
+                    className="w-full text-sm text-primary hover:underline mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Renvoyer le code
+                    {otpCooldown > 0 ? `Renvoyer le code (${otpCooldown}s)` : 'Renvoyer le code'}
                   </button>
                 </>
               )}
