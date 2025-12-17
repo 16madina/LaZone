@@ -6,6 +6,7 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { Keyboard } from '@capacitor/keyboard';
 import { Capacitor } from '@capacitor/core';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 // Check if we're running on a native platform
 export const isNativePlatform = () => Capacitor.isNativePlatform();
@@ -139,6 +140,78 @@ export const useCamera = () => {
 export const usePushNotifications = () => {
   const [token, setToken] = useState<string | null>(null);
   const [isRegistered, setIsRegistered] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Get current user
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUserId(data.user?.id || null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUserId(session?.user?.id || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Save FCM token to database
+  const saveTokenToDatabase = useCallback(async (fcmToken: string) => {
+    if (!userId) {
+      console.log('No user logged in, cannot save FCM token');
+      return;
+    }
+
+    const platform = getPlatform() as 'ios' | 'android' | 'web';
+    
+    try {
+      // Check if token already exists
+      const { data: existing } = await supabase
+        .from('fcm_tokens')
+        .select('id')
+        .eq('token', fcmToken)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing token
+        await supabase
+          .from('fcm_tokens')
+          .update({ 
+            user_id: userId,
+            platform,
+            updated_at: new Date().toISOString()
+          })
+          .eq('token', fcmToken);
+        console.log('FCM token updated in database');
+      } else {
+        // Insert new token
+        await supabase
+          .from('fcm_tokens')
+          .insert({
+            user_id: userId,
+            token: fcmToken,
+            platform,
+            device_info: navigator.userAgent
+          });
+        console.log('FCM token saved to database');
+      }
+    } catch (error) {
+      console.error('Error saving FCM token:', error);
+    }
+  }, [userId]);
+
+  // Remove FCM token from database
+  const removeTokenFromDatabase = useCallback(async (fcmToken: string) => {
+    try {
+      await supabase
+        .from('fcm_tokens')
+        .delete()
+        .eq('token', fcmToken);
+      console.log('FCM token removed from database');
+    } catch (error) {
+      console.error('Error removing FCM token:', error);
+    }
+  }, []);
 
   const register = useCallback(async () => {
     if (!isNativePlatform()) {
@@ -177,10 +250,13 @@ export const usePushNotifications = () => {
     if (!isNativePlatform()) return;
 
     // Listen for registration token
-    const tokenListener = PushNotifications.addListener('registration', (token: Token) => {
-      console.log('Push registration token:', token.value);
-      setToken(token.value);
+    const tokenListener = PushNotifications.addListener('registration', async (tokenData: Token) => {
+      console.log('Push registration token:', tokenData.value);
+      setToken(tokenData.value);
       setIsRegistered(true);
+      
+      // Save token to database
+      await saveTokenToDatabase(tokenData.value);
     });
 
     // Listen for registration errors
@@ -189,7 +265,7 @@ export const usePushNotifications = () => {
       setIsRegistered(false);
     });
 
-    // Listen for push notifications received
+    // Listen for push notifications received (foreground)
     const notificationListener = PushNotifications.addListener(
       'pushNotificationReceived',
       (notification: PushNotificationSchema) => {
@@ -201,7 +277,7 @@ export const usePushNotifications = () => {
       }
     );
 
-    // Listen for push notification actions
+    // Listen for push notification actions (user tapped notification)
     const actionListener = PushNotifications.addListener(
       'pushNotificationActionPerformed',
       (notification: ActionPerformed) => {
@@ -210,6 +286,26 @@ export const usePushNotifications = () => {
         const data = notification.notification.data;
         if (data?.route) {
           window.location.href = data.route;
+        } else if (data?.type) {
+          // Navigate based on notification type
+          switch (data.type) {
+            case 'message':
+              window.location.href = '/messages';
+              break;
+            case 'follow':
+              window.location.href = `/user/${data.actor_id}`;
+              break;
+            case 'review':
+              window.location.href = '/profile';
+              break;
+            case 'property':
+              if (data.property_id) {
+                window.location.href = `/property/${data.property_id}`;
+              }
+              break;
+            default:
+              window.location.href = '/notifications';
+          }
         }
       }
     );
@@ -220,19 +316,29 @@ export const usePushNotifications = () => {
       notificationListener.then(l => l.remove());
       actionListener.then(l => l.remove());
     };
-  }, []);
+  }, [saveTokenToDatabase]);
+
+  // Re-register when user changes
+  useEffect(() => {
+    if (userId && isNativePlatform()) {
+      register();
+    }
+  }, [userId, register]);
 
   const unregister = useCallback(async () => {
     if (!isNativePlatform()) return;
     
     try {
+      if (token) {
+        await removeTokenFromDatabase(token);
+      }
       await PushNotifications.unregister();
       setIsRegistered(false);
       setToken(null);
     } catch (error) {
       console.error('Push unregister error:', error);
     }
-  }, []);
+  }, [token, removeTokenFromDatabase]);
 
   return {
     token,
