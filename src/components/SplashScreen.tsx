@@ -76,22 +76,35 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
             }}
             className="relative z-10"
           >
-            {/* Glow effect */}
+            {/* Pulsing glow effect */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: [0, 0.5, 0.3], scale: [0.8, 1.2, 1] }}
-              transition={{ duration: 1.5, ease: 'easeOut' }}
-              className="absolute inset-0 blur-3xl bg-white/40 rounded-full"
+              animate={{ 
+                opacity: [0.3, 0.6, 0.3], 
+                scale: [1, 1.3, 1],
+              }}
+              transition={{ 
+                duration: 2, 
+                ease: 'easeInOut',
+                repeat: Infinity,
+              }}
+              className="absolute inset-0 blur-3xl bg-white/50 rounded-full"
             />
             
-            {/* Logo - Enlarged */}
+            {/* Logo - Extra Large with pulse */}
             <motion.img
               src="/images/logo-lazone.png"
               alt="LaZone"
-              className="w-64 h-64 object-contain relative z-10 drop-shadow-2xl"
-              initial={{ filter: 'brightness(0) invert(1)' }}
-              animate={{ filter: 'brightness(1) invert(0)' }}
-              transition={{ duration: 0.5, delay: 0.3 }}
+              className="w-80 h-80 object-contain relative z-10 drop-shadow-2xl"
+              initial={{ filter: 'brightness(0) invert(1)', scale: 0.9 }}
+              animate={{ 
+                filter: 'brightness(1) invert(0)',
+                scale: [1, 1.05, 1],
+              }}
+              transition={{ 
+                filter: { duration: 0.5, delay: 0.3 },
+                scale: { duration: 2, ease: 'easeInOut', repeat: Infinity, delay: 0.5 }
+              }}
             />
           </motion.div>
 
