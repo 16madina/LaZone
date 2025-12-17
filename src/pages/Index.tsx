@@ -10,6 +10,7 @@ import { NotificationDropdown } from '@/components/NotificationDropdown';
 import { useAppStore } from '@/stores/appStore';
 import { useProperties } from '@/hooks/useProperties';
 import { useAuth } from '@/hooks/useAuth';
+import { useGeoCountry } from '@/hooks/useGeoCountry';
 import { africanCountries, Country } from '@/data/africanCountries';
 import logoLazone from '@/assets/logo-lazone.png';
 import heroBg1 from '@/assets/hero-bg.jpg';
@@ -22,18 +23,24 @@ const heroImages = [heroBg1, heroBg2, heroBg3, heroBg4];
 const Index = () => {
   const { activeFilter, searchQuery } = useAppStore();
   const { properties, loading } = useProperties();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
+  const { detectedCountry } = useGeoCountry();
   const [currentBg, setCurrentBg] = useState(heroBg1);
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
-  // Initialize country from user profile
+
+  // Initialize country: logged-in users get their profile country, others get geolocation
   useEffect(() => {
-    if (profile?.country) {
+    if (user && profile?.country) {
+      // Logged-in user: use profile country
       const userCountry = africanCountries.find(c => c.code === profile.country);
       if (userCountry) {
         setSelectedCountry(userCountry);
       }
+    } else if (!user && detectedCountry) {
+      // Not logged in: use geolocation-detected country
+      setSelectedCountry(detectedCountry);
     }
-  }, [profile?.country]);
+  }, [user, profile?.country, detectedCountry]);
 
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * heroImages.length);
