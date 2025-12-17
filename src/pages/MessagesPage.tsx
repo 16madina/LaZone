@@ -29,13 +29,21 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
-type MessageTab = 'all' | 'received' | 'sent';
+type MessageTab = 'all' | 'received' | 'sent' | 'archived';
 
 const MessagesPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isEmailVerified } = useAuth();
-  const { conversations, loading, totalUnread, deleteConversation, archiveConversation } = useMessages();
+  const { 
+    conversations, 
+    archivedConversations,
+    loading, 
+    totalUnread, 
+    deleteConversation, 
+    archiveConversation,
+    unarchiveConversation 
+  } = useMessages();
   const { isUserOnline, fetchLastSeen } = useOnlineStatus();
   const [selectedConversation, setSelectedConversation] = useState<{ participantId: string; propertyId: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,18 +59,22 @@ const MessagesPage = () => {
     }
   }, [location.state, user?.id]);
 
+  // Get the base list based on tab (archived or active)
+  const baseList = activeTab === 'archived' ? archivedConversations : conversations;
+
   // Filter conversations based on tab and search
-  const filteredConversations = conversations.filter(c => {
+  const filteredConversations = baseList.filter(c => {
     // Search filter
     const matchesSearch = c.propertyTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.participantName.toLowerCase().includes(searchQuery.toLowerCase());
     
     if (!matchesSearch) return false;
 
-    // Tab filter
+    // Tab filter (only for non-archived)
+    if (activeTab === 'archived') return true;
     if (activeTab === 'all') return true;
-    if (activeTab === 'received') return c.propertyOwnerId === user?.id; // User owns the property
-    if (activeTab === 'sent') return c.propertyOwnerId !== user?.id; // User is inquiring about someone else's property
+    if (activeTab === 'received') return c.propertyOwnerId === user?.id;
+    if (activeTab === 'sent') return c.propertyOwnerId !== user?.id;
     
     return true;
   });
@@ -70,6 +82,7 @@ const MessagesPage = () => {
   // Count for each tab
   const receivedCount = conversations.filter(c => c.propertyOwnerId === user?.id).length;
   const sentCount = conversations.filter(c => c.propertyOwnerId !== user?.id).length;
+  const archivedCount = archivedConversations.length;
 
   const handleDeleteConversation = async (conversationId: string) => {
     if (deleteConversation) {
@@ -102,6 +115,24 @@ const MessagesPage = () => {
         toast({
           title: 'Archivé',
           description: 'Conversation archivée'
+        });
+      }
+    }
+  };
+
+  const handleUnarchiveConversation = async (conversationId: string) => {
+    if (unarchiveConversation) {
+      const { error } = await unarchiveConversation(conversationId);
+      if (error) {
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de désarchiver la conversation',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Désarchivé',
+          description: 'Conversation restaurée'
         });
       }
     }
@@ -296,11 +327,11 @@ const MessagesPage = () => {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
-        className="flex gap-2 mb-4"
+        className="grid grid-cols-4 gap-2 mb-4"
       >
         <button
           onClick={() => setActiveTab('all')}
-          className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${
+          className={`py-2 px-2 rounded-xl text-xs font-medium transition-all ${
             activeTab === 'all'
               ? 'bg-primary text-primary-foreground shadow-md'
               : 'bg-muted/50 text-muted-foreground hover:bg-muted'
@@ -310,7 +341,7 @@ const MessagesPage = () => {
         </button>
         <button
           onClick={() => setActiveTab('received')}
-          className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${
+          className={`py-2 px-2 rounded-xl text-xs font-medium transition-all ${
             activeTab === 'received'
               ? 'bg-primary text-primary-foreground shadow-md'
               : 'bg-muted/50 text-muted-foreground hover:bg-muted'
@@ -320,13 +351,23 @@ const MessagesPage = () => {
         </button>
         <button
           onClick={() => setActiveTab('sent')}
-          className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${
+          className={`py-2 px-2 rounded-xl text-xs font-medium transition-all ${
             activeTab === 'sent'
               ? 'bg-primary text-primary-foreground shadow-md'
               : 'bg-muted/50 text-muted-foreground hover:bg-muted'
           }`}
         >
           Envoyés ({sentCount})
+        </button>
+        <button
+          onClick={() => setActiveTab('archived')}
+          className={`py-2 px-2 rounded-xl text-xs font-medium transition-all ${
+            activeTab === 'archived'
+              ? 'bg-primary text-primary-foreground shadow-md'
+              : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+          }`}
+        >
+          Archivés ({archivedCount})
         </button>
       </motion.div>
 
@@ -344,12 +385,15 @@ const MessagesPage = () => {
           <MessageCircle className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
           <h3 className="font-display font-semibold text-lg mb-2">
             {activeTab === 'all' ? 'Pas de messages' : 
-             activeTab === 'received' ? 'Aucun message reçu' : 'Aucun message envoyé'}
+             activeTab === 'received' ? 'Aucun message reçu' : 
+             activeTab === 'sent' ? 'Aucun message envoyé' :
+             'Aucune conversation archivée'}
           </h3>
           <p className="text-muted-foreground text-sm">
             {activeTab === 'all' ? 'Vos conversations apparaîtront ici' :
              activeTab === 'received' ? 'Les demandes pour vos biens apparaîtront ici' :
-             'Vos demandes vers des propriétaires apparaîtront ici'}
+             activeTab === 'sent' ? 'Vos demandes vers des propriétaires apparaîtront ici' :
+             'Les conversations archivées apparaîtront ici'}
           </p>
         </motion.div>
       ) : (
@@ -364,7 +408,10 @@ const MessagesPage = () => {
                 propertyId: conversation.propertyId 
               })}
               onDelete={() => handleDeleteConversation(conversation.id)}
-              onArchive={() => handleArchiveConversation(conversation.id)}
+              onArchive={activeTab === 'archived' 
+                ? () => handleUnarchiveConversation(conversation.id)
+                : () => handleArchiveConversation(conversation.id)}
+              isArchived={activeTab === 'archived'}
               index={index}
             />
           ))}
