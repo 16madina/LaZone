@@ -10,9 +10,11 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { getCurrencyByCountry } from '@/data/currencies';
 
 interface SearchBarProps {
   variant?: 'default' | 'hero';
+  selectedCountry?: string | null;
 }
 
 const propertyTypes = [
@@ -47,14 +49,14 @@ const bathroomOptions = [
 
 const MAX_PRICE = 1000000000; // 1 milliard
 
-const formatPriceLabel = (value: number) => {
-  if (value >= 1000000000) return '1B+';
-  if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
-  if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
-  return value.toString();
+const formatPriceLabel = (value: number, currencySymbol: string) => {
+  if (value >= 1000000000) return `1B+ ${currencySymbol}`;
+  if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M ${currencySymbol}`;
+  if (value >= 1000) return `${(value / 1000).toFixed(0)}K ${currencySymbol}`;
+  return `${value} ${currencySymbol}`;
 };
 
-export const SearchBar = ({ variant = 'default' }: SearchBarProps) => {
+export const SearchBar = ({ variant = 'default', selectedCountry }: SearchBarProps) => {
   const { 
     searchQuery, setSearchQuery, 
     activeFilter, setActiveFilter, 
@@ -70,6 +72,8 @@ export const SearchBar = ({ variant = 'default' }: SearchBarProps) => {
   const [localBathrooms, setLocalBathrooms] = useState<number | null>(bathroomsFilter);
 
   const isHero = variant === 'hero';
+  const currency = getCurrencyByCountry(selectedCountry ?? null);
+  const currencySymbol = currency?.symbol || 'FCFA';
 
   // Sync local state with store
   useEffect(() => {
@@ -208,10 +212,10 @@ export const SearchBar = ({ variant = 'default' }: SearchBarProps) => {
                 />
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span className="font-medium text-foreground">
-                    {formatPriceLabel(localPriceRange[0])} FCFA
+                    {formatPriceLabel(localPriceRange[0], currencySymbol)}
                   </span>
                   <span className="font-medium text-foreground">
-                    {formatPriceLabel(localPriceRange[1])} FCFA
+                    {formatPriceLabel(localPriceRange[1], currencySymbol)}
                   </span>
                 </div>
               </div>

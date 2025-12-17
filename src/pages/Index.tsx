@@ -160,7 +160,7 @@ const Index = () => {
           </div>
 
           {/* Search Bar */}
-          <SearchBar variant="hero" />
+          <SearchBar variant="hero" selectedCountry={selectedCountry?.code} />
 
           {/* Filter Chips */}
           <div className="mt-4">
