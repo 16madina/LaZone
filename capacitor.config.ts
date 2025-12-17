@@ -40,6 +40,12 @@ const config: CapacitorConfig = {
     StatusBar: {
       style: 'light',
       backgroundColor: '#ea580c'
+    },
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert']
+    },
+    Camera: {
+      presentationStyle: 'fullScreen'
     }
   }
 };
