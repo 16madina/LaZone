@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       ad_banners: {
         Row: {
+          click_count: number | null
           created_at: string
           created_by: string | null
           display_order: number | null
@@ -27,6 +28,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          click_count?: number | null
           created_at?: string
           created_by?: string | null
           display_order?: number | null
@@ -38,6 +40,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          click_count?: number | null
           created_at?: string
           created_by?: string | null
           display_order?: number | null
@@ -126,6 +129,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      banner_clicks: {
+        Row: {
+          banner_id: string
+          clicked_at: string
+          id: string
+          ip_hash: string | null
+          user_id: string | null
+        }
+        Insert: {
+          banner_id: string
+          clicked_at?: string
+          id?: string
+          ip_hash?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          banner_id?: string
+          clicked_at?: string
+          id?: string
+          ip_hash?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banner_clicks_banner_id_fkey"
+            columns: ["banner_id"]
+            isOneToOne: false
+            referencedRelation: "ad_banners"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       favorites: {
         Row: {
