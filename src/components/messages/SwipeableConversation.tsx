@@ -12,7 +12,9 @@ interface Conversation {
   lastMessage: string;
   lastMessageTime: string;
   unreadCount: number;
-  propertyTitle?: string;
+  propertyId: string;
+  propertyTitle: string;
+  propertyImage?: string;
 }
 
 interface SwipeableConversationProps {
@@ -118,20 +120,18 @@ const SwipeableConversation = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1">
             <h3 className={`font-semibold truncate ${conversation.unreadCount > 0 ? 'text-foreground' : ''}`}>
-              {conversation.participantName}
+              {conversation.propertyTitle}
             </h3>
             <span className="text-xs text-muted-foreground">
               {formatDistanceToNow(new Date(conversation.lastMessageTime), { addSuffix: false, locale: fr })}
             </span>
           </div>
+          <p className="text-xs text-primary truncate mb-0.5">
+            👤 {conversation.participantName}
+          </p>
           <p className={`text-sm truncate ${conversation.unreadCount > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
             {conversation.lastMessage}
           </p>
-          {conversation.propertyTitle && (
-            <p className="text-xs text-primary truncate mt-1">
-              📍 {conversation.propertyTitle}
-            </p>
-          )}
         </div>
 
         <MoreVertical className="w-4 h-4 text-muted-foreground flex-shrink-0" />

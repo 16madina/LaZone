@@ -28,15 +28,16 @@ interface Message {
 }
 
 interface Conversation {
-  id: string;
+  id: string; // property_id + participant_id combo
   participantId: string;
   participantName: string;
   participantAvatar: string | null;
   lastMessage: string;
   lastMessageTime: string;
   unreadCount: number;
-  propertyId?: string;
-  propertyTitle?: string;
+  propertyId: string;
+  propertyTitle: string;
+  propertyImage?: string;
 }
 
 export const useMessages = () => {
@@ -59,63 +60,83 @@ export const useMessages = () => {
       const archivedSet = new Set(archived?.map(a => a.other_user_id) || []);
       setArchivedConversations(archivedSet);
 
-      // Fetch all messages where user is sender or receiver
+      // Fetch all messages where user is sender or receiver AND have a property_id
       const { data: messages, error } = await supabase
         .from('messages')
         .select('*')
         .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .not('property_id', 'is', null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Group messages by conversation (other participant)
+      // Group messages by property_id + participant_id
       const conversationMap = new Map<string, Message[]>();
       
       messages?.forEach(msg => {
         const otherUserId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
+        const propertyId = msg.property_id;
+        
         // Skip archived conversations
-        if (archivedSet.has(otherUserId)) return;
-        const existing = conversationMap.get(otherUserId) || [];
+        if (archivedSet.has(`${propertyId}_${otherUserId}`)) return;
+        
+        const conversationKey = `${propertyId}_${otherUserId}`;
+        const existing = conversationMap.get(conversationKey) || [];
         existing.push(msg as Message);
-        conversationMap.set(otherUserId, existing);
+        conversationMap.set(conversationKey, existing);
       });
 
-      // Get unique participant IDs
-      const participantIds = Array.from(conversationMap.keys());
-
-      if (participantIds.length === 0) {
+      if (conversationMap.size === 0) {
         setConversations([]);
         setTotalUnread(0);
         setLoading(false);
         return;
       }
 
+      // Get unique participant IDs and property IDs
+      const participantIds = new Set<string>();
+      const propertyIds = new Set<string>();
+      
+      conversationMap.forEach((msgs, key) => {
+        const [propId, partId] = key.split('_');
+        propertyIds.add(propId);
+        participantIds.add(partId);
+      });
+
       // Fetch participant profiles
       const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, full_name, avatar_url')
-        .in('user_id', participantIds);
+        .in('user_id', Array.from(participantIds));
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
-      // Fetch property titles for messages with property_id
-      const propertyIds = [...new Set(messages?.filter(m => m.property_id).map(m => m.property_id))];
-      let propertyMap = new Map();
+      // Fetch property info
+      const { data: properties } = await supabase
+        .from('properties')
+        .select(`
+          id, 
+          title,
+          property_images (url, is_primary)
+        `)
+        .in('id', Array.from(propertyIds));
       
-      if (propertyIds.length > 0) {
-        const { data: properties } = await supabase
-          .from('properties')
-          .select('id, title')
-          .in('id', propertyIds);
-        propertyMap = new Map(properties?.map(p => [p.id, p.title]) || []);
-      }
+      const propertyMap = new Map(properties?.map(p => [
+        p.id, 
+        { 
+          title: p.title, 
+          image: p.property_images?.find((img: any) => img.is_primary)?.url || p.property_images?.[0]?.url 
+        }
+      ]) || []);
 
       // Build conversations list
       const convList: Conversation[] = [];
       let totalUnreadCount = 0;
 
-      conversationMap.forEach((msgs, participantId) => {
+      conversationMap.forEach((msgs, conversationKey) => {
+        const [propertyId, participantId] = conversationKey.split('_');
         const profile = profileMap.get(participantId);
+        const propertyInfo = propertyMap.get(propertyId);
         const lastMsg = msgs[0];
         const unreadCount = msgs.filter(m => m.receiver_id === user.id && !m.is_read).length;
         totalUnreadCount += unreadCount;
@@ -125,20 +146,17 @@ export const useMessages = () => {
           lastMessageText = lastMsg.attachment_type === 'image' ? '📷 Image' : '📎 Fichier';
         }
 
-        // Find the first message with a property_id (the original inquiry)
-        const messageWithProperty = msgs.find(m => m.property_id);
-        const conversationPropertyId = messageWithProperty?.property_id;
-
         convList.push({
-          id: participantId,
+          id: conversationKey,
           participantId,
           participantName: profile?.full_name || 'Utilisateur',
           participantAvatar: profile?.avatar_url || null,
           lastMessage: lastMessageText,
           lastMessageTime: lastMsg.created_at,
           unreadCount,
-          propertyId: conversationPropertyId || undefined,
-          propertyTitle: conversationPropertyId ? propertyMap.get(conversationPropertyId) : undefined
+          propertyId,
+          propertyTitle: propertyInfo?.title || 'Annonce supprimée',
+          propertyImage: propertyInfo?.image
         });
       });
 
@@ -213,20 +231,23 @@ export const useMessages = () => {
     }
   }, [user, fetchConversations]);
 
-  const deleteConversation = async (participantId: string) => {
+  const deleteConversation = async (conversationId: string) => {
     if (!user) return { error: 'Not authenticated' };
 
     try {
-      // Delete all messages between user and participant
+      const [propertyId, participantId] = conversationId.split('_');
+      
+      // Delete all messages for this property + participant combination
       const { error } = await supabase
         .from('messages')
         .delete()
+        .eq('property_id', propertyId)
         .or(`and(sender_id.eq.${user.id},receiver_id.eq.${participantId}),and(sender_id.eq.${participantId},receiver_id.eq.${user.id})`);
 
       if (error) throw error;
       
       // Update local state
-      setConversations(prev => prev.filter(c => c.participantId !== participantId));
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
       return { error: null };
     } catch (error: any) {
       console.error('Error deleting conversation:', error);
@@ -234,22 +255,24 @@ export const useMessages = () => {
     }
   };
 
-  const archiveConversation = async (participantId: string) => {
+  const archiveConversation = async (conversationId: string) => {
     if (!user) return { error: 'Not authenticated' };
 
     try {
+      const [propertyId, participantId] = conversationId.split('_');
+      
       const { error } = await supabase
         .from('archived_conversations')
         .insert({
           user_id: user.id,
-          other_user_id: participantId
+          other_user_id: `${propertyId}_${participantId}`
         });
 
       if (error) throw error;
       
       // Update local state
-      setConversations(prev => prev.filter(c => c.participantId !== participantId));
-      setArchivedConversations(prev => new Set([...prev, participantId]));
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+      setArchivedConversations(prev => new Set([...prev, conversationId]));
       return { error: null };
     } catch (error: any) {
       console.error('Error archiving conversation:', error);
@@ -293,19 +316,20 @@ export const useMessages = () => {
   };
 };
 
-export const useConversation = (participantId: string | null) => {
+export const useConversation = (participantId: string | null, propertyId: string | null) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
 
   const fetchMessages = useCallback(async () => {
-    if (!user || !participantId) return;
+    if (!user || !participantId || !propertyId) return;
 
     try {
       const { data, error } = await supabase
         .from('messages')
         .select('*')
+        .eq('property_id', propertyId)
         .or(`and(sender_id.eq.${user.id},receiver_id.eq.${participantId}),and(sender_id.eq.${participantId},receiver_id.eq.${user.id})`)
         .order('created_at', { ascending: true });
 
@@ -346,6 +370,7 @@ export const useConversation = (participantId: string | null) => {
         .update({ is_read: true })
         .eq('receiver_id', user.id)
         .eq('sender_id', participantId)
+        .eq('property_id', propertyId)
         .eq('is_read', false);
 
     } catch (error) {
@@ -353,15 +378,15 @@ export const useConversation = (participantId: string | null) => {
     } finally {
       setLoading(false);
     }
-  }, [user, participantId]);
+  }, [user, participantId, propertyId]);
 
   useEffect(() => {
-    if (user && participantId) {
+    if (user && participantId && propertyId) {
       fetchMessages();
 
       // Subscribe to realtime updates for messages
       const messagesChannel = supabase
-        .channel(`conversation-${participantId}`)
+        .channel(`conversation-${propertyId}-${participantId}`)
         .on(
           'postgres_changes',
           {
@@ -373,8 +398,9 @@ export const useConversation = (participantId: string | null) => {
             if (payload.eventType === 'INSERT') {
               const newMsg = payload.new as Message;
               if (
-                (newMsg.sender_id === user.id && newMsg.receiver_id === participantId) ||
-                (newMsg.sender_id === participantId && newMsg.receiver_id === user.id)
+                newMsg.property_id === propertyId &&
+                ((newMsg.sender_id === user.id && newMsg.receiver_id === participantId) ||
+                (newMsg.sender_id === participantId && newMsg.receiver_id === user.id))
               ) {
                 setMessages(prev => [...prev, newMsg]);
                 
@@ -396,7 +422,7 @@ export const useConversation = (participantId: string | null) => {
 
       // Subscribe to typing presence
       const typingChannel = supabase
-        .channel(`typing-${[user.id, participantId].sort().join('-')}`)
+        .channel(`typing-${propertyId}-${[user.id, participantId].sort().join('-')}`)
         .on('presence', { event: 'sync' }, () => {
           const state = typingChannel.presenceState();
           const otherUserTyping = Object.values(state).some((presences: any) =>
@@ -411,10 +437,10 @@ export const useConversation = (participantId: string | null) => {
         supabase.removeChannel(typingChannel);
       };
     }
-  }, [user, participantId, fetchMessages]);
+  }, [user, participantId, propertyId, fetchMessages]);
 
-  const sendMessage = async (content: string, propertyId?: string, attachment?: { url: string; type: 'image' | 'file'; name: string }, replyToId?: string) => {
-    if (!user || !participantId) return { error: 'Not authenticated' };
+  const sendMessage = async (content: string, attachment?: { url: string; type: 'image' | 'file'; name: string }, replyToId?: string) => {
+    if (!user || !participantId || !propertyId) return { error: 'Not authenticated' };
 
     try {
       const { error } = await supabase
@@ -423,7 +449,7 @@ export const useConversation = (participantId: string | null) => {
           content,
           sender_id: user.id,
           receiver_id: participantId,
-          property_id: propertyId || null,
+          property_id: propertyId,
           attachment_url: attachment?.url || null,
           attachment_type: attachment?.type || null,
           attachment_name: attachment?.name || null,
