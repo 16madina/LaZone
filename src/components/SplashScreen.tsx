@@ -1,12 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import heroBg1 from '@/assets/hero-bg.jpg';
+import heroBg2 from '@/assets/hero-bg-2.jpg';
+import heroBg3 from '@/assets/hero-bg-3.jpg';
+import heroBg4 from '@/assets/hero-bg-4.jpg';
 
 interface SplashScreenProps {
   onComplete: () => void;
 }
 
+const backgroundImages = [heroBg1, heroBg2, heroBg3, heroBg4];
+
 export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   const [phase, setPhase] = useState<'logo' | 'text' | 'exit'>('logo');
+  
+  // Random background image selected once per mount
+  const backgroundImage = useMemo(() => {
+    const randomIndex = Math.floor(Math.random() * backgroundImages.length);
+    return backgroundImages[randomIndex];
+  }, []);
 
   useEffect(() => {
     // Phase 1: Logo animation (0-1s)
@@ -30,7 +42,12 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5, ease: 'easeInOut' }}
-          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-gradient-to-br from-primary via-orange-500 to-orange-600"
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center"
+          style={{
+            backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(249,115,22,0.8)), url(${backgroundImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
         >
           {/* Background pattern */}
           <div className="absolute inset-0 overflow-hidden">
@@ -112,13 +129,13 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="mt-8 relative z-10 px-8"
+            className="mt-4 relative z-10 px-8"
           >
             <motion.p
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.8, duration: 0.6, ease: 'easeOut' }}
-              className="text-center text-white text-xl font-medium leading-relaxed"
+              className="text-center text-white text-xl font-medium leading-relaxed drop-shadow-lg"
             >
               Trouvez votre chez vous dans votre Zone
             </motion.p>
@@ -164,7 +181,12 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           animate={{ opacity: 0 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5 }}
-          className="fixed inset-0 z-[9999] bg-gradient-to-br from-primary via-orange-500 to-orange-600"
+          className="fixed inset-0 z-[9999]"
+          style={{
+            backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(249,115,22,0.8)), url(${backgroundImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
         />
       )}
     </AnimatePresence>
