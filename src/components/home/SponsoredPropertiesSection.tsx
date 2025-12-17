@@ -66,16 +66,12 @@ export const SponsoredPropertiesSection = ({ userCountry }: SponsoredPropertiesS
       }
     };
 
-    // Important: don't fetch without a country, otherwise users briefly see other countries.
-    if (!userCountry) {
-      setProperties([]);
-      setLoading(false);
-      return;
-    }
+    // Default to Côte d'Ivoire if no country is selected
+    const countryToFetch = userCountry || 'CI';
 
     setLoading(true);
     setProperties([]);
-    fetchForCountry(userCountry);
+    fetchForCountry(countryToFetch);
 
     return () => {
       cancelled = true;
