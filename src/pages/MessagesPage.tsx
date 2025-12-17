@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { 
   Search, ArrowLeft, Send, Loader2, 
   MessageCircle, Paperclip, X, FileText, Reply, MapPin,
-  MoreVertical, Calendar, Flag
+  MoreVertical, Calendar, Flag, Volume2, VolumeX, Ban
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -28,6 +28,16 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 type MessageTab = 'all' | 'received' | 'sent' | 'archived';
 
@@ -433,7 +443,6 @@ const MessagesPage = () => {
               isArchived={activeTab === 'archived'}
               index={index}
               isMuted={mutedConversations.has(conversation.id)}
-              onToggleMute={() => toggleMuteConversation(conversation.id)}
             />
           ))}
         </div>
@@ -460,9 +469,55 @@ const ConversationView = ({ participantId, propertyId, onBack }: ConversationVie
   const [pendingAttachment, setPendingAttachment] = useState<{ url: string; type: 'image' | 'file'; name: string } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [replyTo, setReplyTo] = useState<{ id: string; content: string } | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ open: boolean; messageId: string | null }>({ open: false, messageId: null });
+  const [isMuted, setIsMuted] = useState(() => {
+    const stored = localStorage.getItem('mutedConversations');
+    const mutedSet = stored ? new Set(JSON.parse(stored)) : new Set();
+    return mutedSet.has(`${propertyId}_${participantId}`);
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const toggleMute = () => {
+    const stored = localStorage.getItem('mutedConversations');
+    const mutedSet = stored ? new Set(JSON.parse(stored)) : new Set();
+    const conversationKey = `${propertyId}_${participantId}`;
+    
+    if (mutedSet.has(conversationKey)) {
+      mutedSet.delete(conversationKey);
+      setIsMuted(false);
+      toast({ title: 'Son activé', description: 'Vous recevrez des notifications sonores' });
+    } else {
+      mutedSet.add(conversationKey);
+      setIsMuted(true);
+      toast({ title: 'Son désactivé', description: 'Notifications silencieuses' });
+    }
+    localStorage.setItem('mutedConversations', JSON.stringify([...mutedSet]));
+  };
+
+  const handleDeleteWithConfirmation = (messageId: string) => {
+    setDeleteConfirmation({ open: true, messageId });
+  };
+
+  const confirmDelete = async () => {
+    if (deleteConfirmation.messageId) {
+      const { error } = await deleteMessage(deleteConfirmation.messageId);
+      if (error) {
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de supprimer le message',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Message supprimé',
+          description: 'Le message a été supprimé'
+        });
+      }
+    }
+    setDeleteConfirmation({ open: false, messageId: null });
+  };
 
   const isOnline = isUserOnline(participantId);
   const lastSeen = getLastSeen(participantId);
@@ -631,28 +686,36 @@ const ConversationView = ({ participantId, propertyId, onBack }: ConversationVie
                 <MoreVertical className="w-5 h-5 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {propertyInfo && propertyInfo.ownerId !== user?.id && (
-                <>
-                  <AppointmentDialog
-                    propertyId={propertyInfo.id}
-                    ownerId={propertyInfo.ownerId}
-                    propertyTitle={propertyInfo.title}
-                    trigger={
-                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                        <Calendar className="w-4 h-4 mr-2" />
-                        Prendre rendez-vous
-                      </DropdownMenuItem>
-                    }
-                  />
-                  <DropdownMenuSeparator />
-                </>
-              )}
+            <DropdownMenuContent align="end" className="bg-card border-border z-50">
+              <DropdownMenuItem onClick={toggleMute} className="cursor-pointer">
+                {isMuted ? (
+                  <>
+                    <Volume2 className="w-4 h-4 mr-2" />
+                    Activer le son
+                  </>
+                ) : (
+                  <>
+                    <VolumeX className="w-4 h-4 mr-2" />
+                    Désactiver le son
+                  </>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <ReportUserDialog
                 userId={participantId}
                 userName={participant?.full_name}
                 trigger={
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer text-destructive focus:text-destructive">
+                    <Ban className="w-4 h-4 mr-2" />
+                    Bloquer l'utilisateur
+                  </DropdownMenuItem>
+                }
+              />
+              <ReportUserDialog
+                userId={participantId}
+                userName={participant?.full_name}
+                trigger={
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer text-destructive focus:text-destructive">
                     <Flag className="w-4 h-4 mr-2" />
                     Signaler l'utilisateur
                   </DropdownMenuItem>
@@ -662,16 +725,36 @@ const ConversationView = ({ participantId, propertyId, onBack }: ConversationVie
           </DropdownMenu>
         </div>
         
-        {/* Property Banner */}
+        {/* Property Banner with RDV Button */}
         {propertyInfo && (
-          <button
-            onClick={() => navigate(`/property/${propertyInfo.id}`)}
-            className="w-full px-4 py-2 bg-primary/10 border-t border-primary/20 flex items-center gap-2 hover:bg-primary/20 transition-colors"
-          >
-            <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
-            <span className="text-sm text-primary font-medium truncate">{propertyInfo.title}</span>
-            <ArrowLeft className="w-4 h-4 text-primary rotate-180 ml-auto flex-shrink-0" />
-          </button>
+          <div className="flex items-center border-t border-primary/20">
+            <button
+              onClick={() => navigate(`/property/${propertyInfo.id}`)}
+              className="flex-1 px-4 py-2 bg-primary/10 flex items-center gap-2 hover:bg-primary/20 transition-colors"
+            >
+              <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+              <span className="text-sm text-primary font-medium truncate">{propertyInfo.title}</span>
+              <ArrowLeft className="w-4 h-4 text-primary rotate-180 ml-auto flex-shrink-0" />
+            </button>
+            {propertyInfo.ownerId !== user?.id && (
+              <AppointmentDialog
+                propertyId={propertyInfo.id}
+                ownerId={propertyInfo.ownerId}
+                propertyTitle={propertyInfo.title}
+                open={showAppointmentDialog}
+                onOpenChange={setShowAppointmentDialog}
+                trigger={
+                  <button 
+                    onClick={() => setShowAppointmentDialog(true)}
+                    className="px-4 py-2 bg-primary/20 hover:bg-primary/30 transition-colors flex items-center gap-1.5"
+                  >
+                    <Calendar className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium text-primary">RDV</span>
+                  </button>
+                }
+              />
+            )}
+          </div>
         )}
       </div>
 
@@ -702,21 +785,7 @@ const ConversationView = ({ participantId, propertyId, onBack }: ConversationVie
                   participantAvatar={participant?.avatar_url}
                   myAvatar={profile?.avatar_url}
                   showAvatar={isLastInGroup}
-                  onDelete={async (messageId) => {
-                    const { error } = await deleteMessage(messageId);
-                    if (error) {
-                      toast({
-                        title: 'Erreur',
-                        description: 'Impossible de supprimer le message',
-                        variant: 'destructive'
-                      });
-                    } else {
-                      toast({
-                        title: 'Message supprimé',
-                        description: 'Le message a été supprimé'
-                      });
-                    }
-                  }}
+                  onDelete={(messageId) => handleDeleteWithConfirmation(messageId)}
                   onReaction={async (messageId, emoji) => {
                     await addReaction(messageId, emoji);
                   }}
@@ -858,6 +927,24 @@ const ConversationView = ({ participantId, propertyId, onBack }: ConversationVie
       </div>
 
       {user && <SectionTutorialButton section="messages" />}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmation.open} onOpenChange={(open) => setDeleteConfirmation({ open, messageId: null })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce message ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Le message sera définitivement supprimé.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -54,13 +54,14 @@ export const useMessages = () => {
     if (!user) return;
 
     try {
-      // Fetch archived conversations first
+      // Fetch archived conversations first (now with property_id)
       const { data: archived } = await supabase
         .from('archived_conversations')
-        .select('other_user_id')
+        .select('other_user_id, property_id')
         .eq('user_id', user.id);
       
-      const archivedSet = new Set(archived?.map(a => a.other_user_id) || []);
+      // Create a set of archived conversation keys (property_id + other_user_id)
+      const archivedSet = new Set(archived?.map(a => `${a.property_id}_${a.other_user_id}`) || []);
       setArchivedConversations(archivedSet);
 
       // Fetch all messages where user is sender or receiver AND have a property_id
@@ -295,12 +296,17 @@ export const useMessages = () => {
         .from('archived_conversations')
         .insert({
           user_id: user.id,
-          other_user_id: `${propertyId}_${participantId}`
+          other_user_id: participantId,
+          property_id: propertyId
         });
 
       if (error) throw error;
       
       // Update local state
+      const archivedConv = conversations.find(c => c.id === conversationId);
+      if (archivedConv) {
+        setArchivedConvList(prev => [archivedConv, ...prev]);
+      }
       setConversations(prev => prev.filter(c => c.id !== conversationId));
       setArchivedConversations(prev => new Set([...prev, conversationId]));
       return { error: null };
@@ -310,24 +316,34 @@ export const useMessages = () => {
     }
   };
 
-  const unarchiveConversation = async (participantId: string) => {
+  const unarchiveConversation = async (conversationId: string) => {
     if (!user) return { error: 'Not authenticated' };
 
     try {
+      const [propertyId, participantId] = conversationId.split('_');
+      
       const { error } = await supabase
         .from('archived_conversations')
         .delete()
         .eq('user_id', user.id)
-        .eq('other_user_id', participantId);
+        .eq('other_user_id', participantId)
+        .eq('property_id', propertyId);
 
       if (error) throw error;
       
+      // Update local state
+      const unarchivedConv = archivedConvList.find(c => c.id === conversationId);
+      if (unarchivedConv) {
+        setConversations(prev => [unarchivedConv, ...prev].sort((a, b) => 
+          new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+        ));
+      }
+      setArchivedConvList(prev => prev.filter(c => c.id !== conversationId));
       setArchivedConversations(prev => {
         const newSet = new Set(prev);
-        newSet.delete(participantId);
+        newSet.delete(conversationId);
         return newSet;
       });
-      await fetchConversations();
       return { error: null };
     } catch (error: any) {
       console.error('Error unarchiving conversation:', error);
