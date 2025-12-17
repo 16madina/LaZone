@@ -31,11 +31,13 @@ const AuthPage = () => {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const [isLogin, setIsLogin] = useState(true);
+  const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
+  const [showLoginCountryDropdown, setShowLoginCountryDropdown] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
@@ -43,7 +45,11 @@ const AuthPage = () => {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [loginCountry, setLoginCountry] = useState<Country | null>(africanCountries[0]);
+  const [loginPhone, setLoginPhone] = useState('');
 
   const [formData, setFormData] = useState({
     email: '',
@@ -223,6 +229,52 @@ const AuthPage = () => {
     }
   };
 
+  const handleSendOtp = async () => {
+    const fullPhone = `${loginCountry?.phoneCode}${loginPhone}`;
+    if (!loginPhone || loginPhone.length < 8) {
+      toast({ title: 'Erreur', description: 'Veuillez entrer un numéro de téléphone valide', variant: 'destructive' });
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: fullPhone,
+      });
+      if (error) throw error;
+      setOtpSent(true);
+      toast({ title: 'Code envoyé', description: 'Un code de vérification a été envoyé à votre téléphone' });
+    } catch (error: any) {
+      toast({ title: 'Erreur', description: error.message || 'Impossible d\'envoyer le code', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const fullPhone = `${loginCountry?.phoneCode}${loginPhone}`;
+    if (!otp || otp.length !== 6) {
+      toast({ title: 'Erreur', description: 'Veuillez entrer le code à 6 chiffres', variant: 'destructive' });
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        phone: fullPhone,
+        token: otp,
+        type: 'sms',
+      });
+      if (error) throw error;
+      toast({ title: 'Connexion réussie', description: 'Bienvenue sur LaZone!' });
+      navigate('/profile');
+    } catch (error: any) {
+      toast({ title: 'Erreur', description: 'Code invalide ou expiré', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -354,7 +406,8 @@ const AuthPage = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-card/90 backdrop-blur-md rounded-3xl shadow-2xl border border-border/50 p-6 max-w-md mx-auto max-h-[calc(100vh-140px)] overflow-y-auto"
+          className="bg-card/90 backdrop-blur-md rounded-3xl shadow-2xl border border-border/50 p-6 max-w-md mx-auto max-h-[calc(100vh-140px)] overflow-y-auto scrollbar-hide"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {/* Title */}
           <div className="text-center mb-6">
@@ -554,58 +607,229 @@ const AuthPage = () => {
             </>
           )}
 
-          {/* Email */}
-          <div>
-            <div className={`glass-card p-1 ${errors.email && touched.email ? 'border border-destructive' : ''}`}>
-              <div className="flex items-center gap-2 px-3 py-2.5">
-                <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={formData.email}
-                  onChange={(e) => handleFieldChange('email', e.target.value)}
-                  onBlur={() => handleBlur('email')}
-                  className="flex-1 bg-transparent outline-none text-sm"
-                />
-              </div>
+          {/* Login Method Toggle - Only for Login */}
+          {isLogin && (
+            <div className="flex gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => { setLoginMethod('email'); setOtpSent(false); setOtp(''); }}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  loginMethod === 'email' 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                <Mail className="w-4 h-4 inline-block mr-1.5" />
+                Email
+              </button>
+              <button
+                type="button"
+                onClick={() => { setLoginMethod('phone'); setOtpSent(false); setOtp(''); }}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  loginMethod === 'phone' 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                <Phone className="w-4 h-4 inline-block mr-1.5" />
+                Téléphone
+              </button>
             </div>
-            <InputError message={touched.email ? errors.email : undefined} />
-          </div>
+          )}
 
-          {/* Password */}
-          <div>
-            <div className={`glass-card p-1 ${errors.password && touched.password ? 'border border-destructive' : ''}`}>
-              <div className="flex items-center gap-2 px-3 py-2.5">
-                <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Mot de passe"
-                  value={formData.password}
-                  onChange={(e) => handleFieldChange('password', e.target.value)}
-                  onBlur={() => handleBlur('password')}
-                  className="flex-1 bg-transparent outline-none text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="text-muted-foreground"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-            <div className="flex justify-between items-center mt-1">
-              <InputError message={touched.password ? errors.password : undefined} />
-              {isLogin && (
-                <button 
-                  type="button"
-                  className="text-xs text-primary font-medium hover:underline"
-                >
-                  Mot de passe oublié?
-                </button>
+          {/* Phone Login Fields */}
+          {isLogin && loginMethod === 'phone' && (
+            <>
+              {!otpSent ? (
+                <>
+                  {/* Country Selector for Login */}
+                  <div className="relative mb-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginCountryDropdown(!showLoginCountryDropdown)}
+                      className="w-full glass-card p-1"
+                    >
+                      <div className="flex items-center gap-2 px-3 py-2.5">
+                        <Globe className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        <span className="flex-1 text-left text-sm">
+                          {loginCountry ? (
+                            <span className="flex items-center gap-2">
+                              <FlagImg code={loginCountry.code} name={loginCountry.name} />
+                              <span>{loginCountry.name}</span>
+                            </span>
+                          ) : 'Sélectionner un pays'}
+                        </span>
+                        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showLoginCountryDropdown ? 'rotate-180' : ''}`} />
+                      </div>
+                    </button>
+                    {showLoginCountryDropdown && (
+                      <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                        {africanCountries.map((country) => (
+                          <button
+                            key={country.code}
+                            type="button"
+                            onClick={() => {
+                              setLoginCountry(country);
+                              setShowLoginCountryDropdown(false);
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors"
+                          >
+                            <FlagImg code={country.code} name={country.name} />
+                            <span className="flex-1 text-left text-sm">{country.name}</span>
+                            <span className="text-xs text-muted-foreground">{country.phoneCode}</span>
+                            {loginCountry?.code === country.code && (
+                              <Check className="w-4 h-4 text-primary" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Phone Input for Login */}
+                  <div className="glass-card p-1">
+                    <div className="flex items-center gap-2 px-3 py-2.5">
+                      <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      {loginCountry && (
+                        <div className="flex items-center gap-2 px-2 py-1 bg-muted rounded-lg">
+                          <FlagImg code={loginCountry.code} name={loginCountry.name} />
+                          <span className="text-sm font-medium text-foreground">
+                            {loginCountry.phoneCode}
+                          </span>
+                        </div>
+                      )}
+                      <input
+                        type="tel"
+                        placeholder="Numéro de téléphone"
+                        value={loginPhone}
+                        onChange={(e) => setLoginPhone(e.target.value.replace(/\D/g, ''))}
+                        className="flex-1 bg-transparent outline-none text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={loading || !loginPhone}
+                    className="w-full gradient-primary py-4 rounded-2xl text-primary-foreground font-display font-semibold shadow-lg disabled:opacity-50 active:scale-[0.98] transition-all mt-4 flex items-center justify-center gap-2"
+                  >
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                        Envoi en cours...
+                      </span>
+                    ) : (
+                      <>Envoyer le code</>
+                    )}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground text-center mb-3">
+                    Un code a été envoyé au {loginCountry?.phoneCode}{loginPhone}
+                  </p>
+                  
+                  {/* OTP Input */}
+                  <div className="glass-card p-1">
+                    <div className="flex items-center gap-2 px-3 py-2.5">
+                      <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <input
+                        type="text"
+                        placeholder="Code à 6 chiffres"
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        className="flex-1 bg-transparent outline-none text-sm text-center tracking-widest font-mono"
+                        maxLength={6}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleVerifyOtp}
+                    disabled={loading || otp.length !== 6}
+                    className="w-full gradient-primary py-4 rounded-2xl text-primary-foreground font-display font-semibold shadow-lg disabled:opacity-50 active:scale-[0.98] transition-all mt-4 flex items-center justify-center gap-2"
+                  >
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                        Vérification...
+                      </span>
+                    ) : (
+                      <>Vérifier le code</>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setOtpSent(false); setOtp(''); }}
+                    className="w-full text-sm text-primary hover:underline mt-2"
+                  >
+                    Renvoyer le code
+                  </button>
+                </>
               )}
-            </div>
-          </div>
+            </>
+          )}
+
+          {/* Email Login Fields */}
+          {(!isLogin || loginMethod === 'email') && (
+            <>
+              {/* Email */}
+              <div>
+                <div className={`glass-card p-1 ${errors.email && touched.email ? 'border border-destructive' : ''}`}>
+                  <div className="flex items-center gap-2 px-3 py-2.5">
+                    <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <input
+                      type="email"
+                      placeholder="Email"
+                      value={formData.email}
+                      onChange={(e) => handleFieldChange('email', e.target.value)}
+                      onBlur={() => handleBlur('email')}
+                      className="flex-1 bg-transparent outline-none text-sm"
+                    />
+                  </div>
+                </div>
+                <InputError message={touched.email ? errors.email : undefined} />
+              </div>
+
+              {/* Password */}
+              <div>
+                <div className={`glass-card p-1 ${errors.password && touched.password ? 'border border-destructive' : ''}`}>
+                  <div className="flex items-center gap-2 px-3 py-2.5">
+                    <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Mot de passe"
+                      value={formData.password}
+                      onChange={(e) => handleFieldChange('password', e.target.value)}
+                      onBlur={() => handleBlur('password')}
+                      className="flex-1 bg-transparent outline-none text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="text-muted-foreground"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center mt-1">
+                  <InputError message={touched.password ? errors.password : undefined} />
+                  {isLogin && (
+                    <button 
+                      type="button"
+                      className="text-xs text-primary font-medium hover:underline"
+                    >
+                      Mot de passe oublié?
+                    </button>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Confirm Password */}
           {!isLogin && (
@@ -675,24 +899,26 @@ const AuthPage = () => {
             </div>
           )}
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full gradient-primary py-4 rounded-2xl text-primary-foreground font-display font-semibold shadow-lg disabled:opacity-50 active:scale-[0.98] transition-all mt-6 flex items-center justify-center gap-2 group"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                Chargement...
-              </span>
-            ) : (
-              <>
-                {isLogin ? 'Se connecter' : 'Créer un compte'}
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </>
-            )}
-          </button>
+          {/* Submit Button - Only for email login or signup */}
+          {(!isLogin || loginMethod === 'email') && (
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full gradient-primary py-4 rounded-2xl text-primary-foreground font-display font-semibold shadow-lg disabled:opacity-50 active:scale-[0.98] transition-all mt-6 flex items-center justify-center gap-2 group"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  Chargement...
+                </span>
+              ) : (
+                <>
+                  {isLogin ? 'Se connecter' : 'Créer un compte'}
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
+          )}
         </form>
 
         {/* Divider */}
@@ -712,6 +938,10 @@ const AuthPage = () => {
                 setIsLogin(!isLogin);
                 setErrors({});
                 setTouched({});
+                setLoginMethod('email');
+                setOtpSent(false);
+                setOtp('');
+                setLoginPhone('');
               }}
               className="text-primary font-semibold hover:underline"
             >
