@@ -8,6 +8,7 @@ import { PropertyCard } from '@/components/property/PropertyCard';
 import { CountrySelector } from '@/components/home/CountrySelector';
 import { NotificationDropdown } from '@/components/NotificationDropdown';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import SectionTutorialButton from '@/components/tutorial/SectionTutorialButton';
 import { useAppStore } from '@/stores/appStore';
 import { useProperties } from '@/hooks/useProperties';
 import { useAuth } from '@/hooks/useAuth';
@@ -236,6 +237,8 @@ const Index = () => {
           )}
         </section>
       </div>
+
+      <SectionTutorialButton section="home" />
     </div>
   );
 };

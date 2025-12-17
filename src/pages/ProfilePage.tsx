@@ -58,6 +58,7 @@ import { useAdmin } from '@/hooks/useAdmin';
 import { useNotifications } from '@/hooks/useNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import SectionTutorialButton from '@/components/tutorial/SectionTutorialButton';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Switch } from '@/components/ui/switch';
@@ -1351,6 +1352,8 @@ const ProfilePage = () => {
           </div>
         </div>
       </div>
+
+      {user && <SectionTutorialButton section="profile" />}
     </div>
   );
 };

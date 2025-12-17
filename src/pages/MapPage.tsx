@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/sheet';
 import { toast } from 'sonner';
 import { africanCountries, Country } from '@/data/africanCountries';
+import SectionTutorialButton from '@/components/tutorial/SectionTutorialButton';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster';
@@ -599,6 +600,8 @@ const MapPage = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <SectionTutorialButton section="map" />
     </div>
   );
 };
