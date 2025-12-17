@@ -7,7 +7,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 const TutorialOverlay = () => {
   const { isActive, currentStep, steps, nextStep, prevStep, skipTutorial } = useTutorial();
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const [tooltipHeight, setTooltipHeight] = useState<number>(240);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const step = steps[currentStep];
   const progress = ((currentStep + 1) / steps.length) * 100;
@@ -30,73 +32,112 @@ const TutorialOverlay = () => {
 
     findTarget();
     const interval = setInterval(findTarget, 500);
-    
+
     return () => clearInterval(interval);
   }, [isActive, step, currentStep]);
+
+  useEffect(() => {
+    if (!isActive) return;
+
+    const measure = () => {
+      const h = cardRef.current?.getBoundingClientRect().height;
+      if (typeof h === 'number' && Number.isFinite(h) && h > 0) {
+        setTooltipHeight(h);
+      }
+    };
+
+    measure();
+
+    const vv = window.visualViewport;
+    window.addEventListener('resize', measure);
+    vv?.addEventListener('resize', measure);
+
+    return () => {
+      window.removeEventListener('resize', measure);
+      vv?.removeEventListener('resize', measure);
+    };
+  }, [isActive, currentStep]);
 
   if (!isActive) return null;
 
   const getTooltipPosition = () => {
     const padding = 16;
-    
+
+    const vv = window.visualViewport;
+    const vw = vv?.width ?? window.innerWidth;
+    const vh = vv?.height ?? window.innerHeight;
+
+    const tooltipWidth = Math.min(320, vw - padding * 2);
+    const effectiveHeight = Math.min(tooltipHeight || 240, vh - padding * 2);
+
+    const base = {
+      maxWidth: `calc(100vw - ${padding * 2}px)`,
+      width: `${tooltipWidth}px`,
+      maxHeight: `calc(100dvh - ${padding * 2}px)`,
+    };
+
     if (!targetRect || step.position === 'center') {
       return {
         position: 'fixed' as const,
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        maxWidth: `calc(100vw - ${padding * 2}px)`,
-        width: '320px',
+        ...base,
       };
     }
-
-    const tooltipWidth = Math.min(320, window.innerWidth - padding * 2);
-    const tooltipHeight = 200;
 
     switch (step.position) {
       case 'top':
         return {
           position: 'fixed' as const,
-          top: Math.max(padding, targetRect.top - tooltipHeight - padding),
-          left: Math.max(padding, Math.min(
-            targetRect.left + targetRect.width / 2 - tooltipWidth / 2,
-            window.innerWidth - tooltipWidth - padding
-          )),
-          maxWidth: `calc(100vw - ${padding * 2}px)`,
-          width: '320px',
+          top: Math.max(padding, targetRect.top - effectiveHeight - padding),
+          left: Math.max(
+            padding,
+            Math.min(
+              targetRect.left + targetRect.width / 2 - tooltipWidth / 2,
+              vw - tooltipWidth - padding
+            )
+          ),
+          ...base,
         };
       case 'bottom':
         return {
           position: 'fixed' as const,
-          top: Math.min(targetRect.bottom + padding, window.innerHeight - tooltipHeight - padding),
-          left: Math.max(padding, Math.min(
-            targetRect.left + targetRect.width / 2 - tooltipWidth / 2,
-            window.innerWidth - tooltipWidth - padding
-          )),
-          maxWidth: `calc(100vw - ${padding * 2}px)`,
-          width: '320px',
+          top: Math.min(targetRect.bottom + padding, vh - effectiveHeight - padding),
+          left: Math.max(
+            padding,
+            Math.min(
+              targetRect.left + targetRect.width / 2 - tooltipWidth / 2,
+              vw - tooltipWidth - padding
+            )
+          ),
+          ...base,
         };
       case 'left':
         return {
           position: 'fixed' as const,
-          top: Math.max(padding, Math.min(
-            targetRect.top + targetRect.height / 2 - tooltipHeight / 2,
-            window.innerHeight - tooltipHeight - padding
-          )),
+          top: Math.max(
+            padding,
+            Math.min(
+              targetRect.top + targetRect.height / 2 - effectiveHeight / 2,
+              vh - effectiveHeight - padding
+            )
+          ),
           left: Math.max(padding, targetRect.left - tooltipWidth - padding),
-          maxWidth: `calc(100vw - ${padding * 2}px)`,
-          width: '320px',
+          ...base,
         };
       case 'right':
         return {
           position: 'fixed' as const,
-          top: Math.max(padding, Math.min(
-            targetRect.top + targetRect.height / 2 - tooltipHeight / 2,
-            window.innerHeight - tooltipHeight - padding
-          )),
-          left: Math.min(targetRect.right + padding, window.innerWidth - tooltipWidth - padding),
-          maxWidth: `calc(100vw - ${padding * 2}px)`,
-          width: '320px',
+          top: Math.max(
+            padding,
+            Math.min(
+              targetRect.top + targetRect.height / 2 - effectiveHeight / 2,
+              vh - effectiveHeight - padding
+            )
+          ),
+          left: Math.min(targetRect.right + padding, vw - tooltipWidth - padding),
+          ...base,
         };
       default:
         return {
@@ -104,8 +145,7 @@ const TutorialOverlay = () => {
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          maxWidth: `calc(100vw - ${padding * 2}px)`,
-          width: '320px',
+          ...base,
         };
     }
   };
@@ -147,8 +187,9 @@ const TutorialOverlay = () => {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: -20 }}
           transition={{ type: 'spring', duration: 0.5 }}
-          className="bg-card rounded-2xl shadow-2xl overflow-hidden border border-border"
+          className="bg-card rounded-2xl shadow-2xl border border-border flex flex-col min-h-0 overflow-hidden"
           style={getTooltipPosition()}
+          ref={cardRef}
         >
           {/* Progress bar */}
           <div className="h-1 bg-muted">
@@ -179,7 +220,7 @@ const TutorialOverlay = () => {
           </div>
 
           {/* Content */}
-          <div className="px-4 pb-4">
+          <div className="px-4 pb-4 flex-1 min-h-0 overflow-y-auto">
             <h3 className="text-lg font-semibold mb-2">{step.title}</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
               {step.description}
