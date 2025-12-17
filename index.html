@@ -2,11 +2,12 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
     <title>LaZone - Immobilier en Afrique</title>
     <meta name="description" content="Trouvez la propriété de vos rêves en Afrique. Maisons, appartements, terrains et locaux commerciaux à vendre ou à louer." />
     <meta name="author" content="LaZone" />
     <meta name="theme-color" content="#ea580c" />
+    <meta name="color-scheme" content="light dark" />
 
     <meta property="og:title" content="LaZone - Immobilier en Afrique" />
     <meta property="og:description" content="Trouvez la propriété de vos rêves en Afrique. Des milliers de propriétés disponibles." />
@@ -26,6 +27,12 @@
     <meta name="msapplication-TileColor" content="#ea580c" />
     <meta name="msapplication-tap-highlight" content="no" />
     
+    <!-- Foldable & Large Screen Support -->
+    <meta name="display-mode" content="standalone" />
+    <meta name="screen-orientation" content="any" />
+    <meta name="HandheldFriendly" content="true" />
+    <meta name="MobileOptimized" content="width" />
+    
     <!-- PWA Icons for iOS -->
     <link rel="apple-touch-icon" href="/pwa-192x192.png" />
     <link rel="apple-touch-icon" sizes="152x152" href="/pwa-192x192.png" />
@@ -34,6 +41,9 @@
     
     <!-- Splash screens for iOS -->
     <link rel="apple-touch-startup-image" href="/pwa-512x512.png" />
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="/manifest.webmanifest" />
   </head>
 
   <body>

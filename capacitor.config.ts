@@ -9,10 +9,38 @@ const config: CapacitorConfig = {
     cleartext: true
   },
   ios: {
-    contentInset: 'automatic'
+    contentInset: 'automatic',
+    preferredContentMode: 'mobile',
+    scrollEnabled: true,
+    allowsLinkPreview: true,
+    backgroundColor: '#fafaf8'
   },
   android: {
-    backgroundColor: '#fafaf8'
+    backgroundColor: '#fafaf8',
+    allowMixedContent: true,
+    captureInput: true,
+    webContentsDebuggingEnabled: false,
+    // Support for foldables and large screens
+    minWebViewVersion: 60,
+    overrideUserAgent: 'LaZone Mobile App'
+  },
+  plugins: {
+    SplashScreen: {
+      launchAutoHide: true,
+      launchShowDuration: 2000,
+      backgroundColor: '#fafaf8',
+      androidSplashResourceName: 'splash',
+      splashFullScreen: true,
+      splashImmersive: true
+    },
+    Keyboard: {
+      resize: 'body',
+      resizeOnFullScreen: true
+    },
+    StatusBar: {
+      style: 'light',
+      backgroundColor: '#ea580c'
+    }
   }
 };
 
