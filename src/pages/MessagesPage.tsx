@@ -2,25 +2,26 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
-  Search, MoreVertical, ArrowLeft, Send, Loader2, 
+  Search, ArrowLeft, Send, Loader2, 
   MessageCircle, Paperclip, X, FileText
 } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
 import { useMessages, useConversation } from '@/hooks/useMessages';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { Button } from '@/components/ui/button';
-import { formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import SwipeableMessage from '@/components/messages/SwipeableMessage';
+import SwipeableConversation from '@/components/messages/SwipeableConversation';
 
 const MessagesPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { conversations, loading, totalUnread } = useMessages();
-  const { isUserOnline, getLastSeen, fetchLastSeen } = useOnlineStatus();
+  const { conversations, loading, totalUnread, deleteConversation } = useMessages();
+  const { isUserOnline, fetchLastSeen } = useOnlineStatus();
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -36,6 +37,31 @@ const MessagesPage = () => {
   const filteredConversations = conversations.filter(c =>
     c.participantName.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleDeleteConversation = async (participantId: string) => {
+    if (deleteConversation) {
+      const { error } = await deleteConversation(participantId);
+      if (error) {
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de supprimer la conversation',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Conversation supprimée',
+          description: 'La conversation a été supprimée'
+        });
+      }
+    }
+  };
+
+  const handleArchiveConversation = (participantId: string) => {
+    toast({
+      title: 'Archivé',
+      description: 'Conversation archivée (fonctionnalité à venir)'
+    });
+  };
 
   if (!user) {
     return (
@@ -60,8 +86,6 @@ const MessagesPage = () => {
       <ConversationView 
         participantId={selectedConversation}
         onBack={() => setSelectedConversation(null)}
-        isOnline={isUserOnline(selectedConversation)}
-        lastSeen={getLastSeen(selectedConversation)}
       />
     );
   }
@@ -118,71 +142,29 @@ const MessagesPage = () => {
       ) : (
         <div className="space-y-3">
           {filteredConversations.map((conversation, index) => (
-            <motion.button
+            <SwipeableConversation
               key={conversation.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 + index * 0.05 }}
-              onClick={() => setSelectedConversation(conversation.participantId)}
-              className="w-full glass-card p-4 flex items-center gap-3 text-left"
-            >
-              <div className="relative">
-                <img
-                  src={conversation.participantAvatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop'}
-                  alt={conversation.participantName}
-                  className="w-12 h-12 rounded-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
-                  }}
-                />
-                {/* Online indicator */}
-                {isUserOnline(conversation.participantId) && (
-                  <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-card rounded-full" />
-                )}
-                {conversation.unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 gradient-primary rounded-full flex items-center justify-center text-xs text-primary-foreground font-bold">
-                    {conversation.unreadCount}
-                  </span>
-                )}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className={`font-semibold truncate ${conversation.unreadCount > 0 ? 'text-foreground' : ''}`}>
-                    {conversation.participantName}
-                  </h3>
-                  <span className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(conversation.lastMessageTime), { addSuffix: false, locale: fr })}
-                  </span>
-                </div>
-                <p className={`text-sm truncate ${conversation.unreadCount > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                  {conversation.lastMessage}
-                </p>
-                {conversation.propertyTitle && (
-                  <p className="text-xs text-primary truncate mt-1">
-                    📍 {conversation.propertyTitle}
-                  </p>
-                )}
-              </div>
-
-              <MoreVertical className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            </motion.button>
+              conversation={conversation}
+              isOnline={isUserOnline(conversation.participantId)}
+              onSelect={() => setSelectedConversation(conversation.participantId)}
+              onDelete={() => handleDeleteConversation(conversation.participantId)}
+              onArchive={() => handleArchiveConversation(conversation.participantId)}
+              index={index}
+            />
           ))}
         </div>
       )}
     </div>
   );
 };
-
 interface ConversationViewProps {
   participantId: string;
   onBack: () => void;
-  isOnline: boolean;
-  lastSeen: string | null;
 }
 
-const ConversationView = ({ participantId, onBack, isOnline, lastSeen }: ConversationViewProps) => {
+const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
   const { user } = useAuth();
+  const { isUserOnline, getLastSeen, fetchLastSeen } = useOnlineStatus();
   const { messages, loading, sendMessage, deleteMessage, addReaction, uploadAttachment, isTyping, setTyping } = useConversation(participantId);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -192,6 +174,15 @@ const ConversationView = ({ participantId, onBack, isOnline, lastSeen }: Convers
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const isOnline = isUserOnline(participantId);
+  const lastSeen = getLastSeen(participantId);
+
+  useEffect(() => {
+    if (!isOnline) {
+      fetchLastSeen([participantId]);
+    }
+  }, [isOnline, participantId, fetchLastSeen]);
 
   useEffect(() => {
     // Fetch participant info
