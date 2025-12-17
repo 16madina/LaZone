@@ -22,7 +22,7 @@ import heroBg4 from '@/assets/hero-bg-4.jpg';
 const heroImages = [heroBg1, heroBg2, heroBg3, heroBg4];
 
 const Index = () => {
-  const { activeFilter, searchQuery } = useAppStore();
+  const { activeFilter, searchQuery, priceRange } = useAppStore();
   const { properties, loading } = useProperties();
   const { profile, user } = useAuth();
   const { detectedCountry, permissionDenied, showAllCountries } = useGeoCountry();
@@ -60,6 +60,11 @@ const Index = () => {
   const filteredProperties = properties.filter((property) => {
     // Filter by country first (if a country is selected)
     if (selectedCountry && property.country !== selectedCountry.code) {
+      return false;
+    }
+
+    // Filter by price range
+    if (property.price < priceRange[0] || property.price > priceRange[1]) {
       return false;
     }
 
@@ -174,6 +179,7 @@ const Index = () => {
                 // Reset all filters to show all properties
                 useAppStore.getState().setActiveFilter('all');
                 useAppStore.getState().setSearchQuery('');
+                useAppStore.getState().setPriceRange([0, 1000000000]);
               }}
               className="text-sm text-primary font-medium active:scale-95 transition-transform"
             >

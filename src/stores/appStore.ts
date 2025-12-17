@@ -30,9 +30,11 @@ interface AppState {
   favorites: string[];
   searchQuery: string;
   activeFilter: string;
+  priceRange: [number, number];
   toggleFavorite: (id: string) => void;
   setSearchQuery: (query: string) => void;
   setActiveFilter: (filter: string) => void;
+  setPriceRange: (range: [number, number]) => void;
 }
 
 const mockProperties: Property[] = [
@@ -203,6 +205,7 @@ export const useAppStore = create<AppState>((set) => ({
   favorites: ['2', '6'],
   searchQuery: '',
   activeFilter: 'all',
+  priceRange: [0, 1000000000],
   toggleFavorite: (id) =>
     set((state) => ({
       favorites: state.favorites.includes(id)
@@ -211,4 +214,5 @@ export const useAppStore = create<AppState>((set) => ({
     })),
   setSearchQuery: (query) => set({ searchQuery: query }),
   setActiveFilter: (filter) => set({ activeFilter: filter }),
+  setPriceRange: (range) => set({ priceRange: range }),
 }));

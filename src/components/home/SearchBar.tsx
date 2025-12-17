@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
 import {
@@ -29,14 +29,34 @@ const transactionTypes = [
   { value: 'rent', label: 'À louer' },
 ];
 
+const MAX_PRICE = 1000000000; // 1 milliard
+
+const formatPriceLabel = (value: number) => {
+  if (value >= 1000000000) return '1B+';
+  if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
+  if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
+  return value.toString();
+};
+
 export const SearchBar = ({ variant = 'default' }: SearchBarProps) => {
-  const { searchQuery, setSearchQuery, activeFilter, setActiveFilter } = useAppStore();
+  const { searchQuery, setSearchQuery, activeFilter, setActiveFilter, priceRange, setPriceRange } = useAppStore();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedType, setSelectedType] = useState('all');
   const [selectedTransaction, setSelectedTransaction] = useState('all');
-  const [priceRange, setPriceRange] = useState([0, 500000000]);
+  const [localPriceRange, setLocalPriceRange] = useState<[number, number]>(priceRange);
 
   const isHero = variant === 'hero';
+
+  // Sync local state with store
+  useEffect(() => {
+    setLocalPriceRange(priceRange);
+  }, [priceRange]);
+
+  // Calculate number of active filters
+  const activeFiltersCount = [
+    activeFilter !== 'all',
+    priceRange[0] > 0 || priceRange[1] < MAX_PRICE,
+  ].filter(Boolean).length;
 
   const applyFilters = () => {
     // Combine filters - prioritize transaction type, then property type
@@ -47,14 +67,16 @@ export const SearchBar = ({ variant = 'default' }: SearchBarProps) => {
     } else {
       setActiveFilter('all');
     }
+    setPriceRange(localPriceRange);
     setIsOpen(false);
   };
 
   const resetFilters = () => {
     setSelectedType('all');
     setSelectedTransaction('all');
-    setPriceRange([0, 500000000]);
+    setLocalPriceRange([0, MAX_PRICE]);
     setActiveFilter('all');
+    setPriceRange([0, MAX_PRICE]);
     setSearchQuery('');
   };
 
@@ -83,8 +105,13 @@ export const SearchBar = ({ variant = 'default' }: SearchBarProps) => {
       
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetTrigger asChild>
-          <button className="gradient-primary p-2 rounded-xl active:scale-95 transition-transform">
+          <button className="relative gradient-primary p-2 rounded-xl active:scale-95 transition-transform">
             <SlidersHorizontal className="w-4 h-4 text-primary-foreground" />
+            {activeFiltersCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 bg-white text-primary rounded-full flex items-center justify-center text-xs font-bold shadow-md">
+                {activeFiltersCount}
+              </span>
+            )}
           </button>
         </SheetTrigger>
         <SheetContent side="bottom" className="rounded-t-3xl">
@@ -130,6 +157,29 @@ export const SearchBar = ({ variant = 'default' }: SearchBarProps) => {
                     {type.label}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Price Range */}
+            <div>
+              <h4 className="font-medium mb-3">Fourchette de prix</h4>
+              <div className="px-2">
+                <Slider
+                  value={[localPriceRange[0], localPriceRange[1]]}
+                  onValueChange={(value) => setLocalPriceRange([value[0], value[1]])}
+                  max={MAX_PRICE}
+                  min={0}
+                  step={1000000}
+                  className="mb-4"
+                />
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">
+                    {formatPriceLabel(localPriceRange[0])} FCFA
+                  </span>
+                  <span className="font-medium text-foreground">
+                    {formatPriceLabel(localPriceRange[1])} FCFA
+                  </span>
+                </div>
               </div>
             </div>
 
