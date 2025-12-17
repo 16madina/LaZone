@@ -607,34 +607,16 @@ const AuthPage = () => {
             </>
           )}
 
-          {/* Login Method Toggle - Only for Login */}
-          {isLogin && (
-            <div className="flex gap-2 mb-4">
-              <button
-                type="button"
-                onClick={() => { setLoginMethod('email'); setOtpSent(false); setOtp(''); }}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  loginMethod === 'email' 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                }`}
-              >
-                <Mail className="w-4 h-4 inline-block mr-1.5" />
-                Email
-              </button>
-              <button
-                type="button"
-                onClick={() => { setLoginMethod('phone'); setOtpSent(false); setOtp(''); }}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  loginMethod === 'phone' 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                }`}
-              >
-                <Phone className="w-4 h-4 inline-block mr-1.5" />
-                Téléphone
-              </button>
-            </div>
+          {/* Back to email button when in phone login mode */}
+          {isLogin && loginMethod === 'phone' && (
+            <button
+              type="button"
+              onClick={() => { setLoginMethod('email'); setOtpSent(false); setOtp(''); setLoginPhone(''); }}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Retour à la connexion par email
+            </button>
           )}
 
           {/* Phone Login Fields */}
@@ -927,6 +909,18 @@ const AuthPage = () => {
           <span className="text-muted-foreground text-sm">ou</span>
           <div className="flex-1 h-px bg-border" />
         </div>
+
+        {/* Phone Login Button - Only for email login mode */}
+        {isLogin && loginMethod === 'email' && (
+          <button
+            type="button"
+            onClick={() => setLoginMethod('phone')}
+            className="w-full py-3 rounded-xl border border-border bg-background/50 hover:bg-muted/50 transition-colors flex items-center justify-center gap-2 text-sm font-medium mb-4"
+          >
+            <Phone className="w-4 h-4" />
+            Se connecter avec le téléphone
+          </button>
+        )}
 
         {/* Toggle */}
         <div className="text-center">
