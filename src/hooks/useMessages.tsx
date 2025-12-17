@@ -148,12 +148,21 @@ export const useMessages = () => {
             console.log('New message received:', payload);
             fetchConversations();
             
-            // Show toast for new messages
+            // Show toast and play sound for new messages
             if (payload.eventType === 'INSERT') {
               toast({
                 title: 'Nouveau message',
                 description: 'Vous avez reçu un nouveau message',
               });
+              
+              // Play notification sound
+              try {
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleShSp93teleShSp+r4VsXV90n6a1iP//////////');
+                audio.volume = 0.5;
+                audio.play().catch(() => {});
+              } catch (e) {
+                // Ignore audio errors
+              }
             }
           }
         )

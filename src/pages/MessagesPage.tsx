@@ -18,7 +18,7 @@ const MessagesPage = () => {
   const location = useLocation();
   const { user } = useAuth();
   const { conversations, loading, totalUnread } = useMessages();
-  const { isUserOnline } = useOnlineStatus();
+  const { isUserOnline, getLastSeen, fetchLastSeen } = useOnlineStatus();
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -49,11 +49,17 @@ const MessagesPage = () => {
   }
 
   if (selectedConversation) {
+    // Fetch last seen when selecting a conversation
+    if (!isUserOnline(selectedConversation)) {
+      fetchLastSeen([selectedConversation]);
+    }
+    
     return (
       <ConversationView 
         participantId={selectedConversation}
         onBack={() => setSelectedConversation(null)}
         isOnline={isUserOnline(selectedConversation)}
+        lastSeen={getLastSeen(selectedConversation)}
       />
     );
   }
@@ -170,9 +176,10 @@ interface ConversationViewProps {
   participantId: string;
   onBack: () => void;
   isOnline: boolean;
+  lastSeen: string | null;
 }
 
-const ConversationView = ({ participantId, onBack, isOnline }: ConversationViewProps) => {
+const ConversationView = ({ participantId, onBack, isOnline, lastSeen }: ConversationViewProps) => {
   const { user } = useAuth();
   const { messages, loading, sendMessage, uploadAttachment, isTyping, setTyping } = useConversation(participantId);
   const [newMessage, setNewMessage] = useState('');
@@ -306,6 +313,10 @@ const ConversationView = ({ participantId, onBack, isOnline }: ConversationViewP
             <p className="text-xs text-primary animate-pulse">En train d'écrire...</p>
           ) : isOnline ? (
             <p className="text-xs text-green-500">En ligne</p>
+          ) : lastSeen ? (
+            <p className="text-xs text-muted-foreground">
+              Vu {formatDistanceToNow(new Date(lastSeen), { addSuffix: true, locale: fr })}
+            </p>
           ) : (
             <p className="text-xs text-muted-foreground">Hors ligne</p>
           )}
