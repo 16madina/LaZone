@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { 
   Search, ArrowLeft, Send, Loader2, 
   MessageCircle, Paperclip, X, FileText, Reply, MapPin,
-  MoreVertical, Calendar
+  MoreVertical, Calendar, Flag
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -17,11 +17,13 @@ import { toast } from '@/hooks/use-toast';
 import SwipeableMessage from '@/components/messages/SwipeableMessage';
 import SwipeableConversation from '@/components/messages/SwipeableConversation';
 import { AppointmentDialog } from '@/components/appointment/AppointmentDialog';
+import { ReportUserDialog } from '@/components/messages/ReportUserDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
 const MessagesPage = () => {
@@ -366,28 +368,41 @@ const ConversationView = ({ participantId, propertyId, onBack }: ConversationVie
           </div>
           
           {/* 3-dot Menu */}
-          {propertyInfo && propertyInfo.ownerId !== user?.id && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="p-2 hover:bg-muted rounded-full">
-                  <MoreVertical className="w-5 h-5 text-muted-foreground" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <AppointmentDialog
-                  propertyId={propertyInfo.id}
-                  ownerId={propertyInfo.ownerId}
-                  propertyTitle={propertyInfo.title}
-                  trigger={
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                      <Calendar className="w-4 h-4 mr-2" />
-                      Prendre rendez-vous
-                    </DropdownMenuItem>
-                  }
-                />
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="p-2 hover:bg-muted rounded-full">
+                <MoreVertical className="w-5 h-5 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {propertyInfo && propertyInfo.ownerId !== user?.id && (
+                <>
+                  <AppointmentDialog
+                    propertyId={propertyInfo.id}
+                    ownerId={propertyInfo.ownerId}
+                    propertyTitle={propertyInfo.title}
+                    trigger={
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <Calendar className="w-4 h-4 mr-2" />
+                        Prendre rendez-vous
+                      </DropdownMenuItem>
+                    }
+                  />
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              <ReportUserDialog
+                userId={participantId}
+                userName={participant?.full_name}
+                trigger={
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                    <Flag className="w-4 h-4 mr-2" />
+                    Signaler l'utilisateur
+                  </DropdownMenuItem>
+                }
+              />
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         
         {/* Property Banner */}
