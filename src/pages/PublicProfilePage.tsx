@@ -74,9 +74,10 @@ const PublicProfilePage = () => {
 
   const fetchProfile = async () => {
     try {
+      // Only select non-sensitive public profile fields
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, user_id, full_name, avatar_url, email_verified, country, created_at')
         .eq('user_id', userId)
         .maybeSingle();
 
