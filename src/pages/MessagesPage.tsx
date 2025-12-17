@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Search, MoreVertical, ArrowLeft, Send, Loader2, 
-  MessageCircle, Check, CheckCheck, Paperclip, Image, X, FileText, Circle
+  MessageCircle, Paperclip, X, FileText
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useMessages, useConversation } from '@/hooks/useMessages';
@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import SwipeableMessage from '@/components/messages/SwipeableMessage';
 
 const MessagesPage = () => {
   const navigate = useNavigate();
@@ -181,7 +183,7 @@ interface ConversationViewProps {
 
 const ConversationView = ({ participantId, onBack, isOnline, lastSeen }: ConversationViewProps) => {
   const { user } = useAuth();
-  const { messages, loading, sendMessage, uploadAttachment, isTyping, setTyping } = useConversation(participantId);
+  const { messages, loading, sendMessage, deleteMessage, addReaction, uploadAttachment, isTyping, setTyping } = useConversation(participantId);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [participant, setParticipant] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
@@ -338,61 +340,30 @@ const ConversationView = ({ participantId, onBack, isOnline, lastSeen }: Convers
             {messages.map((message) => {
               const isMe = message.sender_id === user?.id;
               return (
-                <motion.div
+                <SwipeableMessage
                   key={message.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[80%] p-3 rounded-2xl ${
-                      isMe
-                        ? 'bg-primary text-primary-foreground rounded-br-sm'
-                        : 'bg-muted rounded-bl-sm'
-                    }`}
-                  >
-                    {/* Attachment */}
-                    {message.attachment_url && (
-                      <div className="mb-2">
-                        {message.attachment_type === 'image' ? (
-                          <img 
-                            src={message.attachment_url} 
-                            alt="Image" 
-                            className="max-w-full rounded-lg cursor-pointer"
-                            onClick={() => window.open(message.attachment_url!, '_blank')}
-                          />
-                        ) : (
-                          <a 
-                            href={message.attachment_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className={`flex items-center gap-2 p-2 rounded-lg ${isMe ? 'bg-primary-foreground/10' : 'bg-background/50'}`}
-                          >
-                            <FileText className="w-5 h-5" />
-                            <span className="text-sm truncate">{message.attachment_name || 'Fichier'}</span>
-                          </a>
-                        )}
-                      </div>
-                    )}
-                    
-                    {message.content && (
-                      <p className="text-sm">{message.content}</p>
-                    )}
-                    
-                    <div className={`flex items-center gap-1 mt-1 ${isMe ? 'justify-end' : ''}`}>
-                      <p className={`text-[10px] ${isMe ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                        {formatDistanceToNow(new Date(message.created_at), { addSuffix: true, locale: fr })}
-                      </p>
-                      {isMe && (
-                        message.is_read ? (
-                          <CheckCheck className="w-3.5 h-3.5 text-primary-foreground/70" />
-                        ) : (
-                          <Check className="w-3.5 h-3.5 text-primary-foreground/70" />
-                        )
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
+                  message={message}
+                  isMe={isMe}
+                  userId={user?.id || ''}
+                  onDelete={async (messageId) => {
+                    const { error } = await deleteMessage(messageId);
+                    if (error) {
+                      toast({
+                        title: 'Erreur',
+                        description: 'Impossible de supprimer le message',
+                        variant: 'destructive'
+                      });
+                    } else {
+                      toast({
+                        title: 'Message supprimé',
+                        description: 'Le message a été supprimé'
+                      });
+                    }
+                  }}
+                  onReaction={async (messageId, emoji) => {
+                    await addReaction(messageId, emoji);
+                  }}
+                />
               );
             })}
             <div ref={messagesEndRef} />
