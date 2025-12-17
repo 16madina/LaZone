@@ -51,6 +51,7 @@ const AuthPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loginCountry, setLoginCountry] = useState<Country | null>(africanCountries[0]);
   const [loginPhone, setLoginPhone] = useState('');
+  const [isDiaspora, setIsDiaspora] = useState(false);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -525,6 +526,19 @@ const AuthPage = () => {
                 </div>
               </div>
 
+              {/* Diaspora Checkbox */}
+              <label className="flex items-center gap-3 cursor-pointer py-2">
+                <div 
+                  className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
+                    isDiaspora ? 'bg-primary border-primary' : 'border-muted-foreground/50'
+                  }`}
+                  onClick={() => setIsDiaspora(!isDiaspora)}
+                >
+                  {isDiaspora && <Check className="w-3 h-3 text-primary-foreground" />}
+                </div>
+                <span className="text-sm text-foreground">Je vis à l'étranger (diaspora)</span>
+              </label>
+
               {/* Country Select */}
               <div className="relative">
                 <button
@@ -543,11 +557,16 @@ const AuthPage = () => {
                           <FlagImg code={formData.country.code} name={formData.country.name} />
                           <span>{formData.country.name}</span>
                         </span>
-                      ) : 'Sélectionner un pays'}
+                      ) : (isDiaspora ? 'Pays d\'origine / d\'intérêt' : 'Pays de résidence')}
                     </span>
                     <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showCountryDropdown ? 'rotate-180' : ''}`} />
                   </div>
                 </button>
+                {isDiaspora && (
+                  <p className="text-xs text-muted-foreground mt-1 pl-1">
+                    Sélectionnez le pays africain où vous souhaitez investir
+                  </p>
+                )}
                 <InputError message={touched.country ? errors.country : undefined} />
                 
                 {showCountryDropdown && (
