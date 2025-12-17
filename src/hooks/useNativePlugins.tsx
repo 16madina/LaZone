@@ -4,6 +4,9 @@ import { PushNotifications, Token, PushNotificationSchema, ActionPerformed } fro
 import { Share, ShareResult } from '@capacitor/share';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Keyboard } from '@capacitor/keyboard';
+import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
+import { Geolocation, Position } from '@capacitor/geolocation';
+import { Device, DeviceInfo, BatteryInfo } from '@capacitor/device';
 import { Capacitor } from '@capacitor/core';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -532,6 +535,271 @@ export const useKeyboard = () => {
     isVisible,
     keyboardHeight,
     hide,
+    isNative: isNativePlatform()
+  };
+};
+
+// ==================== HAPTICS HOOK ====================
+export const useHaptics = () => {
+  const impact = useCallback(async (style: 'light' | 'medium' | 'heavy' = 'medium') => {
+    if (!isNativePlatform()) return;
+    
+    try {
+      const impactStyle = {
+        light: ImpactStyle.Light,
+        medium: ImpactStyle.Medium,
+        heavy: ImpactStyle.Heavy
+      }[style];
+      
+      await Haptics.impact({ style: impactStyle });
+    } catch (error) {
+      console.error('Haptics impact error:', error);
+    }
+  }, []);
+
+  const notification = useCallback(async (type: 'success' | 'warning' | 'error' = 'success') => {
+    if (!isNativePlatform()) return;
+    
+    try {
+      const notificationType = {
+        success: NotificationType.Success,
+        warning: NotificationType.Warning,
+        error: NotificationType.Error
+      }[type];
+      
+      await Haptics.notification({ type: notificationType });
+    } catch (error) {
+      console.error('Haptics notification error:', error);
+    }
+  }, []);
+
+  const vibrate = useCallback(async (duration: number = 300) => {
+    if (!isNativePlatform()) return;
+    
+    try {
+      await Haptics.vibrate({ duration });
+    } catch (error) {
+      console.error('Haptics vibrate error:', error);
+    }
+  }, []);
+
+  const selectionStart = useCallback(async () => {
+    if (!isNativePlatform()) return;
+    
+    try {
+      await Haptics.selectionStart();
+    } catch (error) {
+      console.error('Haptics selection start error:', error);
+    }
+  }, []);
+
+  const selectionChanged = useCallback(async () => {
+    if (!isNativePlatform()) return;
+    
+    try {
+      await Haptics.selectionChanged();
+    } catch (error) {
+      console.error('Haptics selection changed error:', error);
+    }
+  }, []);
+
+  const selectionEnd = useCallback(async () => {
+    if (!isNativePlatform()) return;
+    
+    try {
+      await Haptics.selectionEnd();
+    } catch (error) {
+      console.error('Haptics selection end error:', error);
+    }
+  }, []);
+
+  return {
+    impact,
+    notification,
+    vibrate,
+    selectionStart,
+    selectionChanged,
+    selectionEnd,
+    isNative: isNativePlatform()
+  };
+};
+
+// ==================== GEOLOCATION HOOK ====================
+export const useGeolocation = () => {
+  const [position, setPosition] = useState<Position | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [watchId, setWatchId] = useState<string | null>(null);
+
+  const getCurrentPosition = useCallback(async (options?: {
+    enableHighAccuracy?: boolean;
+    timeout?: number;
+    maximumAge?: number;
+  }): Promise<Position | null> => {
+    setLoading(true);
+    try {
+      const permission = await Geolocation.checkPermissions();
+      
+      if (permission.location !== 'granted') {
+        const requested = await Geolocation.requestPermissions();
+        if (requested.location !== 'granted') {
+          toast({
+            title: 'Localisation désactivée',
+            description: 'Activez la localisation dans les paramètres',
+            variant: 'destructive'
+          });
+          return null;
+        }
+      }
+
+      const pos = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: options?.enableHighAccuracy ?? true,
+        timeout: options?.timeout ?? 10000,
+        maximumAge: options?.maximumAge ?? 0
+      });
+      
+      setPosition(pos);
+      return pos;
+    } catch (error: any) {
+      console.error('Geolocation error:', error);
+      toast({
+        title: 'Erreur de localisation',
+        description: error.message || 'Impossible d\'obtenir votre position',
+        variant: 'destructive'
+      });
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const watchPosition = useCallback(async (
+    callback: (position: Position) => void,
+    options?: { enableHighAccuracy?: boolean; timeout?: number; maximumAge?: number }
+  ) => {
+    try {
+      const permission = await Geolocation.checkPermissions();
+      
+      if (permission.location !== 'granted') {
+        const requested = await Geolocation.requestPermissions();
+        if (requested.location !== 'granted') {
+          return null;
+        }
+      }
+
+      const id = await Geolocation.watchPosition(
+        {
+          enableHighAccuracy: options?.enableHighAccuracy ?? true,
+          timeout: options?.timeout ?? 10000,
+          maximumAge: options?.maximumAge ?? 0
+        },
+        (position, error) => {
+          if (position) {
+            setPosition(position);
+            callback(position);
+          }
+          if (error) {
+            console.error('Watch position error:', error);
+          }
+        }
+      );
+      
+      setWatchId(id);
+      return id;
+    } catch (error) {
+      console.error('Watch position setup error:', error);
+      return null;
+    }
+  }, []);
+
+  const clearWatch = useCallback(async () => {
+    if (watchId) {
+      await Geolocation.clearWatch({ id: watchId });
+      setWatchId(null);
+    }
+  }, [watchId]);
+
+  useEffect(() => {
+    return () => {
+      if (watchId) {
+        Geolocation.clearWatch({ id: watchId });
+      }
+    };
+  }, [watchId]);
+
+  return {
+    position,
+    loading,
+    getCurrentPosition,
+    watchPosition,
+    clearWatch,
+    isNative: isNativePlatform()
+  };
+};
+
+// ==================== DEVICE INFO HOOK ====================
+export const useDeviceInfo = () => {
+  const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
+  const [batteryInfo, setBatteryInfo] = useState<BatteryInfo | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const getInfo = useCallback(async () => {
+    setLoading(true);
+    try {
+      const info = await Device.getInfo();
+      setDeviceInfo(info);
+      return info;
+    } catch (error) {
+      console.error('Device info error:', error);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const getBatteryInfo = useCallback(async () => {
+    try {
+      const battery = await Device.getBatteryInfo();
+      setBatteryInfo(battery);
+      return battery;
+    } catch (error) {
+      console.error('Battery info error:', error);
+      return null;
+    }
+  }, []);
+
+  const getLanguageCode = useCallback(async () => {
+    try {
+      const language = await Device.getLanguageCode();
+      return language.value;
+    } catch (error) {
+      console.error('Language code error:', error);
+      return null;
+    }
+  }, []);
+
+  const getLanguageTag = useCallback(async () => {
+    try {
+      const language = await Device.getLanguageTag();
+      return language.value;
+    } catch (error) {
+      console.error('Language tag error:', error);
+      return null;
+    }
+  }, []);
+
+  useEffect(() => {
+    getInfo();
+    getBatteryInfo();
+  }, [getInfo, getBatteryInfo]);
+
+  return {
+    deviceInfo,
+    batteryInfo,
+    loading,
+    getInfo,
+    getBatteryInfo,
+    getLanguageCode,
+    getLanguageTag,
     isNative: isNativePlatform()
   };
 };
