@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Camera, Loader2, User, Mail, Phone, MapPin } from 'lucide-react';
+import { ArrowLeft, Camera, Loader2, User, Mail, Phone, MapPin, Image } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -9,10 +9,19 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { africanCountries } from '@/data/africanCountries';
+import { useCamera, isNativePlatform } from '@/hooks/useNativePlugins';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const EditProfilePage = () => {
   const navigate = useNavigate();
   const { user, profile, refreshVerificationStatus } = useAuth();
+  const { takePicture, pickFromGallery, loading: cameraLoading } = useCamera();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   
@@ -23,9 +32,8 @@ const EditProfilePage = () => {
     city: user?.user_metadata?.city || '',
   });
 
-  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user) return;
+  const uploadAvatarFromFile = async (file: File) => {
+    if (!user) return;
 
     setUploadingAvatar(true);
     try {
@@ -44,7 +52,7 @@ const EditProfilePage = () => {
 
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: `${publicUrl}?t=${Date.now()}` })
         .eq('user_id', user.id);
 
       if (updateError) throw updateError;
@@ -57,6 +65,43 @@ const EditProfilePage = () => {
     } finally {
       setUploadingAvatar(false);
     }
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      await uploadAvatarFromFile(file);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const photo = await takePicture();
+    if (photo?.webPath) {
+      // Fetch the image and convert to blob
+      const response = await fetch(photo.webPath);
+      const blob = await response.blob();
+      const file = new File([blob], `avatar-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      await uploadAvatarFromFile(file);
+    }
+  };
+
+  const handlePickFromGallery = async () => {
+    const photo = await pickFromGallery();
+    if (photo?.webPath) {
+      const response = await fetch(photo.webPath);
+      const blob = await response.blob();
+      const file = new File([blob], `avatar-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      await uploadAvatarFromFile(file);
+    }
+  };
+
+  const handleAvatarClick = () => {
+    if (isNativePlatform()) {
+      // On native, the dropdown menu handles the actions
+      return;
+    }
+    // On web, trigger file input
+    fileInputRef.current?.click();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -117,31 +162,67 @@ const EditProfilePage = () => {
       <div className="px-4 py-6">
         {/* Avatar */}
         <div className="flex justify-center mb-6">
-          <label className="relative cursor-pointer">
-            <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-card shadow-lg">
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-muted flex items-center justify-center">
-                  <User className="w-12 h-12 text-muted-foreground" />
-                </div>
-              )}
-            </div>
-            <div className="absolute bottom-0 right-0 p-2 bg-primary rounded-full text-primary-foreground">
-              {uploadingAvatar ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Camera className="w-5 h-5" />
-              )}
-            </div>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarChange}
-              className="hidden"
-              disabled={uploadingAvatar}
-            />
-          </label>
+          {isNativePlatform() ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="relative cursor-pointer">
+                  <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-card shadow-lg">
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <User className="w-12 h-12 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="absolute bottom-0 right-0 p-2 bg-primary rounded-full text-primary-foreground">
+                    {uploadingAvatar || cameraLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Camera className="w-5 h-5" />
+                    )}
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center">
+                <DropdownMenuItem onClick={handleTakePhoto} className="gap-2">
+                  <Camera className="w-4 h-4" />
+                  Prendre une photo
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handlePickFromGallery} className="gap-2">
+                  <Image className="w-4 h-4" />
+                  Choisir de la galerie
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <label className="relative cursor-pointer">
+              <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-card shadow-lg">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center">
+                    <User className="w-12 h-12 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+              <div className="absolute bottom-0 right-0 p-2 bg-primary rounded-full text-primary-foreground">
+                {uploadingAvatar ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Camera className="w-5 h-5" />
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+                disabled={uploadingAvatar}
+              />
+            </label>
+          )}
         </div>
 
         {/* Form */}

@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   Camera, MapPin, Home, DollarSign, Upload, Plus, X, 
   Bed, Bath, Maximize, FileText, Clock, Wallet, Check,
-  Loader2, AlertCircle, ChevronDown, Map
+  Loader2, AlertCircle, ChevronDown, Map, Image
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,9 +26,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { z } from 'zod';
 import { africanCountries } from '@/data/africanCountries';
 import LocationMapPicker, { countryCoordinates } from '@/components/publish/LocationMapPicker';
+import { useCamera, isNativePlatform } from '@/hooks/useNativePlugins';
 
 type PropertyType = 'house' | 'apartment' | 'land' | 'commercial';
 type TransactionType = 'sale' | 'rent';
@@ -86,6 +93,8 @@ const createValidationSchema = (propertyType: PropertyType, transactionType: Tra
 const PublishPage = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
+  const { takePicture, pickMultiple, loading: cameraLoading } = useCamera();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
@@ -238,6 +247,54 @@ const PublishPage = () => {
         const { images, ...rest } = prev;
         return rest;
       });
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const photo = await takePicture();
+    if (photo?.webPath) {
+      const response = await fetch(photo.webPath);
+      const blob = await response.blob();
+      const file = new File([blob], `property-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      
+      if (images.length < 6) {
+        const url = URL.createObjectURL(file);
+        setImages(prev => [...prev, file]);
+        setImageUrls(prev => [...prev, url]);
+        setErrors(prev => {
+          const { images, ...rest } = prev;
+          return rest;
+        });
+      }
+    }
+  };
+
+  const handlePickMultiple = async () => {
+    const photos = await pickMultiple(6 - images.length);
+    if (photos && photos.length > 0) {
+      const newFiles: File[] = [];
+      const newUrls: string[] = [];
+      
+      for (const photo of photos) {
+        if (photo.webPath) {
+          const response = await fetch(photo.webPath);
+          const blob = await response.blob();
+          const file = new File([blob], `property-${Date.now()}-${newFiles.length}.jpg`, { type: 'image/jpeg' });
+          const url = URL.createObjectURL(file);
+          newFiles.push(file);
+          newUrls.push(url);
+        }
+      }
+      
+      setImages(prev => [...prev, ...newFiles].slice(0, 6));
+      setImageUrls(prev => [...prev, ...newUrls].slice(0, 6));
+      
+      if (newFiles.length > 0) {
+        setErrors(prev => {
+          const { images, ...rest } = prev;
+          return rest;
+        });
+      }
     }
   };
 
@@ -439,19 +496,47 @@ const PublishPage = () => {
               </div>
             ))}
             {images.length < 6 && (
-              <label className={`aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${
-                errors.images ? 'border-destructive text-destructive' : 'border-border text-muted-foreground hover:border-primary hover:text-primary'
-              }`}>
-                <Plus className="w-6 h-6" />
-                <span className="text-xs">Ajouter</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-              </label>
+              isNativePlatform() ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className={`aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors ${
+                      errors.images ? 'border-destructive text-destructive' : 'border-border text-muted-foreground hover:border-primary hover:text-primary'
+                    }`}>
+                      {cameraLoading ? (
+                        <Loader2 className="w-6 h-6 animate-spin" />
+                      ) : (
+                        <Plus className="w-6 h-6" />
+                      )}
+                      <span className="text-xs">Ajouter</span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center">
+                    <DropdownMenuItem onClick={handleTakePhoto} className="gap-2">
+                      <Camera className="w-4 h-4" />
+                      Prendre une photo
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handlePickMultiple} className="gap-2">
+                      <Image className="w-4 h-4" />
+                      Choisir de la galerie
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <label className={`aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${
+                  errors.images ? 'border-destructive text-destructive' : 'border-border text-muted-foreground hover:border-primary hover:text-primary'
+                }`}>
+                  <Plus className="w-6 h-6" />
+                  <span className="text-xs">Ajouter</span>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                </label>
+              )
             )}
             {Array.from({ length: Math.max(0, 5 - images.length) }).map((_, i) => (
               <div
