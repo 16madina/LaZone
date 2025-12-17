@@ -48,6 +48,25 @@ const MessagesPage = () => {
   const [selectedConversation, setSelectedConversation] = useState<{ participantId: string; propertyId: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<MessageTab>('all');
+  const [mutedConversations, setMutedConversations] = useState<Set<string>>(() => {
+    const stored = localStorage.getItem('mutedConversations');
+    return stored ? new Set(JSON.parse(stored)) : new Set();
+  });
+
+  const toggleMuteConversation = (conversationId: string) => {
+    setMutedConversations(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(conversationId)) {
+        newSet.delete(conversationId);
+        toast({ title: 'Son activé', description: 'Vous recevrez des notifications sonores' });
+      } else {
+        newSet.add(conversationId);
+        toast({ title: 'Son désactivé', description: 'Notifications silencieuses' });
+      }
+      localStorage.setItem('mutedConversations', JSON.stringify([...newSet]));
+      return newSet;
+    });
+  };
 
   // Handle recipientId and propertyId from navigation state (when coming from property detail)
   useEffect(() => {
@@ -413,6 +432,8 @@ const MessagesPage = () => {
                 : () => handleArchiveConversation(conversation.id)}
               isArchived={activeTab === 'archived'}
               index={index}
+              isMuted={mutedConversations.has(conversation.id)}
+              onToggleMute={() => toggleMuteConversation(conversation.id)}
             />
           ))}
         </div>
