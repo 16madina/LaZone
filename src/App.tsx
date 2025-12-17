@@ -26,6 +26,8 @@ import SupportPage from "./pages/settings/SupportPage";
 import LegalPage from "./pages/settings/LegalPage";
 import LegalDetailPage from "./pages/settings/LegalDetailPage";
 import AccountManagementPage from "./pages/settings/AccountManagementPage";
+import AboutPage from "./pages/settings/AboutPage";
+import FaqPage from "./pages/settings/FaqPage";
 import AdminPage from "./pages/admin/AdminPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
 import NotificationsPage from "./pages/NotificationsPage";
@@ -69,6 +71,8 @@ const App = () => (
                 <Route path="/settings/legal" element={<LegalPage />} />
                 <Route path="/settings/legal/:id" element={<LegalDetailPage />} />
                 <Route path="/settings/account" element={<AccountManagementPage />} />
+                <Route path="/settings/about" element={<AboutPage />} />
+                <Route path="/settings/faq" element={<FaqPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <BottomNavigation />
