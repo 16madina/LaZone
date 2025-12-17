@@ -76,18 +76,18 @@ const SwipeableMessage = ({ message, isMe, userId, participantAvatar, myAvatar, 
     <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} group items-end gap-2`}>
       {/* Avatar for received messages */}
       {!isMe && (
-        <div className="flex-shrink-0 w-8">
+        <div className="flex-shrink-0 w-6">
           {showAvatar ? (
             <img
               src={participantAvatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop'}
               alt="Avatar"
-              className="w-8 h-8 rounded-full object-cover"
+              className="w-6 h-6 rounded-full object-cover"
               onError={(e) => {
                 e.currentTarget.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop';
               }}
             />
           ) : (
-            <div className="w-8" />
+            <div className="w-6" />
           )}
         </div>
       )}
@@ -235,18 +235,18 @@ const SwipeableMessage = ({ message, isMe, userId, participantAvatar, myAvatar, 
       
       {/* Avatar for sent messages */}
       {isMe && (
-        <div className="flex-shrink-0 w-8">
+        <div className="flex-shrink-0 w-6">
           {showAvatar ? (
             <img
               src={myAvatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop'}
               alt="Mon avatar"
-              className="w-8 h-8 rounded-full object-cover"
+              className="w-6 h-6 rounded-full object-cover"
               onError={(e) => {
                 e.currentTarget.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop';
               }}
             />
           ) : (
-            <div className="w-8" />
+            <div className="w-6" />
           )}
         </div>
       )}
