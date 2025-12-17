@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Calendar, Clock, Loader2, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Calendar, Clock, Loader2, Phone } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -43,6 +45,27 @@ export const AppointmentDialog = ({
   const [selectedTime, setSelectedTime] = useState<string>();
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sharePhone, setSharePhone] = useState(false);
+  const [contactPhone, setContactPhone] = useState('');
+  const [userPhone, setUserPhone] = useState('');
+
+  // Fetch user's phone number from profile
+  useEffect(() => {
+    const fetchUserPhone = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('phone')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (data?.phone) {
+        setUserPhone(data.phone);
+        setContactPhone(data.phone);
+      }
+    };
+    fetchUserPhone();
+  }, [user]);
 
   const handleSubmit = async () => {
     if (!user || !selectedDate || !selectedTime) {
@@ -63,6 +86,15 @@ export const AppointmentDialog = ({
       return;
     }
 
+    if (sharePhone && !contactPhone.trim()) {
+      toast({
+        title: 'Numéro manquant',
+        description: 'Veuillez entrer votre numéro de téléphone.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase
@@ -74,6 +106,8 @@ export const AppointmentDialog = ({
           requested_date: format(selectedDate, 'yyyy-MM-dd'),
           requested_time: selectedTime,
           message: message.trim() || null,
+          share_phone: sharePhone,
+          contact_phone: sharePhone ? contactPhone.trim() : null,
         });
 
       if (error) throw error;
@@ -87,6 +121,7 @@ export const AppointmentDialog = ({
       setSelectedDate(undefined);
       setSelectedTime(undefined);
       setMessage('');
+      setSharePhone(false);
       onSuccess?.();
     } catch (error) {
       console.error('Error creating appointment:', error);
@@ -169,6 +204,48 @@ export const AppointmentDialog = ({
             </motion.div>
           )}
 
+          {/* Phone Share Option */}
+          {selectedTime && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-3"
+            >
+              <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                <Checkbox
+                  id="sharePhone"
+                  checked={sharePhone}
+                  onCheckedChange={(checked) => setSharePhone(checked === true)}
+                  className="mt-0.5"
+                />
+                <label htmlFor="sharePhone" className="text-sm cursor-pointer">
+                  <span className="font-medium">Partager mon numéro de téléphone</span>
+                  <p className="text-muted-foreground text-xs mt-0.5">
+                    Le vendeur pourra vous contacter directement par téléphone
+                  </p>
+                </label>
+              </div>
+
+              {sharePhone && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                >
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="tel"
+                      value={contactPhone}
+                      onChange={(e) => setContactPhone(e.target.value)}
+                      placeholder="Votre numéro de téléphone"
+                      className="flex-1"
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+
           {/* Message */}
           {selectedTime && (
             <motion.div
@@ -199,6 +276,11 @@ export const AppointmentDialog = ({
               <p className="text-sm">
                 {format(selectedDate, 'EEEE d MMMM yyyy', { locale: fr })} à {selectedTime}
               </p>
+              {sharePhone && contactPhone && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  📞 Téléphone partagé : {contactPhone}
+                </p>
+              )}
             </motion.div>
           )}
 

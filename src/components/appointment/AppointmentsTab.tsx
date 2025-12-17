@@ -13,7 +13,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar,
-  List
+  List,
+  Phone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,6 +34,8 @@ interface Appointment {
   message: string | null;
   response_message: string | null;
   created_at: string;
+  share_phone: boolean | null;
+  contact_phone: string | null;
   property?: {
     title: string;
     address: string;
@@ -281,6 +284,16 @@ export const AppointmentsTab = () => {
             {isReceived ? 'Demandeur' : 'Propriétaire'}
           </p>
         </div>
+        {/* Phone number - only visible to owner when shared */}
+        {isReceived && appointment.share_phone && appointment.contact_phone && (
+          <a
+            href={`tel:${appointment.contact_phone}`}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-xs font-medium hover:bg-green-200 transition-colors"
+          >
+            <Phone className="w-3.5 h-3.5" />
+            {appointment.contact_phone}
+          </a>
+        )}
       </div>
 
       {/* Date & Time */}
