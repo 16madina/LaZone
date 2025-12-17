@@ -7,12 +7,14 @@ import { SponsoredPropertiesSection } from '@/components/home/SponsoredPropertie
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { CountrySelector } from '@/components/home/CountrySelector';
 import { NotificationDropdown } from '@/components/NotificationDropdown';
+import { AdBanner } from '@/components/home/AdBanner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import SectionTutorialButton from '@/components/tutorial/SectionTutorialButton';
 import { useAppStore } from '@/stores/appStore';
 import { useProperties } from '@/hooks/useProperties';
 import { useAuth } from '@/hooks/useAuth';
 import { useGeoCountry } from '@/hooks/useGeoCountry';
+import { supabase } from '@/integrations/supabase/client';
 import { africanCountries, Country } from '@/data/africanCountries';
 import logoLazone from '@/assets/logo-lazone.png';
 import heroBg1 from '@/assets/hero-bg.jpg';
@@ -22,6 +24,13 @@ import heroBg4 from '@/assets/hero-bg-4.jpg';
 
 const heroImages = [heroBg1, heroBg2, heroBg3, heroBg4];
 
+interface AdBannerData {
+  id: string;
+  title: string;
+  image_url: string;
+  link_url: string | null;
+}
+
 const Index = () => {
   const { activeFilter, searchQuery, priceRange, bedroomsFilter, bathroomsFilter, setBedroomsFilter, setBathroomsFilter } = useAppStore();
   const { properties, loading } = useProperties();
@@ -30,6 +39,23 @@ const Index = () => {
   const [currentBg, setCurrentBg] = useState(heroBg1);
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [showGeoAlert, setShowGeoAlert] = useState(false);
+  const [adBanners, setAdBanners] = useState<AdBannerData[]>([]);
+
+  // Fetch ad banners
+  useEffect(() => {
+    const fetchBanners = async () => {
+      const { data } = await supabase
+        .from('ad_banners')
+        .select('id, title, image_url, link_url')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+      
+      if (data) {
+        setAdBanners(data);
+      }
+    };
+    fetchBanners();
+  }, []);
 
   // Initialize country: logged-in users get their profile country, others get geolocation
   useEffect(() => {
@@ -99,6 +125,39 @@ const Index = () => {
     if (activeFilter === 'commercial') return property.propertyType === 'commercial';
     return true;
   });
+
+  // Insert banners after every 4 properties
+  const renderPropertiesWithBanners = () => {
+    const items: JSX.Element[] = [];
+    let bannerIndex = 0;
+
+    filteredProperties.forEach((property, index) => {
+      items.push(
+        <PropertyCard 
+          key={property.id} 
+          property={property} 
+          userCountry={selectedCountry?.code}
+          isFirst={index === 0}
+        />
+      );
+
+      // After every 4 properties, insert a banner (if available)
+      if ((index + 1) % 4 === 0 && adBanners.length > 0) {
+        const banner = adBanners[bannerIndex % adBanners.length];
+        items.push(
+          <AdBanner 
+            key={`banner-${banner.id}-${index}`}
+            imageUrl={banner.image_url}
+            linkUrl={banner.link_url}
+            title={banner.title}
+          />
+        );
+        bannerIndex++;
+      }
+    });
+
+    return items;
+  };
 
   return (
     <div className="min-h-screen pb-32">
@@ -214,14 +273,7 @@ const Index = () => {
             </div>
           ) : (
             <div className="grid gap-4">
-              {filteredProperties.map((property, index) => (
-                <PropertyCard 
-                  key={property.id} 
-                  property={property} 
-                  userCountry={selectedCountry?.code}
-                  isFirst={index === 0}
-                />
-              ))}
+              {renderPropertiesWithBanners()}
             </div>
           )}
 

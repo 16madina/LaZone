@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -26,7 +26,12 @@ import {
   MapPin,
   Bell,
   Send,
-  Phone
+  Phone,
+  Image,
+  Plus,
+  Edit2,
+  ExternalLink,
+  Upload
 } from 'lucide-react';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useAuth } from '@/hooks/useAuth';
@@ -58,7 +63,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { africanCountries } from '@/data/africanCountries';
 
-type TabType = 'users' | 'properties' | 'reports' | 'admins' | 'sponsored' | 'notifications';
+type TabType = 'users' | 'properties' | 'reports' | 'admins' | 'sponsored' | 'notifications' | 'banners';
 
 // Predefined notification templates
 const notificationTemplates = [
@@ -168,6 +173,16 @@ interface AdminData {
   created_at: string;
 }
 
+interface BannerData {
+  id: string;
+  title: string;
+  image_url: string;
+  link_url: string | null;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+}
+
 const AdminPage = () => {
   const navigate = useNavigate();
   const { isAdmin, isModerator, loading: loadingRoles } = useAdmin();
@@ -182,6 +197,7 @@ const AdminPage = () => {
   const [properties, setProperties] = useState<PropertyData[]>([]);
   const [reports, setReports] = useState<ReportData[]>([]);
   const [admins, setAdmins] = useState<AdminData[]>([]);
+  const [banners, setBanners] = useState<BannerData[]>([]);
   
   // Dialog states
   const [warningDialog, setWarningDialog] = useState<{ open: boolean; userId: string; userName: string }>({ open: false, userId: '', userName: '' });
@@ -189,6 +205,16 @@ const AdminPage = () => {
   const [messageDialog, setMessageDialog] = useState<{ open: boolean; userId: string; userName: string; type: 'app' | 'email' }>({ open: false, userId: '', userName: '', type: 'app' });
   const [sponsorDialog, setSponsorDialog] = useState<SponsorDialogData>({ open: false, property: null });
   const [addAdminDialog, setAddAdminDialog] = useState(false);
+  const [bannerDialog, setBannerDialog] = useState<{ open: boolean; banner: BannerData | null }>({ open: false, banner: null });
+  
+  // Banner form states
+  const [bannerTitle, setBannerTitle] = useState('');
+  const [bannerLinkUrl, setBannerLinkUrl] = useState('');
+  const [bannerIsActive, setBannerIsActive] = useState(true);
+  const [bannerImageFile, setBannerImageFile] = useState<File | null>(null);
+  const [bannerImagePreview, setBannerImagePreview] = useState<string | null>(null);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const bannerFileInputRef = useRef<HTMLInputElement>(null);
   
   // Form states
   const [warningReason, setWarningReason] = useState('');
@@ -244,6 +270,9 @@ const AdminPage = () => {
           break;
         case 'notifications':
           await fetchUsers();
+          break;
+        case 'banners':
+          await fetchBanners();
           break;
       }
     } catch (error) {
@@ -431,6 +460,16 @@ const AdminPage = () => {
     }));
 
     setProperties(propertiesWithOwner);
+  };
+
+  const fetchBanners = async () => {
+    const { data, error } = await supabase
+      .from('ad_banners')
+      .select('*')
+      .order('display_order', { ascending: true });
+    
+    if (error) throw error;
+    setBanners(data || []);
   };
 
   // Actions
@@ -706,11 +745,155 @@ const AdminPage = () => {
     });
   };
 
+  // Banner handlers
+  const handleOpenBannerDialog = (banner?: BannerData) => {
+    if (banner) {
+      setBannerTitle(banner.title);
+      setBannerLinkUrl(banner.link_url || '');
+      setBannerIsActive(banner.is_active);
+      setBannerImagePreview(banner.image_url);
+      setBannerDialog({ open: true, banner });
+    } else {
+      setBannerTitle('');
+      setBannerLinkUrl('');
+      setBannerIsActive(true);
+      setBannerImagePreview(null);
+      setBannerImageFile(null);
+      setBannerDialog({ open: true, banner: null });
+    }
+  };
+
+  const handleBannerImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setBannerImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBannerImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveBanner = async () => {
+    if (!bannerTitle.trim()) {
+      toast({ title: 'Veuillez entrer un titre', variant: 'destructive' });
+      return;
+    }
+
+    if (!bannerDialog.banner && !bannerImageFile) {
+      toast({ title: 'Veuillez sélectionner une image', variant: 'destructive' });
+      return;
+    }
+
+    setUploadingBanner(true);
+    try {
+      let imageUrl = bannerDialog.banner?.image_url || '';
+
+      // Upload new image if provided
+      if (bannerImageFile) {
+        const fileExt = bannerImageFile.name.split('.').pop();
+        const fileName = `${crypto.randomUUID()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('ad-banners')
+          .upload(fileName, bannerImageFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from('ad-banners')
+          .getPublicUrl(fileName);
+        
+        imageUrl = urlData.publicUrl;
+      }
+
+      if (bannerDialog.banner) {
+        // Update existing banner
+        const { error } = await supabase
+          .from('ad_banners')
+          .update({
+            title: bannerTitle,
+            image_url: imageUrl,
+            link_url: bannerLinkUrl || null,
+            is_active: bannerIsActive,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', bannerDialog.banner.id);
+
+        if (error) throw error;
+        toast({ title: 'Bannière mise à jour' });
+      } else {
+        // Create new banner
+        const { error } = await supabase
+          .from('ad_banners')
+          .insert({
+            title: bannerTitle,
+            image_url: imageUrl,
+            link_url: bannerLinkUrl || null,
+            is_active: bannerIsActive,
+            created_by: user?.id,
+          });
+
+        if (error) throw error;
+        toast({ title: 'Bannière créée' });
+      }
+
+      setBannerDialog({ open: false, banner: null });
+      setBannerImageFile(null);
+      fetchBanners();
+    } catch (error) {
+      console.error('Error saving banner:', error);
+      toast({ title: 'Erreur lors de la sauvegarde', variant: 'destructive' });
+    } finally {
+      setUploadingBanner(false);
+    }
+  };
+
+  const handleDeleteBanner = async (bannerId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette bannière ?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('ad_banners')
+        .delete()
+        .eq('id', bannerId);
+
+      if (error) throw error;
+
+      setBanners(prev => prev.filter(b => b.id !== bannerId));
+      toast({ title: 'Bannière supprimée' });
+    } catch (error) {
+      console.error('Error deleting banner:', error);
+      toast({ title: 'Erreur', variant: 'destructive' });
+    }
+  };
+
+  const handleToggleBannerActive = async (bannerId: string, isActive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('ad_banners')
+        .update({ is_active: !isActive })
+        .eq('id', bannerId);
+
+      if (error) throw error;
+
+      setBanners(prev => prev.map(b => 
+        b.id === bannerId ? { ...b, is_active: !isActive } : b
+      ));
+      toast({ title: isActive ? 'Bannière désactivée' : 'Bannière activée' });
+    } catch (error) {
+      console.error('Error toggling banner:', error);
+      toast({ title: 'Erreur', variant: 'destructive' });
+    }
+  };
+
   const tabs = [
     { id: 'users' as TabType, label: 'Utilisateurs', icon: Users },
     { id: 'properties' as TabType, label: 'Annonces', icon: Home },
     { id: 'reports' as TabType, label: 'Signalements', icon: Flag },
     { id: 'sponsored' as TabType, label: 'Sponsorisés', icon: Star },
+    { id: 'banners' as TabType, label: 'Bannières', icon: Image },
     { id: 'notifications' as TabType, label: 'Notifs', icon: Bell },
     ...(isAdmin ? [{ id: 'admins' as TabType, label: 'Admins', icon: Shield }] : []),
   ];
@@ -1380,6 +1563,85 @@ const AdminPage = () => {
                 </div>
               </div>
             )}
+
+            {/* Banners Tab */}
+            {activeTab === 'banners' && (
+              <div className="space-y-3">
+                <Button
+                  onClick={() => handleOpenBannerDialog()}
+                  className="w-full"
+                  variant="outline"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Ajouter une bannière
+                </Button>
+                
+                {banners.map((banner) => (
+                  <div key={banner.id} className="bg-card rounded-xl overflow-hidden shadow-sm border border-border">
+                    <div className="aspect-[3/1] relative">
+                      <img 
+                        src={banner.image_url} 
+                        alt={banner.title}
+                        className="w-full h-full object-cover"
+                      />
+                      {!banner.is_active && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <Badge variant="secondary">Désactivée</Badge>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium truncate">{banner.title}</h3>
+                          {banner.link_url && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                              <ExternalLink className="w-3 h-3" />
+                              <span className="truncate">{banner.link_url}</span>
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleToggleBannerActive(banner.id, banner.is_active)}
+                            className={`p-2 rounded-lg hover:bg-muted transition-colors ${
+                              banner.is_active ? 'text-green-500' : 'text-muted-foreground'
+                            }`}
+                            title={banner.is_active ? 'Désactiver' : 'Activer'}
+                          >
+                            {banner.is_active ? <Eye className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                          </button>
+                          <button
+                            onClick={() => handleOpenBannerDialog(banner)}
+                            className="p-2 rounded-lg hover:bg-muted transition-colors"
+                            title="Modifier"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteBanner(banner.id)}
+                            className="p-2 rounded-lg hover:bg-muted transition-colors"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {banners.length === 0 && (
+                  <div className="text-center py-8">
+                    <Image className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-muted-foreground">Aucune bannière publicitaire</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Ajoutez des bannières pour les afficher entre les annonces
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>
@@ -1720,6 +1982,96 @@ const AdminPage = () => {
             </Button>
             <Button onClick={handleAddAdmin} disabled={!newAdminEmail.trim()}>
               Ajouter
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Banner Dialog */}
+      <Dialog open={bannerDialog.open} onOpenChange={(open) => {
+        if (!open) {
+          setBannerDialog({ open: false, banner: null });
+          setBannerImageFile(null);
+          setBannerImagePreview(null);
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{bannerDialog.banner ? 'Modifier la bannière' : 'Nouvelle bannière'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Titre</Label>
+              <Input
+                value={bannerTitle}
+                onChange={(e) => setBannerTitle(e.target.value)}
+                placeholder="Titre de la bannière"
+              />
+            </div>
+            
+            <div>
+              <Label>Image (ratio 3:1 recommandé)</Label>
+              <input
+                type="file"
+                ref={bannerFileInputRef}
+                onChange={handleBannerImageChange}
+                accept="image/*"
+                className="hidden"
+              />
+              {bannerImagePreview ? (
+                <div className="mt-2 relative">
+                  <img 
+                    src={bannerImagePreview} 
+                    alt="Preview" 
+                    className="w-full aspect-[3/1] object-cover rounded-lg"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="absolute bottom-2 right-2"
+                    onClick={() => bannerFileInputRef.current?.click()}
+                  >
+                    Changer
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full mt-2 h-24"
+                  onClick={() => bannerFileInputRef.current?.click()}
+                >
+                  <Upload className="w-5 h-5 mr-2" />
+                  Sélectionner une image
+                </Button>
+              )}
+            </div>
+            
+            <div>
+              <Label>Lien (optionnel)</Label>
+              <Input
+                value={bannerLinkUrl}
+                onChange={(e) => setBannerLinkUrl(e.target.value)}
+                placeholder="https://..."
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <Label>Activer la bannière</Label>
+              <Switch
+                checked={bannerIsActive}
+                onCheckedChange={setBannerIsActive}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBannerDialog({ open: false, banner: null })}>
+              Annuler
+            </Button>
+            <Button onClick={handleSaveBanner} disabled={uploadingBanner}>
+              {uploadingBanner && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {bannerDialog.banner ? 'Mettre à jour' : 'Créer'}
             </Button>
           </DialogFooter>
         </DialogContent>
