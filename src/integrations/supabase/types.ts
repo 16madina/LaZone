@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       appointments: {
         Row: {
+          contact_phone: string | null
           created_at: string
           id: string
           message: string | null
@@ -25,10 +26,12 @@ export type Database = {
           requested_time: string
           requester_id: string
           response_message: string | null
+          share_phone: boolean | null
           status: string
           updated_at: string
         }
         Insert: {
+          contact_phone?: string | null
           created_at?: string
           id?: string
           message?: string | null
@@ -38,10 +41,12 @@ export type Database = {
           requested_time: string
           requester_id: string
           response_message?: string | null
+          share_phone?: boolean | null
           status?: string
           updated_at?: string
         }
         Update: {
+          contact_phone?: string | null
           created_at?: string
           id?: string
           message?: string | null
@@ -51,6 +56,7 @@ export type Database = {
           requested_time?: string
           requester_id?: string
           response_message?: string | null
+          share_phone?: boolean | null
           status?: string
           updated_at?: string
         }
