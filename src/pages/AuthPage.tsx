@@ -51,6 +51,9 @@ const AuthPage = () => {
   const [residenceCountry, setResidenceCountry] = useState<DiasporaCountry | null>(null);
   const [showResidenceDropdown, setShowResidenceDropdown] = useState(false);
   const [loginPhone, setLoginPhone] = useState('');
+  const [showForgotPasswordDialog, setShowForgotPasswordDialog] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -243,6 +246,37 @@ const AuthPage = () => {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!resetEmail) {
+      toast({ title: 'Erreur', description: 'Veuillez entrer votre email', variant: 'destructive' });
+      return;
+    }
+    
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resetEmail)) {
+      toast({ title: 'Erreur', description: 'Format d\'email invalide', variant: 'destructive' });
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/auth?reset=true`,
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Email envoyé!',
+        description: 'Vérifiez votre boîte mail pour réinitialiser votre mot de passe.',
+      });
+      setShowForgotPasswordDialog(false);
+      setResetEmail('');
+    } catch (error: any) {
+      toast({ title: 'Erreur', description: error.message || 'Impossible d\'envoyer l\'email', variant: 'destructive' });
+    } finally {
+      setResetLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -688,36 +722,6 @@ const AuthPage = () => {
             </>
           )}
 
-          {/* Login Method Toggle */}
-          {isLogin && (
-            <div className="flex gap-2 mb-2">
-              <button
-                type="button"
-                onClick={() => setLoginMethod('email')}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-                  loginMethod === 'email' 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                }`}
-              >
-                <Mail className="w-4 h-4" />
-                Email
-              </button>
-              <button
-                type="button"
-                onClick={() => setLoginMethod('phone')}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-                  loginMethod === 'phone' 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                }`}
-              >
-                <Phone className="w-4 h-4" />
-                Téléphone
-              </button>
-            </div>
-          )}
-
           {/* Email/Phone Login Fields */}
           {isLogin ? (
             loginMethod === 'email' ? (
@@ -809,8 +813,15 @@ const AuthPage = () => {
               </div>
               <div className="flex justify-between items-center mt-1">
                 <InputError message={touched.password ? errors.password : undefined} />
-                {isLogin && (
-                  <button type="button" className="text-xs text-primary font-medium hover:underline">
+                {isLogin && loginMethod === 'email' && (
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setResetEmail(formData.email);
+                      setShowForgotPasswordDialog(true);
+                    }}
+                    className="text-xs text-primary font-medium hover:underline"
+                  >
                     Mot de passe oublié?
                   </button>
                 )}
@@ -903,18 +914,46 @@ const AuthPage = () => {
               </>
             )}
           </button>
+
+          {/* Phone Login Toggle */}
+          {isLogin && (
+            <>
+              <div className="flex items-center gap-3 my-4">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-muted-foreground text-sm">ou</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+              
+              <button
+                type="button"
+                onClick={() => setLoginMethod(loginMethod === 'email' ? 'phone' : 'email')}
+                className="w-full py-3 rounded-xl border border-border bg-background hover:bg-muted transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+              >
+                {loginMethod === 'email' ? (
+                  <>
+                    <Phone className="w-4 h-4" />
+                    Se connecter avec le téléphone
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-4 h-4" />
+                    Se connecter avec l'email
+                  </>
+                )}
+              </button>
+            </>
+          )}
         </form>
 
-
-
         {/* Toggle */}
-        <div className="text-center">
+        <div className="text-center mt-4">
           <p className="text-muted-foreground text-sm">
             {isLogin ? 'Pas encore de compte?' : 'Déjà un compte?'}{' '}
             <button
               type="button"
               onClick={() => {
                 setIsLogin(!isLogin);
+                setLoginMethod('email');
                 setErrors({});
                 setTouched({});
               }}
@@ -991,6 +1030,46 @@ const AuthPage = () => {
             
             <p><strong>7. Contact</strong></p>
             <p>Pour toute question concernant notre politique de confidentialité, contactez-nous à support@lazone.africa</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={showForgotPasswordDialog} onOpenChange={setShowForgotPasswordDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display">Réinitialiser le mot de passe</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.
+            </p>
+            <div className="glass-card p-1">
+              <div className="flex items-center gap-2 px-3 py-2.5">
+                <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <input
+                  type="email"
+                  placeholder="Votre email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  className="flex-1 bg-transparent outline-none text-sm"
+                />
+              </div>
+            </div>
+            <button
+              onClick={handleResetPassword}
+              disabled={resetLoading}
+              className="w-full gradient-primary py-3 rounded-xl text-primary-foreground font-medium shadow-lg disabled:opacity-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+            >
+              {resetLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  Envoi...
+                </span>
+              ) : (
+                'Envoyer le lien'
+              )}
+            </button>
           </div>
         </DialogContent>
       </Dialog>
