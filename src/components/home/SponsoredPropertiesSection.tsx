@@ -103,36 +103,36 @@ export const SponsoredPropertiesSection = ({ userCountry }: SponsoredPropertiesS
           <Link
             key={property.id}
             to={`/property/${property.id}`}
-            className="flex-shrink-0 w-[140px] group"
+            className="flex-shrink-0 w-[160px] group"
           >
-            <div className="relative rounded-xl overflow-hidden">
+            <div className="relative rounded-2xl overflow-hidden shadow-lg">
               {/* Image */}
-              <div className="aspect-[4/3] relative">
+              <div className="aspect-[3/4] relative">
                 <img
                   src={property.imageUrl}
                   alt={property.title}
                   className="w-full h-full object-cover group-active:scale-105 transition-transform"
                 />
                 {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                 
                 {/* Sponsor Badge */}
-                <div className="absolute top-2 left-2 px-2 py-0.5 bg-primary rounded-full flex items-center gap-1">
-                  <Star className="w-2.5 h-2.5 text-white fill-white" />
-                  <span className="text-[10px] font-semibold text-white">Sponsor</span>
+                <div className="absolute top-2.5 left-2.5 px-2.5 py-1 bg-primary rounded-full flex items-center gap-1 shadow-md">
+                  <Star className="w-3 h-3 text-white fill-white" />
+                  <span className="text-[11px] font-bold text-white">Sponsor</span>
                 </div>
               </div>
 
               {/* Content Overlay */}
-              <div className="absolute bottom-0 left-0 right-0 p-2">
-                <p className="text-white font-medium text-xs truncate">
+              <div className="absolute bottom-0 left-0 right-0 p-3">
+                <p className="text-white font-semibold text-sm truncate">
                   {property.title}
                 </p>
-                <div className="flex items-center gap-1 text-white/70 mt-0.5">
-                  <MapPin className="w-2.5 h-2.5" />
-                  <span className="text-[10px] truncate">{property.city}</span>
+                <div className="flex items-center gap-1.5 text-white/80 mt-1">
+                  <MapPin className="w-3 h-3" />
+                  <span className="text-xs truncate">{property.city}</span>
                 </div>
-                <p className="text-primary font-bold text-xs mt-1">
+                <p className="text-primary font-bold text-sm mt-1.5">
                   {formatPrice(property.price, property.country)}
                 </p>
               </div>
