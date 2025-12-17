@@ -213,11 +213,9 @@
   .bottom-nav {
     @apply fixed bottom-0 left-0 right-0 z-50;
     @apply glass border-t border-glass-border;
-    padding-bottom: max(env(safe-area-inset-bottom, 0px), 6px);
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 4px);
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
-    /* Ensure visibility on all devices */
-    min-height: 52px;
   }
 
   .top-safe-area {
