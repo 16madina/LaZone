@@ -68,20 +68,22 @@ const TutorialOverlay = () => {
     const vh = vv?.height ?? window.innerHeight;
 
     const tooltipWidth = Math.min(320, vw - padding * 2);
-    const effectiveHeight = Math.min(tooltipHeight || 240, vh - padding * 2);
+    const availableHeight = Math.max(0, vh - padding * 2);
+    const effectiveHeight = Math.min(tooltipHeight || 240, availableHeight);
 
     const base = {
       maxWidth: `calc(100vw - ${padding * 2}px)`,
       width: `${tooltipWidth}px`,
-      maxHeight: `calc(100dvh - ${padding * 2}px)`,
+      maxHeight: `${availableHeight}px`,
     };
 
+    // Mobile-safe center: anchor from the top padding, let content scroll inside.
     if (!targetRect || step.position === 'center') {
       return {
         position: 'fixed' as const,
-        top: '50%',
+        top: padding,
         left: '50%',
-        transform: 'translate(-50%, -50%)',
+        transform: 'translateX(-50%)',
         ...base,
       };
     }
@@ -142,9 +144,9 @@ const TutorialOverlay = () => {
       default:
         return {
           position: 'fixed' as const,
-          top: '50%',
+          top: padding,
           left: '50%',
-          transform: 'translate(-50%, -50%)',
+          transform: 'translateX(-50%)',
           ...base,
         };
     }
