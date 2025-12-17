@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Search, ArrowLeft, Send, Loader2, 
-  MessageCircle, Paperclip, X, FileText, Reply, MapPin
+  MessageCircle, Paperclip, X, FileText, Reply, MapPin,
+  MoreVertical, Calendar
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -15,6 +16,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import SwipeableMessage from '@/components/messages/SwipeableMessage';
 import SwipeableConversation from '@/components/messages/SwipeableConversation';
+import { AppointmentDialog } from '@/components/appointment/AppointmentDialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const MessagesPage = () => {
   const navigate = useNavigate();
@@ -188,7 +196,8 @@ const ConversationView = ({ participantId, propertyId, onBack }: ConversationVie
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [participant, setParticipant] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
-  const [propertyInfo, setPropertyInfo] = useState<{ id: string; title: string } | null>(null);
+  const [propertyInfo, setPropertyInfo] = useState<{ id: string; title: string; ownerId: string } | null>(null);
+  const [showAppointmentDialog, setShowAppointmentDialog] = useState(false);
   const [pendingAttachment, setPendingAttachment] = useState<{ url: string; type: 'image' | 'file'; name: string } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [replyTo, setReplyTo] = useState<{ id: string; content: string } | null>(null);
@@ -224,12 +233,12 @@ const ConversationView = ({ participantId, propertyId, onBack }: ConversationVie
       if (propertyId) {
         const { data } = await supabase
           .from('properties')
-          .select('id, title')
+          .select('id, title, user_id')
           .eq('id', propertyId)
           .maybeSingle();
         
         if (data) {
-          setPropertyInfo({ id: data.id, title: data.title });
+          setPropertyInfo({ id: data.id, title: data.title, ownerId: data.user_id });
         }
       }
     };
@@ -355,6 +364,30 @@ const ConversationView = ({ participantId, propertyId, onBack }: ConversationVie
               <p className="text-xs text-muted-foreground">Hors ligne</p>
             )}
           </div>
+          
+          {/* 3-dot Menu */}
+          {propertyInfo && propertyInfo.ownerId !== user?.id && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-2 hover:bg-muted rounded-full">
+                  <MoreVertical className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <AppointmentDialog
+                  propertyId={propertyInfo.id}
+                  ownerId={propertyInfo.ownerId}
+                  propertyTitle={propertyInfo.title}
+                  trigger={
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Prendre rendez-vous
+                    </DropdownMenuItem>
+                  }
+                />
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
         
         {/* Property Banner */}

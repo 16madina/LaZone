@@ -59,6 +59,7 @@ import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Switch } from '@/components/ui/switch';
+import { AppointmentsTab } from '@/components/appointment/AppointmentsTab';
 
 type TabType = 'profil' | 'annonces' | 'rdv' | 'favoris' | 'parametres';
 
@@ -867,13 +868,7 @@ const ProfilePage = () => {
             )}
 
             {activeTab === 'rdv' && (
-              <div className="text-center py-8">
-                <CalendarDays className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                <h3 className="font-semibold mb-1">Mes Rendez-vous</h3>
-                <p className="text-sm text-muted-foreground">
-                  Aucun rendez-vous prévu
-                </p>
-              </div>
+              <AppointmentsTab />
             )}
 
             {activeTab === 'favoris' && (
