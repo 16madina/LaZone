@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, HelpCircle, MessageCircle, AlertTriangle, ChevronRight, Search } from 'lucide-react';
+import { ArrowLeft, HelpCircle, MessageCircle, AlertTriangle, Info, FileText, Search } from 'lucide-react';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -78,6 +78,15 @@ const HelpCenterPage = () => {
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-3">
           <button 
+            onClick={() => navigate('/settings/faq')}
+            className="bg-card p-4 rounded-2xl flex flex-col items-center gap-2 hover:bg-muted/50 transition-colors"
+          >
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <HelpCircle className="w-6 h-6 text-primary" />
+            </div>
+            <span className="font-medium text-sm">FAQ complète</span>
+          </button>
+          <button 
             onClick={() => navigate('/settings/support')}
             className="bg-card p-4 rounded-2xl flex flex-col items-center gap-2 hover:bg-muted/50 transition-colors"
           >
@@ -87,13 +96,22 @@ const HelpCenterPage = () => {
             <span className="font-medium text-sm">Contacter le support</span>
           </button>
           <button 
-            onClick={() => navigate('/settings/report')}
+            onClick={() => navigate('/settings/about')}
             className="bg-card p-4 rounded-2xl flex flex-col items-center gap-2 hover:bg-muted/50 transition-colors"
           >
-            <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-destructive" />
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <Info className="w-6 h-6 text-primary" />
             </div>
-            <span className="font-medium text-sm">Signaler un problème</span>
+            <span className="font-medium text-sm">À propos de LaZone</span>
+          </button>
+          <button 
+            onClick={() => navigate('/settings/legal')}
+            className="bg-card p-4 rounded-2xl flex flex-col items-center gap-2 hover:bg-muted/50 transition-colors"
+          >
+            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+              <FileText className="w-6 h-6 text-muted-foreground" />
+            </div>
+            <span className="font-medium text-sm">Mentions légales</span>
           </button>
         </div>
 
