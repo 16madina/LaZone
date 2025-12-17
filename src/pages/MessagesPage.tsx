@@ -88,13 +88,109 @@ const MessagesPage = () => {
 
   if (!user) {
     return (
-      <div className="page-container flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <MessageCircle className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Connectez-vous</h2>
-          <p className="text-muted-foreground mb-4">Pour accéder à vos messages</p>
-          <Button onClick={() => navigate('/auth')}>Se connecter</Button>
-        </div>
+      <div className="page-container flex flex-col items-center justify-center min-h-[70vh] px-6">
+        {/* Animated illustration */}
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="relative mb-8"
+        >
+          <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+            <motion.div
+              animate={{ 
+                y: [0, -8, 0],
+                rotate: [0, 5, -5, 0]
+              }}
+              transition={{ 
+                duration: 3, 
+                repeat: Infinity, 
+                ease: "easeInOut" 
+              }}
+            >
+              <MessageCircle className="w-16 h-16 text-primary" strokeWidth={1.5} />
+            </motion.div>
+          </div>
+          {/* Decorative bubbles */}
+          <motion.div
+            animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+            className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary/30"
+          />
+          <motion.div
+            animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.8, 0.3] }}
+            transition={{ duration: 2.5, repeat: Infinity, delay: 1 }}
+            className="absolute bottom-0 -left-3 w-4 h-4 rounded-full bg-primary/20"
+          />
+        </motion.div>
+
+        {/* Title and subtitle */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="text-center mb-8"
+        >
+          <h2 className="font-display text-2xl font-bold mb-2">Vos messages vous attendent</h2>
+          <p className="text-muted-foreground">Connectez-vous pour discuter avec les propriétaires</p>
+        </motion.div>
+
+        {/* Features list */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="glass-card p-5 w-full max-w-sm mb-8"
+        >
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Send className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-medium text-sm">Chat en temps réel</p>
+                <p className="text-xs text-muted-foreground">Messages instantanés</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Paperclip className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-medium text-sm">Pièces jointes</p>
+                <p className="text-xs text-muted-foreground">Photos et documents</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Calendar className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-medium text-sm">Rendez-vous</p>
+                <p className="text-xs text-muted-foreground">Planifiez vos visites</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* CTA Button */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="w-full max-w-sm"
+        >
+          <Button 
+            onClick={() => navigate('/auth')} 
+            className="w-full h-12 text-base font-semibold"
+            size="lg"
+          >
+            Se connecter
+          </Button>
+          <p className="text-center text-xs text-muted-foreground mt-3">
+            Pas encore de compte ? <button onClick={() => navigate('/auth')} className="text-primary font-medium">Créer un compte</button>
+          </p>
+        </motion.div>
       </div>
     );
   }
