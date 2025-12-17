@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
+import { motion, PanInfo, useMotionValue } from 'framer-motion';
 import { MoreVertical, Trash2, Archive } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -35,8 +35,6 @@ const SwipeableConversation = ({
   const [showActions, setShowActions] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
-  const actionOpacity = useTransform(x, [-100, -50], [1, 0]);
-  const actionScale = useTransform(x, [-100, -50], [1, 0.8]);
 
   const handleDragEnd = (_: any, info: PanInfo) => {
     if (info.offset.x < -80) {
@@ -64,23 +62,28 @@ const SwipeableConversation = ({
       className="relative overflow-hidden rounded-2xl"
     >
       {/* Action buttons behind */}
-      <motion.div 
-        className="absolute right-0 top-0 bottom-0 flex items-center gap-2 pr-2"
-        style={{ opacity: actionOpacity, scale: actionScale }}
-      >
-        <button
-          onClick={() => handleActionClick('archive')}
-          className="h-12 w-12 rounded-full bg-blue-500 flex items-center justify-center text-white shadow-lg"
-        >
-          <Archive className="w-5 h-5" />
-        </button>
-        <button
-          onClick={() => handleActionClick('delete')}
-          className="h-12 w-12 rounded-full bg-red-500 flex items-center justify-center text-white shadow-lg"
-        >
-          <Trash2 className="w-5 h-5" />
-        </button>
-      </motion.div>
+      {showActions && (
+        <div className="absolute right-0 top-0 bottom-0 flex items-center gap-2 pr-2 z-20">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleActionClick('archive');
+            }}
+            className="h-12 w-12 rounded-full bg-blue-500 flex items-center justify-center text-white shadow-lg active:scale-95 transition-transform"
+          >
+            <Archive className="w-5 h-5" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleActionClick('delete');
+            }}
+            className="h-12 w-12 rounded-full bg-red-500 flex items-center justify-center text-white shadow-lg active:scale-95 transition-transform"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
+        </div>
+      )}
 
       {/* Conversation card */}
       <motion.button
@@ -91,7 +94,7 @@ const SwipeableConversation = ({
         style={{ x }}
         animate={{ x: showActions ? -120 : 0 }}
         onClick={() => !showActions && onSelect()}
-        className="w-full glass-card p-4 flex items-center gap-3 text-left relative z-10 bg-card"
+        className={`w-full glass-card p-4 flex items-center gap-3 text-left relative bg-card ${showActions ? 'z-0' : 'z-10'}`}
       >
         <div className="relative">
           <img
