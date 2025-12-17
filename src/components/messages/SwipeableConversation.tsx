@@ -100,11 +100,11 @@ const SwipeableConversation = ({
       >
         <div className="relative">
           <img
-            src={conversation.participantAvatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop'}
-            alt={conversation.participantName}
-            className="w-12 h-12 rounded-full object-cover"
+            src={conversation.propertyImage || '/placeholder.svg'}
+            alt={conversation.propertyTitle}
+            className="w-14 h-14 rounded-xl object-cover"
             onError={(e) => {
-              e.currentTarget.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
+              e.currentTarget.src = '/placeholder.svg';
             }}
           />
           {isOnline && (
