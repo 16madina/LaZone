@@ -688,13 +688,11 @@ const AdminPage = () => {
     ...(isAdmin ? [{ id: 'admins' as TabType, label: 'Admins', icon: Shield }] : []),
   ];
 
-  // Handle send push notification
   const handleSendPushNotification = async () => {
-    const template = notificationTemplates.find(t => t.id === selectedNotificationTemplate);
-    const title = selectedNotificationTemplate === 'custom' ? customNotificationTitle : template?.title || '';
-    const body = selectedNotificationTemplate === 'custom' ? customNotificationBody : template?.body || '';
+    const title = customNotificationTitle.trim();
+    const body = customNotificationBody.trim();
 
-    if (!title.trim() || !body.trim()) {
+    if (!title || !body) {
       toast({ title: 'Veuillez remplir le titre et le message', variant: 'destructive' });
       return;
     }
@@ -742,11 +740,10 @@ const AdminPage = () => {
         });
       }
 
-      // Reset form
-      if (selectedNotificationTemplate === 'custom') {
-        setCustomNotificationTitle('');
-        setCustomNotificationBody('');
-      }
+      // Reset form after sending
+      setCustomNotificationTitle('');
+      setCustomNotificationBody('');
+      setSelectedNotificationTemplate('');
     } catch (error) {
       console.error('Error sending notification:', error);
       toast({ title: 'Erreur lors de l\'envoi', variant: 'destructive' });
@@ -1211,12 +1208,16 @@ const AdminPage = () => {
 
                   {/* Template Selection */}
                   <div className="mb-4">
-                    <Label className="text-sm">Type de notification</Label>
+                    <Label className="text-sm">Modèle de notification</Label>
                     <div className="grid grid-cols-2 gap-2 mt-2">
-                      {notificationTemplates.map((template) => (
+                      {notificationTemplates.filter(t => t.id !== 'custom').map((template) => (
                         <button
                           key={template.id}
-                          onClick={() => setSelectedNotificationTemplate(template.id)}
+                          onClick={() => {
+                            setSelectedNotificationTemplate(template.id);
+                            setCustomNotificationTitle(template.title);
+                            setCustomNotificationBody(template.body);
+                          }}
                           className={cn(
                             "p-3 rounded-lg border text-left transition-colors",
                             selectedNotificationTemplate === template.id
@@ -1230,39 +1231,28 @@ const AdminPage = () => {
                     </div>
                   </div>
 
-                  {/* Preview or Custom Input */}
-                  {selectedNotificationTemplate === 'custom' ? (
-                    <div className="space-y-3 mb-4">
-                      <div>
-                        <Label className="text-sm">Titre</Label>
-                        <Input
-                          value={customNotificationTitle}
-                          onChange={(e) => setCustomNotificationTitle(e.target.value)}
-                          placeholder="Titre de la notification..."
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-sm">Message</Label>
-                        <Textarea
-                          value={customNotificationBody}
-                          onChange={(e) => setCustomNotificationBody(e.target.value)}
-                          placeholder="Corps du message..."
-                          rows={3}
-                          className="mt-1"
-                        />
-                      </div>
+                  {/* Editable Title & Message */}
+                  <div className="space-y-3 mb-4">
+                    <div>
+                      <Label className="text-sm">Titre</Label>
+                      <Input
+                        value={customNotificationTitle}
+                        onChange={(e) => setCustomNotificationTitle(e.target.value)}
+                        placeholder="Titre de la notification..."
+                        className="mt-1"
+                      />
                     </div>
-                  ) : (
-                    <div className="mb-4 p-3 bg-muted/50 rounded-lg">
-                      <p className="text-sm font-medium">
-                        {notificationTemplates.find(t => t.id === selectedNotificationTemplate)?.title}
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {notificationTemplates.find(t => t.id === selectedNotificationTemplate)?.body}
-                      </p>
+                    <div>
+                      <Label className="text-sm">Message</Label>
+                      <Textarea
+                        value={customNotificationBody}
+                        onChange={(e) => setCustomNotificationBody(e.target.value)}
+                        placeholder="Corps du message..."
+                        rows={3}
+                        className="mt-1"
+                      />
                     </div>
-                  )}
+                  </div>
 
                   {/* Send Button */}
                   <Button 
