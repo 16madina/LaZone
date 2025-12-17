@@ -14,7 +14,9 @@ import {
   Loader2,
   ChevronRight,
   Clock,
-  MapPin
+  MapPin,
+  Ban,
+  UserX
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { format, isToday, isTomorrow, addDays, startOfDay, endOfDay } from 'date-fns';
@@ -26,6 +28,8 @@ import { useMessages } from '@/hooks/useMessages';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
 
 interface DashboardStats {
   totalProperties: number;
@@ -67,6 +71,16 @@ interface PropertyRanking {
   favoriteCount: number;
 }
 
+interface BlockedUser {
+  id: string;
+  blocked_user_id: string;
+  created_at: string;
+  profile: {
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
+}
+
 const DashboardPage = () => {
   const { user, profile } = useAuth();
   const { properties } = useProperties();
@@ -77,6 +91,7 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
   const [propertyRankings, setPropertyRankings] = useState<PropertyRanking[]>([]);
+  const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
 
   // Get unread conversations
   const unreadConversations = conversations.filter(c => c.unreadCount > 0);
@@ -225,6 +240,64 @@ const DashboardPage = () => {
 
     fetchStats();
   }, [user, properties, favorites, totalUnread, navigate]);
+
+  // Fetch blocked users
+  useEffect(() => {
+    const fetchBlockedUsers = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from('blocked_users')
+        .select('id, blocked_user_id, created_at')
+        .eq('user_id', user.id);
+      
+      if (data && data.length > 0) {
+        // Fetch profiles for blocked users
+        const blockedUserIds = data.map(b => b.blocked_user_id);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, avatar_url')
+          .in('user_id', blockedUserIds);
+        
+        const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+        
+        const blockedWithProfiles: BlockedUser[] = data.map(b => ({
+          ...b,
+          profile: profileMap.get(b.blocked_user_id) || null
+        }));
+        
+        setBlockedUsers(blockedWithProfiles);
+      } else {
+        setBlockedUsers([]);
+      }
+    };
+    
+    fetchBlockedUsers();
+  }, [user]);
+
+  const handleUnblockUser = async (blockedUserId: string, userName: string | null) => {
+    try {
+      const { error } = await supabase
+        .from('blocked_users')
+        .delete()
+        .eq('user_id', user?.id)
+        .eq('blocked_user_id', blockedUserId);
+      
+      if (error) throw error;
+      
+      setBlockedUsers(prev => prev.filter(b => b.blocked_user_id !== blockedUserId));
+      toast({
+        title: 'Utilisateur débloqué',
+        description: `${userName || 'L\'utilisateur'} a été débloqué`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de débloquer l\'utilisateur',
+        variant: 'destructive'
+      });
+    }
+  };
 
   const formatAppointmentDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -493,6 +566,53 @@ const DashboardPage = () => {
                         <span className="font-medium">{prop.favoriteCount}</span>
                       </div>
                     </Link>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Blocked Users */}
+            {blockedUsers.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.55 }}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Ban className="w-5 h-5 text-destructive" />
+                    Utilisateurs bloqués ({blockedUsers.length})
+                  </h3>
+                </div>
+                <div className="space-y-2">
+                  {blockedUsers.map((blocked) => (
+                    <div
+                      key={blocked.id}
+                      className="glass-card p-3 flex items-center gap-3"
+                    >
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={blocked.profile?.avatar_url || ''} />
+                        <AvatarFallback>
+                          <UserX className="w-5 h-5 text-muted-foreground" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">
+                          {blocked.profile?.full_name || 'Utilisateur'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Bloqué le {format(new Date(blocked.created_at), 'd MMM yyyy', { locale: fr })}
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleUnblockUser(blocked.blocked_user_id, blocked.profile?.full_name || null)}
+                        className="text-xs"
+                      >
+                        Débloquer
+                      </Button>
+                    </div>
                   ))}
                 </div>
               </motion.div>
