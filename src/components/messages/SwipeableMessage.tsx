@@ -32,6 +32,7 @@ interface SwipeableMessageProps {
   isMe: boolean;
   userId: string;
   participantAvatar?: string | null;
+  myAvatar?: string | null;
   showAvatar?: boolean;
   onDelete: (messageId: string) => void;
   onReaction: (messageId: string, emoji: string) => void;
@@ -40,7 +41,7 @@ interface SwipeableMessageProps {
 
 const EMOJI_OPTIONS = ['❤️', '👍', '😂', '😮', '😢', '🙏'];
 
-const SwipeableMessage = ({ message, isMe, userId, participantAvatar, showAvatar = false, onReaction, onReply }: SwipeableMessageProps) => {
+const SwipeableMessage = ({ message, isMe, userId, participantAvatar, myAvatar, showAvatar = false, onReaction, onReply }: SwipeableMessageProps) => {
   const [showReactions, setShowReactions] = useState(false);
   const longPressRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -226,10 +227,28 @@ const SwipeableMessage = ({ message, isMe, userId, participantAvatar, showAvatar
       {isMe && (
         <button
           onClick={() => onReply(message)}
-          className="opacity-0 group-hover:opacity-100 self-center ml-2 p-1.5 hover:bg-muted rounded-full transition-opacity"
+          className="opacity-0 group-hover:opacity-100 self-center p-1.5 hover:bg-muted rounded-full transition-opacity"
         >
           <Reply className="w-4 h-4 text-muted-foreground" />
         </button>
+      )}
+      
+      {/* Avatar for sent messages */}
+      {isMe && (
+        <div className="flex-shrink-0 w-8">
+          {showAvatar ? (
+            <img
+              src={myAvatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop'}
+              alt="Mon avatar"
+              className="w-8 h-8 rounded-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop';
+              }}
+            />
+          ) : (
+            <div className="w-8" />
+          )}
+        </div>
       )}
     </div>
   );
