@@ -42,14 +42,9 @@ import InstallPage from "./pages/InstallPage";
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [showSplash, setShowSplash] = useState(() => {
-    // Only show splash once per session
-    const hasSeenSplash = sessionStorage.getItem('lazone_splash_shown');
-    return !hasSeenSplash;
-  });
+  const [showSplash, setShowSplash] = useState(true);
 
   const handleSplashComplete = () => {
-    sessionStorage.setItem('lazone_splash_shown', 'true');
     setShowSplash(false);
   };
 
