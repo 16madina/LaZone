@@ -39,6 +39,7 @@ interface Conversation {
   propertyId: string;
   propertyTitle: string;
   propertyImage?: string;
+  propertyOwnerId?: string; // To know if user is the property owner
 }
 
 export const useMessages = () => {
@@ -118,6 +119,7 @@ export const useMessages = () => {
         .select(`
           id, 
           title,
+          user_id,
           property_images (url, is_primary)
         `)
         .in('id', Array.from(propertyIds));
@@ -126,7 +128,8 @@ export const useMessages = () => {
         p.id, 
         { 
           title: p.title, 
-          image: p.property_images?.find((img: any) => img.is_primary)?.url || p.property_images?.[0]?.url 
+          image: p.property_images?.find((img: any) => img.is_primary)?.url || p.property_images?.[0]?.url,
+          ownerId: p.user_id
         }
       ]) || []);
 
@@ -157,7 +160,8 @@ export const useMessages = () => {
           unreadCount,
           propertyId,
           propertyTitle: propertyInfo?.title || 'Annonce supprimée',
-          propertyImage: propertyInfo?.image
+          propertyImage: propertyInfo?.image,
+          propertyOwnerId: propertyInfo?.ownerId
         });
       });
 

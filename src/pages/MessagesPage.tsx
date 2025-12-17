@@ -29,6 +29,8 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
+type MessageTab = 'all' | 'received' | 'sent';
+
 const MessagesPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -37,6 +39,7 @@ const MessagesPage = () => {
   const { isUserOnline, fetchLastSeen } = useOnlineStatus();
   const [selectedConversation, setSelectedConversation] = useState<{ participantId: string; propertyId: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<MessageTab>('all');
 
   // Handle recipientId and propertyId from navigation state (when coming from property detail)
   useEffect(() => {
@@ -48,10 +51,25 @@ const MessagesPage = () => {
     }
   }, [location.state, user?.id]);
 
-  const filteredConversations = conversations.filter(c =>
-    c.propertyTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.participantName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter conversations based on tab and search
+  const filteredConversations = conversations.filter(c => {
+    // Search filter
+    const matchesSearch = c.propertyTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.participantName.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (!matchesSearch) return false;
+
+    // Tab filter
+    if (activeTab === 'all') return true;
+    if (activeTab === 'received') return c.propertyOwnerId === user?.id; // User owns the property
+    if (activeTab === 'sent') return c.propertyOwnerId !== user?.id; // User is inquiring about someone else's property
+    
+    return true;
+  });
+
+  // Count for each tab
+  const receivedCount = conversations.filter(c => c.propertyOwnerId === user?.id).length;
+  const sentCount = conversations.filter(c => c.propertyOwnerId !== user?.id).length;
 
   const handleDeleteConversation = async (conversationId: string) => {
     if (deleteConversation) {
@@ -273,6 +291,45 @@ const MessagesPage = () => {
         />
       </motion.div>
 
+      {/* Tabs */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="flex gap-2 mb-4"
+      >
+        <button
+          onClick={() => setActiveTab('all')}
+          className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${
+            activeTab === 'all'
+              ? 'bg-primary text-primary-foreground shadow-md'
+              : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+          }`}
+        >
+          Tous ({conversations.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('received')}
+          className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${
+            activeTab === 'received'
+              ? 'bg-primary text-primary-foreground shadow-md'
+              : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+          }`}
+        >
+          Reçus ({receivedCount})
+        </button>
+        <button
+          onClick={() => setActiveTab('sent')}
+          className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all ${
+            activeTab === 'sent'
+              ? 'bg-primary text-primary-foreground shadow-md'
+              : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+          }`}
+        >
+          Envoyés ({sentCount})
+        </button>
+      </motion.div>
+
       {/* Conversations List */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
@@ -286,10 +343,13 @@ const MessagesPage = () => {
         >
           <MessageCircle className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
           <h3 className="font-display font-semibold text-lg mb-2">
-            Pas de messages
+            {activeTab === 'all' ? 'Pas de messages' : 
+             activeTab === 'received' ? 'Aucun message reçu' : 'Aucun message envoyé'}
           </h3>
           <p className="text-muted-foreground text-sm">
-            Vos conversations apparaîtront ici
+            {activeTab === 'all' ? 'Vos conversations apparaîtront ici' :
+             activeTab === 'received' ? 'Les demandes pour vos biens apparaîtront ici' :
+             'Vos demandes vers des propriétaires apparaîtront ici'}
           </p>
         </motion.div>
       ) : (
