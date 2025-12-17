@@ -26,12 +26,14 @@ interface FormErrors {
   password?: string;
   confirmPassword?: string;
   terms?: string;
+  loginPhone?: string;
 }
 
 const AuthPage = () => {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const [isLogin, setIsLogin] = useState(true);
+  const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -48,6 +50,7 @@ const AuthPage = () => {
   const [isDiaspora, setIsDiaspora] = useState(false);
   const [residenceCountry, setResidenceCountry] = useState<DiasporaCountry | null>(null);
   const [showResidenceDropdown, setShowResidenceDropdown] = useState(false);
+  const [loginPhone, setLoginPhone] = useState('');
 
   const [formData, setFormData] = useState({
     email: '',
@@ -108,6 +111,10 @@ const AuthPage = () => {
         if (value.length < 8) return 'Numéro de téléphone trop court';
         if (value.length > 15) return 'Numéro de téléphone trop long';
         break;
+      case 'loginPhone':
+        if (!value) return 'Le numéro de téléphone est requis';
+        if (value.length < 8) return 'Numéro de téléphone trop court';
+        break;
       case 'country':
         if (!value) return 'Veuillez sélectionner un pays';
         break;
@@ -143,9 +150,16 @@ const AuthPage = () => {
       newErrors.phone = validateField('phone', formData.phone);
       newErrors.confirmPassword = validateField('confirmPassword', formData.confirmPassword);
       if (!acceptedTerms) newErrors.terms = 'Veuillez accepter les conditions d\'utilisation';
+      newErrors.email = validateField('email', formData.email);
+    } else {
+      // Login validation
+      if (loginMethod === 'email') {
+        newErrors.email = validateField('email', formData.email);
+      } else {
+        newErrors.loginPhone = validateField('loginPhone', loginPhone);
+      }
     }
     
-    newErrors.email = validateField('email', formData.email);
     newErrors.password = validateField('password', formData.password);
     
     setErrors(newErrors);
@@ -159,6 +173,7 @@ const AuthPage = () => {
       password: true,
       confirmPassword: true,
       terms: true,
+      loginPhone: true,
     });
     
     return !Object.values(newErrors).some(error => error);
@@ -241,8 +256,22 @@ const AuthPage = () => {
 
     try {
       if (isLogin) {
+        let emailToUse = formData.email;
+        
+        // If logging in with phone, lookup email using RPC function
+        if (loginMethod === 'phone') {
+          const { data: userEmail, error: rpcError } = await supabase
+            .rpc('get_user_email_by_phone', { phone_number: loginPhone });
+          
+          if (rpcError || !userEmail) {
+            throw new Error('Numéro de téléphone non trouvé');
+          }
+          
+          emailToUse = userEmail;
+        }
+        
         const { error } = await supabase.auth.signInWithPassword({
-          email: formData.email,
+          email: emailToUse,
           password: formData.password,
         });
         if (error) throw error;
@@ -297,11 +326,13 @@ const AuthPage = () => {
     } catch (error: any) {
       let message = 'Une erreur est survenue';
       if (error.message.includes('Invalid login credentials')) {
-        message = 'Email ou mot de passe incorrect';
+        message = loginMethod === 'phone' ? 'Numéro ou mot de passe incorrect' : 'Email ou mot de passe incorrect';
       } else if (error.message.includes('User already registered')) {
         message = 'Cet email est déjà utilisé';
       } else if (error.message.includes('Password should be')) {
         message = 'Le mot de passe doit contenir au moins 6 caractères';
+      } else if (error.message.includes('Numéro') || error.message.includes('Veuillez')) {
+        message = error.message;
       }
       toast({ title: 'Erreur', description: message, variant: 'destructive' });
     } finally {
@@ -657,9 +688,85 @@ const AuthPage = () => {
             </>
           )}
 
-          {/* Email Login Fields */}
-          <>
-            {/* Email */}
+          {/* Login Method Toggle */}
+          {isLogin && (
+            <div className="flex gap-2 mb-2">
+              <button
+                type="button"
+                onClick={() => setLoginMethod('email')}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                  loginMethod === 'email' 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                <Mail className="w-4 h-4" />
+                Email
+              </button>
+              <button
+                type="button"
+                onClick={() => setLoginMethod('phone')}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                  loginMethod === 'phone' 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                <Phone className="w-4 h-4" />
+                Téléphone
+              </button>
+            </div>
+          )}
+
+          {/* Email/Phone Login Fields */}
+          {isLogin ? (
+            loginMethod === 'email' ? (
+              <div>
+                <div className={`glass-card p-1 ${errors.email && touched.email ? 'border border-destructive' : ''}`}>
+                  <div className="flex items-center gap-2 px-3 py-2.5">
+                    <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <input
+                      type="email"
+                      placeholder="Email"
+                      value={formData.email}
+                      onChange={(e) => handleFieldChange('email', e.target.value)}
+                      onBlur={() => handleBlur('email')}
+                      className="flex-1 bg-transparent outline-none text-sm"
+                    />
+                  </div>
+                </div>
+                <InputError message={touched.email ? errors.email : undefined} />
+              </div>
+            ) : (
+              <div>
+                <div className={`glass-card p-1 ${errors.loginPhone && touched.loginPhone ? 'border border-destructive' : ''}`}>
+                  <div className="flex items-center gap-2 px-3 py-2.5">
+                    <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <input
+                      type="tel"
+                      placeholder="Numéro de téléphone (ex: +225...)"
+                      value={loginPhone}
+                      onChange={(e) => {
+                        setLoginPhone(e.target.value.replace(/[^\d+]/g, ''));
+                        if (touched.loginPhone) {
+                          const error = validateField('loginPhone', e.target.value);
+                          setErrors(prev => ({ ...prev, loginPhone: error }));
+                        }
+                      }}
+                      onBlur={() => {
+                        setTouched(prev => ({ ...prev, loginPhone: true }));
+                        const error = validateField('loginPhone', loginPhone);
+                        setErrors(prev => ({ ...prev, loginPhone: error }));
+                      }}
+                      className="flex-1 bg-transparent outline-none text-sm"
+                    />
+                  </div>
+                </div>
+                <InputError message={touched.loginPhone ? errors.loginPhone : undefined} />
+              </div>
+            )
+          ) : (
+            /* Signup Email Field */
             <div>
               <div className={`glass-card p-1 ${errors.email && touched.email ? 'border border-destructive' : ''}`}>
                 <div className="flex items-center gap-2 px-3 py-2.5">
@@ -676,6 +783,7 @@ const AuthPage = () => {
               </div>
               <InputError message={touched.email ? errors.email : undefined} />
             </div>
+          )}
 
             {/* Password */}
             <div>
@@ -708,7 +816,6 @@ const AuthPage = () => {
                 )}
               </div>
             </div>
-          </>
 
           {/* Confirm Password */}
           {!isLogin && (
