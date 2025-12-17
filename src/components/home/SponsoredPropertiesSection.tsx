@@ -27,8 +27,8 @@ export const SponsoredPropertiesSection = ({ userCountry }: SponsoredPropertiesS
 
   const fetchSponsoredProperties = async () => {
     try {
-      // Sponsored properties are shown to ALL users regardless of country
-      const { data, error } = await supabase
+      // Sponsored properties are filtered by user's country
+      let query = supabase
         .from('properties')
         .select(`
           id,
@@ -43,6 +43,13 @@ export const SponsoredPropertiesSection = ({ userCountry }: SponsoredPropertiesS
         .gte('sponsored_until', new Date().toISOString())
         .order('sponsored_until', { ascending: false })
         .limit(6);
+
+      // Filter by user's country if specified
+      if (userCountry) {
+        query = query.eq('country', userCountry);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
