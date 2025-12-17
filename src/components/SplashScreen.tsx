@@ -4,12 +4,28 @@ import heroBg1 from '@/assets/hero-bg.jpg';
 import heroBg2 from '@/assets/hero-bg-2.jpg';
 import heroBg3 from '@/assets/hero-bg-3.jpg';
 import heroBg4 from '@/assets/hero-bg-4.jpg';
+import splashBg5 from '@/assets/splash-bg-5.jpg';
+import splashBg6 from '@/assets/splash-bg-6.jpg';
+import splashBg7 from '@/assets/splash-bg-7.jpg';
+import splashBg8 from '@/assets/splash-bg-8.jpg';
+import splashBg9 from '@/assets/splash-bg-9.jpg';
+import splashBg10 from '@/assets/splash-bg-10.jpg';
+import splashBg11 from '@/assets/splash-bg-11.jpg';
+import splashBg12 from '@/assets/splash-bg-12.jpg';
+import splashBg13 from '@/assets/splash-bg-13.jpg';
+import splashBg14 from '@/assets/splash-bg-14.jpg';
+import splashBg15 from '@/assets/splash-bg-15.jpg';
 
 interface SplashScreenProps {
   onComplete: () => void;
 }
 
-const backgroundImages = [heroBg1, heroBg2, heroBg3, heroBg4];
+const backgroundImages = [
+  heroBg1, heroBg2, heroBg3, heroBg4,
+  splashBg5, splashBg6, splashBg7, splashBg8,
+  splashBg9, splashBg10, splashBg11, splashBg12,
+  splashBg13, splashBg14, splashBg15
+];
 
 export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   const [phase, setPhase] = useState<'logo' | 'text' | 'exit'>('logo');
