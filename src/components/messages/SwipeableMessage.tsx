@@ -44,15 +44,72 @@ const EMOJI_OPTIONS = ['❤️', '👍', '😂', '😮', '😢', '🙏'];
 const SwipeableMessage = ({ message, isMe, userId, participantAvatar, myAvatar, showAvatar = false, onReaction, onReply }: SwipeableMessageProps) => {
   const [showReactions, setShowReactions] = useState(false);
   const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
+  const [imageScale, setImageScale] = useState(1);
+  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+  const lastTapRef = useRef<number>(0);
+  const initialDistanceRef = useRef<number>(0);
+  const initialScaleRef = useRef<number>(1);
   const longPressRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleTouchStart = () => {
+  const handleCloseLightbox = () => {
+    setEnlargedImage(null);
+    setImageScale(1);
+    setImagePosition({ x: 0, y: 0 });
+  };
+
+  const handleDoubleTap = () => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      // Double tap - toggle between 1x and 2x zoom
+      if (imageScale === 1) {
+        setImageScale(2);
+      } else {
+        setImageScale(1);
+        setImagePosition({ x: 0, y: 0 });
+      }
+    }
+    lastTapRef.current = now;
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const distance = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      initialDistanceRef.current = distance;
+      initialScaleRef.current = imageScale;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const distance = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const scale = (distance / initialDistanceRef.current) * initialScaleRef.current;
+      setImageScale(Math.min(Math.max(scale, 0.5), 4));
+    }
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    const newScale = Math.min(Math.max(imageScale * delta, 0.5), 4);
+    setImageScale(newScale);
+    if (newScale <= 1) {
+      setImagePosition({ x: 0, y: 0 });
+    }
+  };
+
+  const handleLongPressStart = () => {
     longPressRef.current = setTimeout(() => {
       setShowReactions(true);
     }, 500);
   };
 
-  const handleTouchEnd = () => {
+  const handleLongPressEnd = () => {
     if (longPressRef.current) {
       clearTimeout(longPressRef.current);
       longPressRef.current = null;
@@ -104,11 +161,11 @@ const SwipeableMessage = ({ message, isMe, userId, participantAvatar, myAvatar, 
       )}
       
       <motion.div
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onMouseDown={handleTouchStart}
-        onMouseUp={handleTouchEnd}
-        onMouseLeave={handleTouchEnd}
+        onTouchStart={handleLongPressStart}
+        onTouchEnd={handleLongPressEnd}
+        onMouseDown={handleLongPressStart}
+        onMouseUp={handleLongPressEnd}
+        onMouseLeave={handleLongPressEnd}
         whileTap={{ scale: 0.98 }}
         className="relative max-w-[80%]"
       >
@@ -252,31 +309,60 @@ const SwipeableMessage = ({ message, isMe, userId, participantAvatar, myAvatar, 
         </div>
       )}
 
-      {/* Image Lightbox */}
+      {/* Image Lightbox with Pinch-to-Zoom */}
       <AnimatePresence>
         {enlargedImage && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4"
-            onClick={() => setEnlargedImage(null)}
+            className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 touch-none"
+            onClick={handleCloseLightbox}
+            onWheel={handleWheel}
           >
             <button
-              onClick={() => setEnlargedImage(null)}
+              onClick={handleCloseLightbox}
               className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10"
             >
               <X className="w-6 h-6 text-white" />
             </button>
+            
+            {/* Zoom indicator */}
+            {imageScale !== 1 && (
+              <div className="absolute top-4 left-4 px-2 py-1 bg-white/10 rounded-full text-white text-xs">
+                {Math.round(imageScale * 100)}%
+              </div>
+            )}
+            
             <motion.img
               initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
+              animate={{ 
+                scale: imageScale,
+                x: imagePosition.x,
+                y: imagePosition.y
+              }}
               exit={{ scale: 0.9 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              drag={imageScale > 1}
+              dragConstraints={{ left: -200, right: 200, top: -200, bottom: 200 }}
+              onDragEnd={(_, info) => {
+                setImagePosition({ x: info.offset.x, y: info.offset.y });
+              }}
               src={enlargedImage}
               alt="Image agrandie"
-              className="max-w-full max-h-full object-contain rounded-lg"
-              onClick={(e) => e.stopPropagation()}
+              className="max-w-full max-h-full object-contain rounded-lg cursor-grab active:cursor-grabbing"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDoubleTap();
+              }}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
             />
+            
+            {/* Zoom hint */}
+            <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/50 text-xs">
+              Double-tap ou pincez pour zoomer
+            </p>
           </motion.div>
         )}
       </AnimatePresence>
