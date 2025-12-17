@@ -3,7 +3,7 @@ import { User, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SearchBar } from '@/components/home/SearchBar';
 import { FilterChips } from '@/components/home/FilterChips';
-import { StatsSection } from '@/components/home/StatsSection';
+import { SponsoredPropertiesSection } from '@/components/home/SponsoredPropertiesSection';
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { CountrySelector } from '@/components/home/CountrySelector';
 import { NotificationDropdown } from '@/components/NotificationDropdown';
@@ -121,9 +121,9 @@ const Index = () => {
             <FilterChips variant="hero" />
           </div>
 
-          {/* Stats Section */}
+          {/* Sponsored Properties */}
           <div className="mt-6">
-            <StatsSection variant="hero" />
+            <SponsoredPropertiesSection userCountry={selectedCountry?.code} />
           </div>
         </div>
       </div>
