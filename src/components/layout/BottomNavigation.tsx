@@ -52,7 +52,14 @@ export const BottomNavigation = () => {
                 ) : (
                   <>
                     <div className="relative">
-                      <item.icon className={`w-5 h-5 transition-all duration-300 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <item.icon 
+                        className={`w-5 h-5 transition-all duration-300 ${
+                          isActive 
+                            ? 'text-primary fill-primary' 
+                            : 'text-muted-foreground fill-none'
+                        }`} 
+                        strokeWidth={isActive ? 2.5 : 1.5}
+                      />
                       {showBadge && (
                         <span className="absolute -top-2 -right-2 min-w-4 h-4 bg-primary rounded-full flex items-center justify-center text-[10px] text-primary-foreground font-bold px-1">
                           {totalUnread > 99 ? '99+' : totalUnread}
