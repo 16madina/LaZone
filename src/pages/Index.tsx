@@ -169,7 +169,14 @@ const Index = () => {
                 ? `Propriétés en ${selectedCountry.name}` 
                 : 'Toutes les propriétés'}
             </h3>
-            <button className="text-sm text-primary font-medium active:scale-95 transition-transform">
+            <button 
+              onClick={() => {
+                // Reset all filters to show all properties
+                useAppStore.getState().setActiveFilter('all');
+                useAppStore.getState().setSearchQuery('');
+              }}
+              className="text-sm text-primary font-medium active:scale-95 transition-transform"
+            >
               Voir tout
             </button>
           </div>
