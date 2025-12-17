@@ -11,14 +11,21 @@ import {
   Users,
   Star,
   Building2,
-  Loader2
+  Loader2,
+  ChevronRight,
+  Clock,
+  MapPin
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { format, isToday, isTomorrow, addDays, startOfDay, endOfDay } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
 import { useProperties } from '@/hooks/useProperties';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useMessages } from '@/hooks/useMessages';
 import { supabase } from '@/integrations/supabase/client';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 
 interface DashboardStats {
   totalProperties: number;
@@ -35,14 +42,44 @@ interface DashboardStats {
   following: number;
 }
 
+interface Appointment {
+  id: string;
+  requested_date: string;
+  requested_time: string;
+  status: string;
+  property: {
+    id: string;
+    title: string;
+    city: string;
+  } | null;
+  requester: {
+    full_name: string;
+    avatar_url: string;
+  } | null;
+}
+
+interface PropertyRanking {
+  id: string;
+  title: string;
+  city: string;
+  price: number;
+  image: string;
+  favoriteCount: number;
+}
+
 const DashboardPage = () => {
   const { user, profile } = useAuth();
   const { properties } = useProperties();
   const { favorites } = useFavorites();
-  const { totalUnread } = useMessages();
+  const { conversations, totalUnread } = useMessages();
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
+  const [propertyRankings, setPropertyRankings] = useState<PropertyRanking[]>([]);
+
+  // Get unread conversations
+  const unreadConversations = conversations.filter(c => c.unreadCount > 0);
 
   useEffect(() => {
     if (!user) {
@@ -63,6 +100,80 @@ const DashboardPage = () => {
           .or(`owner_id.eq.${user.id},requester_id.eq.${user.id}`);
 
         const pendingAppointments = appointments?.filter(a => a.status === 'pending').length || 0;
+
+        // Get upcoming appointments (next 7 days)
+        const today = new Date();
+        const nextWeek = addDays(today, 7);
+        
+        const { data: upcomingData } = await supabase
+          .from('appointments')
+          .select(`
+            id,
+            requested_date,
+            requested_time,
+            status,
+            property_id,
+            requester_id
+          `)
+          .or(`owner_id.eq.${user.id},requester_id.eq.${user.id}`)
+          .gte('requested_date', format(today, 'yyyy-MM-dd'))
+          .lte('requested_date', format(nextWeek, 'yyyy-MM-dd'))
+          .in('status', ['pending', 'approved'])
+          .order('requested_date', { ascending: true })
+          .limit(5);
+
+        // Fetch property and requester details for appointments
+        if (upcomingData && upcomingData.length > 0) {
+          const appointmentsWithDetails = await Promise.all(
+            upcomingData.map(async (apt) => {
+              const { data: propertyData } = await supabase
+                .from('properties')
+                .select('id, title, city')
+                .eq('id', apt.property_id)
+                .maybeSingle();
+
+              const { data: requesterData } = await supabase
+                .from('profiles')
+                .select('full_name, avatar_url')
+                .eq('user_id', apt.requester_id)
+                .maybeSingle();
+
+              return {
+                ...apt,
+                property: propertyData,
+                requester: requesterData
+              };
+            })
+          );
+          setUpcomingAppointments(appointmentsWithDetails);
+        }
+
+        // Get property rankings by favorites count
+        if (userProperties.length > 0) {
+          const propertyIds = userProperties.map(p => p.id);
+          
+          const rankings: PropertyRanking[] = await Promise.all(
+            userProperties.slice(0, 5).map(async (prop) => {
+              const { count } = await supabase
+                .from('favorites')
+                .select('*', { count: 'exact', head: true })
+                .eq('property_id', prop.id);
+
+              return {
+                id: prop.id,
+                title: prop.title,
+                city: prop.city,
+                price: prop.price,
+                image: prop.images[0] || '',
+                favoriteCount: count || 0
+              };
+            })
+          );
+
+          // Sort by favorite count
+          rankings.sort((a, b) => b.favoriteCount - a.favoriteCount);
+          setPropertyRankings(rankings);
+        }
 
         // Get reviews
         const { data: reviews } = await supabase
@@ -93,13 +204,13 @@ const DashboardPage = () => {
 
         setStats({
           totalProperties: userProperties.length,
-          activeProperties: userProperties.length, // All returned properties are active
+          activeProperties: userProperties.length,
           totalFavorites: favorites.length,
           totalMessages: messagesCount || 0,
           unreadMessages: totalUnread,
           totalAppointments: appointments?.length || 0,
           pendingAppointments,
-          totalViews: 0, // Would need view tracking
+          totalViews: 0,
           averageRating,
           totalReviews: reviews?.length || 0,
           followers: followersCount || 0,
@@ -114,6 +225,13 @@ const DashboardPage = () => {
 
     fetchStats();
   }, [user, properties, favorites, totalUnread, navigate]);
+
+  const formatAppointmentDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    if (isToday(date)) return "Aujourd'hui";
+    if (isTomorrow(date)) return "Demain";
+    return format(date, 'EEE d MMM', { locale: fr });
+  };
 
   if (!user) return null;
 
@@ -183,12 +301,12 @@ const DashboardPage = () => {
         </div>
       </header>
 
-      <div className="px-4 py-6">
+      <div className="px-4 py-6 space-y-6">
         {/* Welcome Section */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass-card p-6 mb-6"
+          className="glass-card p-6"
         >
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
@@ -215,28 +333,171 @@ const DashboardPage = () => {
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
-            {statCards.map((card, index) => (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              {statCards.map((card, index) => (
+                <motion.div
+                  key={card.label}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <Link 
+                    to={card.link}
+                    className="glass-card p-4 block hover:shadow-lg transition-all"
+                  >
+                    <div className={`w-10 h-10 rounded-full ${card.color} flex items-center justify-center mb-3`}>
+                      <card.icon className="w-5 h-5 text-white" />
+                    </div>
+                    <p className="text-2xl font-bold">{card.value}</p>
+                    <p className="text-sm text-muted-foreground">{card.label}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{card.subValue}</p>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Unread Conversations */}
+            {unreadConversations.length > 0 && (
               <motion.div
-                key={card.label}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ delay: 0.3 }}
               >
-                <Link 
-                  to={card.link}
-                  className="glass-card p-4 block hover:shadow-lg transition-all"
-                >
-                  <div className={`w-10 h-10 rounded-full ${card.color} flex items-center justify-center mb-3`}>
-                    <card.icon className="w-5 h-5 text-white" />
-                  </div>
-                  <p className="text-2xl font-bold">{card.value}</p>
-                  <p className="text-sm text-muted-foreground">{card.label}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{card.subValue}</p>
-                </Link>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <MessageCircle className="w-5 h-5 text-primary" />
+                    Messages non lus
+                  </h3>
+                  <Link to="/messages" className="text-sm text-primary flex items-center gap-1">
+                    Voir tout <ChevronRight className="w-4 h-4" />
+                  </Link>
+                </div>
+                <div className="space-y-2">
+                  {unreadConversations.slice(0, 3).map((conv) => (
+                    <Link
+                      key={conv.id}
+                      to={`/messages?user=${conv.participantId}&property=${conv.propertyId}`}
+                      className="glass-card p-3 flex items-center gap-3 hover:bg-primary/5 transition-colors"
+                    >
+                      <div className="relative">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={conv.participantAvatar || ''} />
+                          <AvatarFallback>{conv.participantName?.charAt(0) || '?'}</AvatarFallback>
+                        </Avatar>
+                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center">
+                          {conv.unreadCount}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{conv.participantName}</p>
+                        <p className="text-sm text-muted-foreground truncate">{conv.lastMessage}</p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </Link>
+                  ))}
+                </div>
               </motion.div>
-            ))}
-          </div>
+            )}
+
+            {/* Upcoming Appointments Calendar */}
+            {upcomingAppointments.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-primary" />
+                    Rendez-vous à venir
+                  </h3>
+                  <Link to="/profile" className="text-sm text-primary flex items-center gap-1">
+                    Voir tout <ChevronRight className="w-4 h-4" />
+                  </Link>
+                </div>
+                <div className="space-y-2">
+                  {upcomingAppointments.map((apt) => (
+                    <div
+                      key={apt.id}
+                      className="glass-card p-3 flex items-center gap-3"
+                    >
+                      <div className="w-14 h-14 rounded-lg bg-primary/10 flex flex-col items-center justify-center">
+                        <span className="text-xs text-muted-foreground">
+                          {formatAppointmentDate(apt.requested_date)}
+                        </span>
+                        <span className="text-lg font-bold text-primary">
+                          {apt.requested_time.slice(0, 5)}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{apt.property?.title || 'Propriété'}</p>
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {apt.property?.city}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          avec {apt.requester?.full_name || 'Utilisateur'}
+                        </p>
+                      </div>
+                      <Badge variant={apt.status === 'approved' ? 'default' : 'secondary'}>
+                        {apt.status === 'approved' ? 'Confirmé' : 'En attente'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Property Rankings */}
+            {propertyRankings.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    Classement de vos annonces
+                  </h3>
+                  <Link to="/my-listings" className="text-sm text-primary flex items-center gap-1">
+                    Voir tout <ChevronRight className="w-4 h-4" />
+                  </Link>
+                </div>
+                <div className="space-y-2">
+                  {propertyRankings.map((prop, index) => (
+                    <Link
+                      key={prop.id}
+                      to={`/property/${prop.id}`}
+                      className="glass-card p-3 flex items-center gap-3 hover:bg-primary/5 transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary">
+                        {index + 1}
+                      </div>
+                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted">
+                        {prop.image ? (
+                          <img src={prop.image} alt={prop.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Building2 className="w-6 h-6 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{prop.title}</p>
+                        <p className="text-sm text-muted-foreground">{prop.city}</p>
+                      </div>
+                      <div className="flex items-center gap-1 text-red-500">
+                        <Heart className="w-4 h-4 fill-current" />
+                        <span className="font-medium">{prop.favoriteCount}</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </>
         )}
 
         {/* Quick Actions */}
@@ -244,7 +505,6 @@ const DashboardPage = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="mt-6"
         >
           <h3 className="font-semibold mb-4">Actions rapides</h3>
           <div className="grid grid-cols-2 gap-3">
