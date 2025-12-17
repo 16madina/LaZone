@@ -23,7 +23,9 @@ import {
   Clock,
   ChevronRight,
   CalendarIcon,
-  MapPin
+  MapPin,
+  Bell,
+  Send
 } from 'lucide-react';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useAuth } from '@/hooks/useAuth';
@@ -55,7 +57,59 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { africanCountries } from '@/data/africanCountries';
 
-type TabType = 'users' | 'properties' | 'reports' | 'admins' | 'sponsored';
+type TabType = 'users' | 'properties' | 'reports' | 'admins' | 'sponsored' | 'notifications';
+
+// Predefined notification templates
+const notificationTemplates = [
+  {
+    id: 'verify_email',
+    label: 'Vérification email',
+    title: '📧 Vérifiez votre email',
+    body: 'N\'oubliez pas de vérifier votre adresse email pour accéder à toutes les fonctionnalités de LaZone.',
+  },
+  {
+    id: 'promotion',
+    label: 'Promotion',
+    title: '🎉 Offre spéciale LaZone',
+    body: 'Profitez de nos offres exclusives pour sponsoriser vos annonces et augmenter leur visibilité !',
+  },
+  {
+    id: 'delete_listing',
+    label: 'Supprimer annonce',
+    title: '⚠️ Action requise sur votre annonce',
+    body: 'Votre annonce ne respecte pas nos conditions d\'utilisation. Veuillez la modifier ou la supprimer.',
+  },
+  {
+    id: 'welcome',
+    label: 'Bienvenue',
+    title: '👋 Bienvenue sur LaZone',
+    body: 'Merci de rejoindre notre communauté immobilière africaine ! Commencez à explorer les annonces.',
+  },
+  {
+    id: 'update_app',
+    label: 'Mise à jour',
+    title: '🆕 Nouvelle version disponible',
+    body: 'Une nouvelle version de LaZone est disponible avec de nouvelles fonctionnalités !',
+  },
+  {
+    id: 'inactive',
+    label: 'Compte inactif',
+    title: '💤 Vous nous manquez',
+    body: 'Cela fait un moment que vous n\'êtes pas venu sur LaZone. De nouvelles annonces vous attendent !',
+  },
+  {
+    id: 'security',
+    label: 'Sécurité',
+    title: '🔒 Alerte sécurité',
+    body: 'Nous vous recommandons de mettre à jour votre mot de passe pour sécuriser votre compte.',
+  },
+  {
+    id: 'custom',
+    label: 'Personnalisé',
+    title: '',
+    body: '',
+  },
+];
 
 interface UserData {
   id: string;
@@ -142,6 +196,14 @@ const AdminPage = () => {
   const [sponsorEndDate, setSponsorEndDate] = useState<Date | undefined>(undefined);
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [newAdminRole, setNewAdminRole] = useState<'admin' | 'moderator'>('moderator');
+  
+  // Push notification states
+  const [selectedNotificationTemplate, setSelectedNotificationTemplate] = useState('verify_email');
+  const [customNotificationTitle, setCustomNotificationTitle] = useState('');
+  const [customNotificationBody, setCustomNotificationBody] = useState('');
+  const [notificationTargetType, setNotificationTargetType] = useState<'all' | 'single'>('all');
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [sendingNotification, setSendingNotification] = useState(false);
 
   useEffect(() => {
     if (!loadingRoles && !isAdmin && !isModerator) {
@@ -173,6 +235,9 @@ const AdminPage = () => {
           break;
         case 'sponsored':
           await fetchSponsoredProperties();
+          break;
+        case 'notifications':
+          await fetchUsers();
           break;
       }
     } catch (error) {
@@ -619,8 +684,76 @@ const AdminPage = () => {
     { id: 'properties' as TabType, label: 'Annonces', icon: Home },
     { id: 'reports' as TabType, label: 'Signalements', icon: Flag },
     { id: 'sponsored' as TabType, label: 'Sponsorisés', icon: Star },
+    { id: 'notifications' as TabType, label: 'Notifs', icon: Bell },
     ...(isAdmin ? [{ id: 'admins' as TabType, label: 'Admins', icon: Shield }] : []),
   ];
+
+  // Handle send push notification
+  const handleSendPushNotification = async () => {
+    const template = notificationTemplates.find(t => t.id === selectedNotificationTemplate);
+    const title = selectedNotificationTemplate === 'custom' ? customNotificationTitle : template?.title || '';
+    const body = selectedNotificationTemplate === 'custom' ? customNotificationBody : template?.body || '';
+
+    if (!title.trim() || !body.trim()) {
+      toast({ title: 'Veuillez remplir le titre et le message', variant: 'destructive' });
+      return;
+    }
+
+    if (notificationTargetType === 'single' && !selectedUserId) {
+      toast({ title: 'Veuillez sélectionner un utilisateur', variant: 'destructive' });
+      return;
+    }
+
+    setSendingNotification(true);
+    try {
+      if (notificationTargetType === 'single') {
+        // Send to single user
+        const { error } = await supabase.functions.invoke('send-push-notification', {
+          body: { userId: selectedUserId, title, body },
+        });
+        if (error) throw error;
+        toast({ title: 'Notification envoyée' });
+      } else {
+        // Send to all users with FCM tokens
+        const { data: tokens, error: tokensError } = await supabase
+          .from('fcm_tokens')
+          .select('user_id')
+          .limit(500);
+
+        if (tokensError) throw tokensError;
+
+        const uniqueUserIds = [...new Set((tokens || []).map(t => t.user_id))];
+        let successCount = 0;
+        
+        for (const userId of uniqueUserIds) {
+          try {
+            await supabase.functions.invoke('send-push-notification', {
+              body: { userId, title, body },
+            });
+            successCount++;
+          } catch (e) {
+            console.error(`Failed to send to ${userId}:`, e);
+          }
+        }
+
+        toast({ 
+          title: 'Notifications envoyées', 
+          description: `${successCount}/${uniqueUserIds.length} utilisateurs notifiés` 
+        });
+      }
+
+      // Reset form
+      if (selectedNotificationTemplate === 'custom') {
+        setCustomNotificationTitle('');
+        setCustomNotificationBody('');
+      }
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      toast({ title: 'Erreur lors de l\'envoi', variant: 'destructive' });
+    } finally {
+      setSendingNotification(false);
+    }
+  };
 
   const getReasonLabel = (reason: string) => {
     const labels: Record<string, string> = {
@@ -1020,6 +1153,146 @@ const AdminPage = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Notifications Tab */}
+            {activeTab === 'notifications' && (
+              <div className="space-y-4">
+                <div className="bg-card rounded-xl p-4 shadow-sm">
+                  <h3 className="font-medium mb-4 flex items-center gap-2">
+                    <Bell className="w-5 h-5 text-primary" />
+                    Envoyer une notification push
+                  </h3>
+                  
+                  {/* Target Selection */}
+                  <div className="mb-4">
+                    <Label className="text-sm">Destinataire</Label>
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        variant={notificationTargetType === 'all' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setNotificationTargetType('all')}
+                        className="flex-1"
+                      >
+                        <Users className="w-4 h-4 mr-1" />
+                        Tous les utilisateurs
+                      </Button>
+                      <Button
+                        variant={notificationTargetType === 'single' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setNotificationTargetType('single')}
+                        className="flex-1"
+                      >
+                        <Users className="w-4 h-4 mr-1" />
+                        Un utilisateur
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Single User Selection */}
+                  {notificationTargetType === 'single' && (
+                    <div className="mb-4">
+                      <Label className="text-sm">Sélectionner un utilisateur</Label>
+                      <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue placeholder="Choisir un utilisateur..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {users.map((u) => (
+                            <SelectItem key={u.user_id} value={u.user_id}>
+                              {u.full_name || u.phone || 'Utilisateur sans nom'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Template Selection */}
+                  <div className="mb-4">
+                    <Label className="text-sm">Type de notification</Label>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {notificationTemplates.map((template) => (
+                        <button
+                          key={template.id}
+                          onClick={() => setSelectedNotificationTemplate(template.id)}
+                          className={cn(
+                            "p-3 rounded-lg border text-left transition-colors",
+                            selectedNotificationTemplate === template.id
+                              ? "border-primary bg-primary/10"
+                              : "border-border hover:bg-muted"
+                          )}
+                        >
+                          <span className="text-sm font-medium">{template.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Preview or Custom Input */}
+                  {selectedNotificationTemplate === 'custom' ? (
+                    <div className="space-y-3 mb-4">
+                      <div>
+                        <Label className="text-sm">Titre</Label>
+                        <Input
+                          value={customNotificationTitle}
+                          onChange={(e) => setCustomNotificationTitle(e.target.value)}
+                          placeholder="Titre de la notification..."
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm">Message</Label>
+                        <Textarea
+                          value={customNotificationBody}
+                          onChange={(e) => setCustomNotificationBody(e.target.value)}
+                          placeholder="Corps du message..."
+                          rows={3}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+                      <p className="text-sm font-medium">
+                        {notificationTemplates.find(t => t.id === selectedNotificationTemplate)?.title}
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {notificationTemplates.find(t => t.id === selectedNotificationTemplate)?.body}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Send Button */}
+                  <Button 
+                    onClick={handleSendPushNotification} 
+                    className="w-full"
+                    disabled={sendingNotification}
+                  >
+                    {sendingNotification ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4 mr-2" />
+                    )}
+                    {notificationTargetType === 'all' ? 'Envoyer à tous' : 'Envoyer'}
+                  </Button>
+                </div>
+
+                {/* Info Card */}
+                <div className="bg-amber-50 dark:bg-amber-950/30 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                        Information
+                      </p>
+                      <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                        Les notifications push ne seront envoyées qu'aux utilisateurs ayant installé l'application mobile et accepté les notifications.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </>
