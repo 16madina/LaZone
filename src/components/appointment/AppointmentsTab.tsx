@@ -22,6 +22,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 interface Appointment {
   id: string;
@@ -60,6 +67,12 @@ export const AppointmentsTab = () => {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [responseDialog, setResponseDialog] = useState<{
+    open: boolean;
+    appointmentId: string;
+    status: 'approved' | 'rejected';
+  } | null>(null);
+  const [responseMessage, setResponseMessage] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -161,14 +174,27 @@ export const AppointmentsTab = () => {
     }
   };
 
-  const handleUpdateStatus = async (appointmentId: string, status: 'approved' | 'rejected') => {
+  const openResponseDialog = (appointmentId: string, status: 'approved' | 'rejected') => {
+    setResponseDialog({ open: true, appointmentId, status });
+    setResponseMessage('');
+  };
+
+  const handleConfirmResponse = async () => {
+    if (!responseDialog) return;
+    
+    const { appointmentId, status } = responseDialog;
     setProcessingId(appointmentId);
+    setResponseDialog(null);
+    
     try {
       const appointment = appointments.find(a => a.id === appointmentId);
       
       const { error } = await supabase
         .from('appointments')
-        .update({ status })
+        .update({ 
+          status,
+          response_message: responseMessage.trim() || null
+        })
         .eq('id', appointmentId);
 
       if (error) throw error;
@@ -189,6 +215,7 @@ export const AppointmentsTab = () => {
           : 'Le demandeur a été notifié de votre refus.',
       });
 
+      setResponseMessage('');
       fetchAppointments();
     } catch (error) {
       console.error('Error updating appointment:', error);
@@ -316,12 +343,20 @@ export const AppointmentsTab = () => {
         </div>
       )}
 
+      {/* Response Message */}
+      {appointment.response_message && (
+        <div className="p-2 bg-primary/10 rounded-lg border-l-2 border-primary">
+          <p className="text-xs text-muted-foreground">Réponse du vendeur :</p>
+          <p className="text-sm">{appointment.response_message}</p>
+        </div>
+      )}
+
       {/* Actions for received appointments */}
       {isReceived && appointment.status === 'pending' && (
         <div className="flex items-center gap-2 pt-2">
           <Button
             size="sm"
-            onClick={() => handleUpdateStatus(appointment.id, 'approved')}
+            onClick={() => openResponseDialog(appointment.id, 'approved')}
             disabled={processingId === appointment.id}
             className="flex-1 bg-green-600 hover:bg-green-700"
           >
@@ -337,7 +372,7 @@ export const AppointmentsTab = () => {
           <Button
             size="sm"
             variant="destructive"
-            onClick={() => handleUpdateStatus(appointment.id, 'rejected')}
+            onClick={() => openResponseDialog(appointment.id, 'rejected')}
             disabled={processingId === appointment.id}
             className="flex-1"
           >
@@ -555,6 +590,61 @@ export const AppointmentsTab = () => {
           </TabsContent>
         </Tabs>
       )}
+      {/* Response Dialog */}
+      <Dialog open={responseDialog?.open || false} onOpenChange={(open) => !open && setResponseDialog(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {responseDialog?.status === 'approved' ? (
+                <>
+                  <Check className="w-5 h-5 text-green-600" />
+                  Accepter le rendez-vous
+                </>
+              ) : (
+                <>
+                  <X className="w-5 h-5 text-destructive" />
+                  Refuser le rendez-vous
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Message de réponse (optionnel)
+              </label>
+              <textarea
+                value={responseMessage}
+                onChange={(e) => setResponseMessage(e.target.value)}
+                placeholder={
+                  responseDialog?.status === 'approved'
+                    ? "Ex: Parfait, je vous attends à l'adresse indiquée..."
+                    : "Ex: Je ne suis pas disponible à cette date..."
+                }
+                className="w-full p-3 rounded-lg border border-border bg-background resize-none h-24"
+                maxLength={500}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setResponseDialog(null)}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleConfirmResponse}
+              className={responseDialog?.status === 'approved' ? 'bg-green-600 hover:bg-green-700' : ''}
+              variant={responseDialog?.status === 'rejected' ? 'destructive' : 'default'}
+            >
+              {responseDialog?.status === 'approved' ? 'Confirmer' : 'Refuser'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
