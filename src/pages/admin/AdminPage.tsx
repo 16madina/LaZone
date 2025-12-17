@@ -115,6 +115,7 @@ const AdminPage = () => {
   const [activeTab, setActiveTab] = useState<TabType>('users');
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [propertyStatusFilter, setPropertyStatusFilter] = useState<'all' | 'active' | 'inactive' | 'sponsored'>('all');
   
   // Data states
   const [users, setUsers] = useState<UserData[]>([]);
@@ -639,11 +640,24 @@ const AdminPage = () => {
 
   const filteredProperties = properties.filter(p => {
     const query = searchQuery.toLowerCase();
-    return p.title.toLowerCase().includes(query) ||
+    const matchesSearch = p.title.toLowerCase().includes(query) ||
       p.city.toLowerCase().includes(query) ||
       (p.owner_name?.toLowerCase().includes(query)) ||
       (p.country?.toLowerCase().includes(query)) ||
       (africanCountries.find(c => c.code === p.country)?.name.toLowerCase().includes(query));
+    
+    if (!matchesSearch) return false;
+    
+    switch (propertyStatusFilter) {
+      case 'active':
+        return p.is_active && !p.is_sponsored;
+      case 'inactive':
+        return !p.is_active;
+      case 'sponsored':
+        return p.is_sponsored;
+      default:
+        return true;
+    }
   });
 
   if (loadingRoles) {
@@ -780,6 +794,37 @@ const AdminPage = () => {
             {/* Properties Tab */}
             {activeTab === 'properties' && (
               <div className="space-y-3">
+                {/* Status Filter Chips */}
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {[
+                    { value: 'all', label: 'Toutes', count: properties.length },
+                    { value: 'active', label: 'Actives', count: properties.filter(p => p.is_active && !p.is_sponsored).length },
+                    { value: 'inactive', label: 'Inactives', count: properties.filter(p => !p.is_active).length },
+                    { value: 'sponsored', label: 'Sponsorisées', count: properties.filter(p => p.is_sponsored).length },
+                  ].map((filter) => (
+                    <button
+                      key={filter.value}
+                      onClick={() => setPropertyStatusFilter(filter.value as typeof propertyStatusFilter)}
+                      className={cn(
+                        "flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5",
+                        propertyStatusFilter === filter.value
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      )}
+                    >
+                      {filter.label}
+                      <span className={cn(
+                        "text-xs px-1.5 py-0.5 rounded-full",
+                        propertyStatusFilter === filter.value
+                          ? "bg-primary-foreground/20 text-primary-foreground"
+                          : "bg-background text-foreground"
+                      )}>
+                        {filter.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
                 {filteredProperties.map((property) => (
                   <div key={property.id} className="bg-card rounded-xl p-4 shadow-sm">
                     <div className="flex items-start justify-between gap-3">
