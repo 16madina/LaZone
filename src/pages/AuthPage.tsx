@@ -5,6 +5,7 @@ import { Mail, Lock, User, ArrowLeft, Eye, EyeOff, Phone, MapPin, ChevronDown, C
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { africanCountries, Country } from '@/data/africanCountries';
+import { diasporaCountries, DiasporaCountry, getRegionLabel } from '@/data/diasporaCountries';
 import { useTheme } from '@/hooks/useTheme';
 import logoLazone from '@/assets/logo-lazone.png';
 import heroBg from '@/assets/hero-bg.jpg';
@@ -52,6 +53,8 @@ const AuthPage = () => {
   const [loginCountry, setLoginCountry] = useState<Country | null>(africanCountries[0]);
   const [loginPhone, setLoginPhone] = useState('');
   const [isDiaspora, setIsDiaspora] = useState(false);
+  const [residenceCountry, setResidenceCountry] = useState<DiasporaCountry | null>(null);
+  const [showResidenceDropdown, setShowResidenceDropdown] = useState(false);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -337,7 +340,8 @@ const AuthPage = () => {
         toast({ title: 'Connexion réussie', description: 'Bienvenue sur LaZone!' });
         navigate('/profile');
       } else {
-        const fullPhoneNumber = `${formData.country?.phoneCode}${formData.phone}`;
+        const phoneCode = isDiaspora ? residenceCountry?.phoneCode : formData.country?.phoneCode;
+        const fullPhoneNumber = `${phoneCode}${formData.phone}`;
         const { data, error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
@@ -350,6 +354,9 @@ const AuthPage = () => {
               country_code: formData.country?.code,
               city: formData.city,
               phone: fullPhoneNumber,
+              is_diaspora: isDiaspora,
+              residence_country: isDiaspora ? residenceCountry?.name : null,
+              residence_country_code: isDiaspora ? residenceCountry?.code : null,
             },
             emailRedirectTo: `${window.location.origin}/profile`,
           },
@@ -532,19 +539,88 @@ const AuthPage = () => {
                   className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
                     isDiaspora ? 'bg-primary border-primary' : 'border-muted-foreground/50'
                   }`}
-                  onClick={() => setIsDiaspora(!isDiaspora)}
+                  onClick={() => {
+                    setIsDiaspora(!isDiaspora);
+                    if (!isDiaspora) {
+                      setResidenceCountry(null);
+                    }
+                  }}
                 >
                   {isDiaspora && <Check className="w-3 h-3 text-primary-foreground" />}
                 </div>
                 <span className="text-sm text-foreground">Je vis à l'étranger (diaspora)</span>
               </label>
 
-              {/* Country Select */}
+              {/* Residence Country Select (for diaspora) */}
+              {isDiaspora && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowResidenceDropdown(!showResidenceDropdown);
+                      setShowCountryDropdown(false);
+                      setShowCityDropdown(false);
+                    }}
+                    className="w-full glass-card p-1"
+                  >
+                    <div className="flex items-center gap-2 px-3 py-2.5">
+                      <Globe className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <span className={`flex-1 text-left text-sm ${residenceCountry ? 'text-foreground' : 'text-muted-foreground'}`}>
+                        {residenceCountry ? (
+                          <span className="flex items-center gap-2">
+                            <FlagImg code={residenceCountry.code} name={residenceCountry.name} />
+                            <span>{residenceCountry.name}</span>
+                          </span>
+                        ) : 'Pays de résidence actuel'}
+                      </span>
+                      <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showResidenceDropdown ? 'rotate-180' : ''}`} />
+                    </div>
+                  </button>
+                  <p className="text-xs text-muted-foreground mt-1 pl-1">
+                    Où vivez-vous actuellement ?
+                  </p>
+                  
+                  {showResidenceDropdown && (
+                    <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                      {(['americas', 'europe', 'asia'] as const).map((region) => (
+                        <div key={region}>
+                          <div className="px-4 py-2 bg-muted/50 text-xs font-semibold text-muted-foreground sticky top-0">
+                            {getRegionLabel(region)}
+                          </div>
+                          {diasporaCountries
+                            .filter((c) => c.region === region)
+                            .map((country) => (
+                              <button
+                                key={country.code}
+                                type="button"
+                                onClick={() => {
+                                  setResidenceCountry(country);
+                                  setShowResidenceDropdown(false);
+                                }}
+                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
+                              >
+                                <FlagImg code={country.code} name={country.name} className="h-5 w-7" />
+                                <span className="flex-1 text-sm">{country.name}</span>
+                                <span className="text-xs text-muted-foreground">{country.phoneCode}</span>
+                                {residenceCountry?.code === country.code && (
+                                  <Check className="w-4 h-4 text-primary" />
+                                )}
+                              </button>
+                            ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Country Select (African country - origin for diaspora, residence for locals) */}
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => {
                     setShowCountryDropdown(!showCountryDropdown);
+                    setShowResidenceDropdown(false);
                     setShowCityDropdown(false);
                   }}
                   className={`w-full glass-card p-1 ${errors.country && touched.country ? 'border border-destructive' : ''}`}
@@ -557,14 +633,14 @@ const AuthPage = () => {
                           <FlagImg code={formData.country.code} name={formData.country.name} />
                           <span>{formData.country.name}</span>
                         </span>
-                      ) : (isDiaspora ? 'Pays d\'origine / d\'intérêt' : 'Pays de résidence')}
+                      ) : (isDiaspora ? 'Pays d\'origine' : 'Pays de résidence')}
                     </span>
                     <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showCountryDropdown ? 'rotate-180' : ''}`} />
                   </div>
                 </button>
                 {isDiaspora && (
                   <p className="text-xs text-muted-foreground mt-1 pl-1">
-                    Sélectionnez le pays africain où vous souhaitez investir
+                    Pays africain où vous souhaitez investir
                   </p>
                 )}
                 <InputError message={touched.country ? errors.country : undefined} />
@@ -636,15 +712,20 @@ const AuthPage = () => {
                 <div className={`glass-card p-1 ${errors.phone && touched.phone ? 'border border-destructive' : ''}`}>
                   <div className="flex items-center gap-2 px-3 py-2.5">
                     <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                    {formData.country ? (
+                    {(isDiaspora ? residenceCountry : formData.country) ? (
                       <div className="flex items-center gap-2 px-2 py-1 bg-muted rounded-lg">
-                        <FlagImg code={formData.country.code} name={formData.country.name} />
+                        <FlagImg 
+                          code={isDiaspora ? residenceCountry!.code : formData.country!.code} 
+                          name={isDiaspora ? residenceCountry!.name : formData.country!.name} 
+                        />
                         <span className="text-sm font-medium text-foreground">
-                          {formData.country.phoneCode}
+                          {isDiaspora ? residenceCountry!.phoneCode : formData.country!.phoneCode}
                         </span>
                       </div>
                     ) : (
-                      <span className="text-xs text-muted-foreground">Sélectionnez un pays</span>
+                      <span className="text-xs text-muted-foreground">
+                        {isDiaspora ? 'Sélectionnez votre pays de résidence' : 'Sélectionnez un pays'}
+                      </span>
                     )}
                     <input
                       type="tel"
@@ -653,14 +734,14 @@ const AuthPage = () => {
                       onChange={(e) => handleFieldChange('phone', e.target.value.replace(/\D/g, ''))}
                       onBlur={() => handleBlur('phone')}
                       className="flex-1 bg-transparent outline-none text-sm"
-                      disabled={!formData.country}
+                      disabled={isDiaspora ? !residenceCountry : !formData.country}
                     />
                   </div>
                 </div>
                 <InputError message={touched.phone ? errors.phone : undefined} />
-                {formData.country && formData.phone && (
+                {(isDiaspora ? residenceCountry : formData.country) && formData.phone && (
                   <p className="text-xs text-muted-foreground mt-1 pl-1">
-                    Numéro complet: {formData.country.phoneCode}{formData.phone}
+                    Numéro complet: {isDiaspora ? residenceCountry!.phoneCode : formData.country!.phoneCode}{formData.phone}
                   </p>
                 )}
               </div>
