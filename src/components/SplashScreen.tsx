@@ -38,11 +38,11 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
 
   useEffect(() => {
     // Phase 1: Logo animation (0-1s)
-    const textTimer = setTimeout(() => setPhase('text'), 800);
-    // Phase 2: Text animation (1-2s), then exit
-    const exitTimer = setTimeout(() => setPhase('exit'), 2200);
+    const textTimer = setTimeout(() => setPhase('text'), 1000);
+    // Phase 2: Text animation (1-3s), then exit
+    const exitTimer = setTimeout(() => setPhase('exit'), 4200);
     // Complete and unmount
-    const completeTimer = setTimeout(() => onComplete(), 2800);
+    const completeTimer = setTimeout(() => onComplete(), 4800);
 
     return () => {
       clearTimeout(textTimer);
