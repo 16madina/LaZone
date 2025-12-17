@@ -24,7 +24,7 @@ export const BottomNavigation = () => {
       animate={{ y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
     >
-      <div className="flex items-center justify-around py-1.5 px-2 max-w-lg mx-auto">
+      <div className="flex items-center justify-around py-1 px-2 max-w-lg mx-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.to;
           const isPublish = item.to === '/publish';
