@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, HelpCircle, MessageCircle, AlertTriangle, Info, FileText, Search } from 'lucide-react';
+import { ArrowLeft, HelpCircle, MessageCircle, Info, FileText, Search, GraduationCap } from 'lucide-react';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { useTutorial } from '@/hooks/useTutorial';
 
 const faqs = [
   {
@@ -42,11 +43,20 @@ const faqs = [
 const HelpCenterPage = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const { startTutorial, resetTutorial, hasCompletedTutorial } = useTutorial();
 
   const filteredFaqs = faqs.filter(faq => 
     faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
     faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleStartTutorial = () => {
+    resetTutorial();
+    navigate('/');
+    setTimeout(() => {
+      startTutorial();
+    }, 500);
+  };
 
   return (
     <div className="min-h-screen bg-muted/30 pb-32">
@@ -74,6 +84,22 @@ const HelpCenterPage = () => {
             className="pl-10"
           />
         </div>
+
+        {/* Tutorial Button */}
+        <button 
+          onClick={handleStartTutorial}
+          className="w-full bg-gradient-to-r from-primary via-primary to-primary/80 p-4 rounded-2xl flex items-center gap-4 hover:opacity-90 transition-opacity"
+        >
+          <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+            <GraduationCap className="w-6 h-6 text-primary-foreground" />
+          </div>
+          <div className="flex-1 text-left">
+            <span className="font-semibold text-primary-foreground block">Tutoriel interactif</span>
+            <span className="text-sm text-primary-foreground/80">
+              {hasCompletedTutorial ? 'Revoir le guide' : 'Découvrir l\'application'}
+            </span>
+          </div>
+        </button>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-3">

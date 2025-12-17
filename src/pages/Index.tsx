@@ -213,11 +213,12 @@ const Index = () => {
             </div>
           ) : (
             <div className="grid gap-4">
-              {filteredProperties.map((property) => (
+              {filteredProperties.map((property, index) => (
                 <PropertyCard 
                   key={property.id} 
                   property={property} 
                   userCountry={selectedCountry?.code}
+                  isFirst={index === 0}
                 />
               ))}
             </div>

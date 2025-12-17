@@ -5,11 +5,11 @@ import { useMessages } from '@/hooks/useMessages';
 import { useAuth } from '@/hooks/useAuth';
 
 const navItems = [
-  { to: '/', icon: Home, label: 'Accueil' },
-  { to: '/map', icon: Map, label: 'Carte' },
-  { to: '/publish', icon: PlusCircle, label: 'Publier' },
-  { to: '/messages', icon: MessageCircle, label: 'Messages' },
-  { to: '/profile', icon: User, label: 'Profil' },
+  { to: '/', icon: Home, label: 'Accueil', tutorialId: 'nav-home' },
+  { to: '/map', icon: Map, label: 'Carte', tutorialId: 'nav-map' },
+  { to: '/publish', icon: PlusCircle, label: 'Publier', tutorialId: 'nav-publish' },
+  { to: '/messages', icon: MessageCircle, label: 'Messages', tutorialId: 'nav-messages' },
+  { to: '/profile', icon: User, label: 'Profil', tutorialId: 'nav-profile' },
 ];
 
 export const BottomNavigation = () => {
@@ -35,6 +35,7 @@ export const BottomNavigation = () => {
             <RouterNavLink
               key={item.to}
               to={item.to}
+              data-tutorial={item.tutorialId}
               className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all duration-300"
             >
               <motion.div 
