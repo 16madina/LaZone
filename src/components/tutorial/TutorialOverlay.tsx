@@ -71,21 +71,28 @@ const TutorialOverlay = () => {
     const availableHeight = Math.max(0, vh - padding * 2);
     const effectiveHeight = Math.min(tooltipHeight || 240, availableHeight);
 
+    // IMPORTANT: don't use `transform` for centering here.
+    // Framer Motion animates transforms (scale/y), which would override our transform and break centering on mobile.
+    const centered = {
+      position: 'fixed' as const,
+      top: padding,
+      left: padding,
+      right: padding,
+      marginLeft: 'auto',
+      marginRight: 'auto',
+      width: 'auto',
+      maxWidth: `${tooltipWidth}px`,
+      maxHeight: `${availableHeight}px`,
+    };
+
     const base = {
       maxWidth: `calc(100vw - ${padding * 2}px)`,
       width: `${tooltipWidth}px`,
       maxHeight: `${availableHeight}px`,
     };
 
-    // Mobile-safe center: anchor from the top padding, let content scroll inside.
     if (!targetRect || step.position === 'center') {
-      return {
-        position: 'fixed' as const,
-        top: padding,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        ...base,
-      };
+      return centered;
     }
 
     switch (step.position) {
@@ -142,13 +149,7 @@ const TutorialOverlay = () => {
           ...base,
         };
       default:
-        return {
-          position: 'fixed' as const,
-          top: padding,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          ...base,
-        };
+        return centered;
     }
   };
 
