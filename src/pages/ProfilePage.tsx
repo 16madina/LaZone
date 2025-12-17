@@ -59,9 +59,113 @@ import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Switch } from '@/components/ui/switch';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { AppointmentsTab } from '@/components/appointment/AppointmentsTab';
 
-type TabType = 'profil' | 'annonces' | 'rdv' | 'favoris' | 'parametres';
+type TabType = 'annonces' | 'rdv' | 'favoris' | 'parametres';
+
+const ProfileInfoSheet = ({ 
+  user, 
+  reviews, 
+  reviewsLoading 
+}: { 
+  user: any; 
+  reviews: Review[]; 
+  reviewsLoading: boolean;
+}) => {
+  return (
+    <div className="space-y-6">
+      {/* Profile Info Cards */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
+          <Mail className="w-5 h-5 text-primary" />
+          <div className="flex-1">
+            <p className="text-xs text-muted-foreground">Email</p>
+            <p className="text-sm font-medium">{user.email}</p>
+          </div>
+        </div>
+        
+        {user.user_metadata?.phone && (
+          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
+            <Phone className="w-5 h-5 text-primary" />
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground">Téléphone</p>
+              <p className="text-sm font-medium">{user.user_metadata.phone}</p>
+            </div>
+          </div>
+        )}
+        
+        {user.user_metadata?.city && (
+          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
+            <MapPin className="w-5 h-5 text-primary" />
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground">Localisation</p>
+              <p className="text-sm font-medium">{user.user_metadata.city}, {user.user_metadata.country}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Reviews Section */}
+      <div>
+        <h3 className="font-semibold mb-3 flex items-center gap-2">
+          <Star className="w-5 h-5 text-primary" />
+          Avis reçus ({reviews.length})
+        </h3>
+        
+        {reviewsLoading ? (
+          <div className="text-center py-4">
+            <Loader2 className="w-6 h-6 mx-auto animate-spin text-primary" />
+          </div>
+        ) : reviews.length > 0 ? (
+          <div className="space-y-3">
+            {reviews.map((review) => (
+              <div key={review.id} className="p-3 bg-muted/50 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <img
+                    src={review.reviewer?.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop'}
+                    alt={review.reviewer?.full_name || 'Utilisateur'}
+                    className="w-10 h-10 rounded-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop';
+                    }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-sm">{review.reviewer?.full_name || 'Utilisateur'}</p>
+                      <div className="flex items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`w-3 h-3 ${
+                              star <= review.rating 
+                                ? 'text-primary fill-primary' 
+                                : 'text-muted-foreground'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    {review.comment && (
+                      <p className="text-sm text-muted-foreground mt-1">{review.comment}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {format(new Date(review.created_at), "d MMMM yyyy", { locale: fr })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Aucun avis pour le moment
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
 
 interface Property {
   id: string;
@@ -123,7 +227,8 @@ const ProfilePage = () => {
   const [favoriteProperties, setFavoriteProperties] = useState<Property[]>([]);
   const [loadingProperties, setLoadingProperties] = useState(false);
   const [loadingFavorites, setLoadingFavorites] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>('profil');
+  const [activeTab, setActiveTab] = useState<TabType>('annonces');
+  const [showProfileSheet, setShowProfileSheet] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -419,7 +524,6 @@ const ProfilePage = () => {
     : 'décembre 2025';
 
   const tabs = [
-    { id: 'profil' as TabType, label: 'Profil', icon: User },
     { id: 'annonces' as TabType, label: 'Annonces', icon: Home },
     { id: 'rdv' as TabType, label: 'Mes RDV', icon: CalendarDays },
     { id: 'favoris' as TabType, label: 'Favoris', icon: Heart },
@@ -516,10 +620,29 @@ const ProfilePage = () => {
                 }`}>
                   {isEmailVerified ? 'Vérifié' : 'Non vérifié'}
                 </div>
+                {/* Profile Info Button */}
+                <Sheet open={showProfileSheet} onOpenChange={setShowProfileSheet}>
+                  <SheetTrigger asChild>
+                    <button className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors">
+                      <User className="w-4 h-4" />
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-2xl">
+                    <SheetHeader>
+                      <SheetTitle className="flex items-center gap-2">
+                        <User className="w-5 h-5 text-primary" />
+                        Mon Profil
+                      </SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-4">
+                      <ProfileInfoSheet user={user} reviews={reviews} reviewsLoading={reviewsLoading} />
+                    </div>
+                  </SheetContent>
+                </Sheet>
               </div>
 
               {/* User Info */}
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 mt-2">
                 <div className="flex items-start justify-between gap-2">
                   <h1 className="text-lg font-bold text-foreground truncate">
                     {user.user_metadata?.full_name || 'Utilisateur'}
@@ -677,97 +800,6 @@ const ProfilePage = () => {
 
           {/* Tab Content */}
           <div className="p-4">
-            {activeTab === 'profil' && (
-              <div className="space-y-6">
-                {/* Profile Info Cards */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
-                    <Mail className="w-5 h-5 text-primary" />
-                    <div className="flex-1">
-                      <p className="text-xs text-muted-foreground">Email</p>
-                      <p className="text-sm font-medium">{user.email}</p>
-                    </div>
-                  </div>
-                  
-                  {user.user_metadata?.phone && (
-                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
-                      <Phone className="w-5 h-5 text-primary" />
-                      <div className="flex-1">
-                        <p className="text-xs text-muted-foreground">Téléphone</p>
-                        <p className="text-sm font-medium">{user.user_metadata.phone}</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {user.user_metadata?.city && (
-                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
-                      <MapPin className="w-5 h-5 text-primary" />
-                      <div className="flex-1">
-                        <p className="text-xs text-muted-foreground">Localisation</p>
-                        <p className="text-sm font-medium">{user.user_metadata.city}, {user.user_metadata.country}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Reviews Section */}
-                <div>
-                  <h3 className="font-semibold mb-3 flex items-center gap-2">
-                    <Star className="w-5 h-5 text-primary" />
-                    Avis reçus ({reviews.length})
-                  </h3>
-                  
-                  {reviewsLoading ? (
-                    <div className="text-center py-4">
-                      <Loader2 className="w-6 h-6 mx-auto animate-spin text-primary" />
-                    </div>
-                  ) : reviews.length > 0 ? (
-                    <div className="space-y-3">
-                      {reviews.map((review) => (
-                        <div key={review.id} className="p-3 bg-muted/50 rounded-xl">
-                          <div className="flex items-start gap-3">
-                            <img
-                              src={review.reviewer?.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop'}
-                              alt={review.reviewer?.full_name || 'Utilisateur'}
-                              className="w-10 h-10 rounded-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop';
-                              }}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between">
-                                <p className="font-medium text-sm">{review.reviewer?.full_name || 'Utilisateur'}</p>
-                                <div className="flex items-center gap-0.5">
-                                  {[1, 2, 3, 4, 5].map((star) => (
-                                    <Star
-                                      key={star}
-                                      className={`w-3 h-3 ${
-                                        star <= review.rating 
-                                          ? 'text-primary fill-primary' 
-                                          : 'text-muted-foreground'
-                                      }`}
-                                    />
-                                  ))}
-                                </div>
-                              </div>
-                              {review.comment && (
-                                <p className="text-sm text-muted-foreground mt-1">{review.comment}</p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-6 bg-muted/30 rounded-xl">
-                      <Star className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
-                      <p className="text-sm text-muted-foreground">Aucun avis pour le moment</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
             {activeTab === 'annonces' && (
               <div>
                 {/* Add new listing button */}
