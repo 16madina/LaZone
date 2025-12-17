@@ -687,6 +687,13 @@ const ConversationView = ({ participantId, propertyId, onBack }: ConversationVie
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-card border-border z-50">
+              {/* Prendre RDV */}
+              {propertyInfo && propertyInfo.ownerId !== user?.id && (
+                <DropdownMenuItem onClick={() => setShowAppointmentDialog(true)} className="cursor-pointer">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Prendre RDV
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={toggleMute} className="cursor-pointer">
                 {isMuted ? (
                   <>
@@ -701,16 +708,33 @@ const ConversationView = ({ participantId, propertyId, onBack }: ConversationVie
                 )}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <ReportUserDialog
-                userId={participantId}
-                userName={participant?.full_name}
-                trigger={
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer text-destructive focus:text-destructive">
-                    <Ban className="w-4 h-4 mr-2" />
-                    Bloquer l'utilisateur
-                  </DropdownMenuItem>
-                }
-              />
+              <DropdownMenuItem 
+                onClick={async () => {
+                  try {
+                    const { error } = await supabase
+                      .from('blocked_users')
+                      .insert({ user_id: user?.id, blocked_user_id: participantId });
+                    
+                    if (error) throw error;
+                    
+                    toast({
+                      title: 'Utilisateur bloqué',
+                      description: `Vous ne recevrez plus de messages de ${participant?.full_name || 'cet utilisateur'}`,
+                    });
+                    onBack();
+                  } catch (err: any) {
+                    if (err.code === '23505') {
+                      toast({ title: 'Déjà bloqué', description: 'Cet utilisateur est déjà bloqué' });
+                    } else {
+                      toast({ title: 'Erreur', description: 'Impossible de bloquer l\'utilisateur', variant: 'destructive' });
+                    }
+                  }
+                }} 
+                className="cursor-pointer text-destructive focus:text-destructive"
+              >
+                <Ban className="w-4 h-4 mr-2" />
+                Bloquer l'utilisateur
+              </DropdownMenuItem>
               <ReportUserDialog
                 userId={participantId}
                 userName={participant?.full_name}

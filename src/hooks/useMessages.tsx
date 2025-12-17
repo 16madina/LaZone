@@ -54,6 +54,14 @@ export const useMessages = () => {
     if (!user) return;
 
     try {
+      // Fetch blocked users first
+      const { data: blockedData } = await supabase
+        .from('blocked_users')
+        .select('blocked_user_id')
+        .eq('user_id', user.id);
+      
+      const blockedUserIds = new Set(blockedData?.map(b => b.blocked_user_id) || []);
+
       // Fetch archived conversations first (now with property_id)
       const { data: archived } = await supabase
         .from('archived_conversations')
@@ -73,12 +81,18 @@ export const useMessages = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      
+      // Filter out messages from blocked users
+      const filteredMessages = messages?.filter(msg => {
+        const otherUserId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
+        return !blockedUserIds.has(otherUserId);
+      });
 
       // Group messages by property_id + participant_id (separate active and archived)
       const conversationMap = new Map<string, Message[]>();
       const archivedConversationMap = new Map<string, Message[]>();
       
-      messages?.forEach(msg => {
+      filteredMessages?.forEach(msg => {
         const otherUserId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
         const propertyId = msg.property_id;
         const conversationKey = `${propertyId}_${otherUserId}`;
