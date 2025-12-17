@@ -684,59 +684,70 @@ const ProfilePage = () => {
           <div className="p-5">
             <div className="flex gap-4">
               {/* Avatar with upload button */}
-              <div className="relative flex-shrink-0">
-                <button
-                  onClick={handleAvatarClick}
-                  disabled={uploadingAvatar}
-                  className="relative w-24 h-24 rounded-xl overflow-hidden border-4 border-card shadow-md group"
-                >
-                  {profile?.avatar_url ? (
-                    <img 
-                      src={profile.avatar_url} 
-                      alt="Avatar" 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <span className="text-3xl">👤</span>
-                    </div>
-                  )}
-                  {/* Overlay on hover */}
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    {uploadingAvatar ? (
-                      <Loader2 className="w-6 h-6 text-white animate-spin" />
+              <div className="flex-shrink-0">
+                <div className="relative">
+                  <button
+                    onClick={handleAvatarClick}
+                    disabled={uploadingAvatar}
+                    className="relative w-24 h-24 rounded-xl overflow-hidden border-4 border-card shadow-md group"
+                  >
+                    {profile?.avatar_url ? (
+                      <img 
+                        src={profile.avatar_url} 
+                        alt="Avatar" 
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
-                      <Camera className="w-6 h-6 text-white" />
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <span className="text-3xl">👤</span>
+                      </div>
                     )}
-                  </div>
-                </button>
-                {/* Verification Badge */}
-                <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
-                  isEmailVerified 
-                    ? 'bg-green-500 text-white' 
-                    : 'bg-primary text-primary-foreground'
-                }`}>
-                  {isEmailVerified ? 'Vérifié' : 'Non vérifié'}
-                </div>
-                {/* Profile Info Button */}
-                <Sheet open={showProfileSheet} onOpenChange={setShowProfileSheet}>
-                  <SheetTrigger asChild>
-                    <button className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors">
-                      <User className="w-4 h-4" />
-                    </button>
-                  </SheetTrigger>
-                  <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-2xl">
-                    <SheetHeader>
-                      <SheetTitle className="flex items-center gap-2">
-                        <User className="w-5 h-5 text-primary" />
-                        Mon Profil
-                      </SheetTitle>
-                    </SheetHeader>
-                    <div className="mt-4">
-                      <ProfileInfoSheet user={user} reviews={reviews} reviewsLoading={reviewsLoading} />
+                    {/* Overlay on hover */}
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      {uploadingAvatar ? (
+                        <Loader2 className="w-6 h-6 text-white animate-spin" />
+                      ) : (
+                        <Camera className="w-6 h-6 text-white" />
+                      )}
                     </div>
-                  </SheetContent>
-                </Sheet>
+                  </button>
+                  {/* Verification Badge */}
+                  <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
+                    isEmailVerified 
+                      ? 'bg-green-500 text-white' 
+                      : 'bg-primary text-primary-foreground'
+                  }`}>
+                    {isEmailVerified ? 'Vérifié' : 'Non vérifié'}
+                  </div>
+                </div>
+                
+                {/* Profile Info & Edit Button */}
+                <div className="mt-4 flex items-center gap-2">
+                  <Sheet open={showProfileSheet} onOpenChange={setShowProfileSheet}>
+                    <SheetTrigger asChild>
+                      <button className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors">
+                        <User className="w-4 h-4" />
+                      </button>
+                    </SheetTrigger>
+                    <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-2xl">
+                      <SheetHeader>
+                        <SheetTitle className="flex items-center gap-2">
+                          <User className="w-5 h-5 text-primary" />
+                          Mon Profil
+                        </SheetTitle>
+                      </SheetHeader>
+                      <div className="mt-4">
+                        <ProfileInfoSheet user={user} reviews={reviews} reviewsLoading={reviewsLoading} />
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                  <button
+                    onClick={() => navigate('/settings/edit-profile')}
+                    className="text-xs text-primary font-medium hover:underline"
+                  >
+                    Modifier le profil
+                  </button>
+                </div>
               </div>
 
               {/* User Info */}
