@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
+import heroBg4 from '@/assets/hero-bg-4.jpg';
+import {
   LogOut, 
   Mail,
   Phone,
@@ -544,13 +545,13 @@ const ProfilePage = () => {
   if (!user) {
     return (
       <div className="min-h-screen relative overflow-hidden">
-        {/* Background gradient and pattern */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-primary/5" />
-        <div className="absolute inset-0 opacity-30" style={{
-          backgroundImage: `radial-gradient(circle at 20% 50%, hsl(var(--primary) / 0.15) 0%, transparent 50%),
-                           radial-gradient(circle at 80% 20%, hsl(var(--primary) / 0.1) 0%, transparent 40%),
-                           radial-gradient(circle at 40% 80%, hsl(var(--primary) / 0.08) 0%, transparent 45%)`
-        }} />
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${heroBg4})` }}
+        />
+        {/* Overlay gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/30 to-background/70" />
         
         <div className="relative z-10 flex flex-col items-center justify-center min-h-[70vh] px-6">
           {/* Animated illustration */}
