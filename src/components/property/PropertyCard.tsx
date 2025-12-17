@@ -13,9 +13,10 @@ interface PropertyCardProps {
   property: Property;
   index?: number;
   userCountry?: string | null;
+  isFirst?: boolean;
 }
 
-export const PropertyCard = ({ property, userCountry }: PropertyCardProps) => {
+export const PropertyCard = ({ property, userCountry, isFirst = false }: PropertyCardProps) => {
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorite = isFavorite(property.id);
   const [swiperActive, setSwiperActive] = useState(false);
@@ -32,7 +33,7 @@ export const PropertyCard = ({ property, userCountry }: PropertyCardProps) => {
   const hasMultipleImages = property.images.length > 1;
 
   return (
-    <div className="property-card">
+    <div className="property-card" data-tutorial={isFirst ? "property-card" : undefined}>
       <div className="relative aspect-[4/3] overflow-hidden">
         {hasMultipleImages ? (
           <Swiper

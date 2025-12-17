@@ -31,6 +31,7 @@ export const CountrySelector = ({ selectedCountry, onCountryChange, isAuthentica
     <>
       <button
         onClick={() => setIsOpen(true)}
+        data-tutorial="country"
         className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-white/20 backdrop-blur-sm active:scale-95 transition-transform"
       >
         {selectedCountry ? (

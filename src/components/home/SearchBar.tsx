@@ -119,11 +119,14 @@ export const SearchBar = ({ variant = 'default', selectedCountry }: SearchBarPro
   };
 
   return (
-    <div className={`flex items-center gap-3 p-3 rounded-2xl ${
-      isHero 
-        ? 'bg-white/95 backdrop-blur-sm shadow-lg' 
-        : 'search-bar'
-    }`}>
+    <div 
+      data-tutorial="search"
+      className={`flex items-center gap-3 p-3 rounded-2xl ${
+        isHero 
+          ? 'bg-white/95 backdrop-blur-sm shadow-lg' 
+          : 'search-bar'
+      }`}
+    >
       <Search className={`w-5 h-5 ${isHero ? 'text-muted-foreground' : 'text-muted-foreground'}`} />
       <input
         type="text"
