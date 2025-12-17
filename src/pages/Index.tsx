@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Loader2 } from 'lucide-react';
+import { User, Loader2, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SearchBar } from '@/components/home/SearchBar';
 import { FilterChips } from '@/components/home/FilterChips';
@@ -7,6 +7,7 @@ import { SponsoredPropertiesSection } from '@/components/home/SponsoredPropertie
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { CountrySelector } from '@/components/home/CountrySelector';
 import { NotificationDropdown } from '@/components/NotificationDropdown';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAppStore } from '@/stores/appStore';
 import { useProperties } from '@/hooks/useProperties';
 import { useAuth } from '@/hooks/useAuth';
@@ -24,9 +25,10 @@ const Index = () => {
   const { activeFilter, searchQuery } = useAppStore();
   const { properties, loading } = useProperties();
   const { profile, user } = useAuth();
-  const { detectedCountry } = useGeoCountry();
+  const { detectedCountry, permissionDenied, showAllCountries } = useGeoCountry();
   const [currentBg, setCurrentBg] = useState(heroBg1);
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
+  const [showGeoAlert, setShowGeoAlert] = useState(false);
 
   // Initialize country: logged-in users get their profile country, others get geolocation
   useEffect(() => {
@@ -36,11 +38,19 @@ const Index = () => {
       if (userCountry) {
         setSelectedCountry(userCountry);
       }
-    } else if (!user && detectedCountry) {
-      // Not logged in: use geolocation-detected country
-      setSelectedCountry(detectedCountry);
+    } else if (!user) {
+      if (detectedCountry) {
+        // Not logged in: use geolocation-detected country
+        setSelectedCountry(detectedCountry);
+      } else if (showAllCountries) {
+        // Geolocation denied or not in Africa - show all countries
+        setSelectedCountry(null);
+        if (permissionDenied) {
+          setShowGeoAlert(true);
+        }
+      }
     }
-  }, [user, profile?.country, detectedCountry]);
+  }, [user, profile?.country, detectedCountry, showAllCountries, permissionDenied]);
 
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * heroImages.length);
@@ -48,7 +58,7 @@ const Index = () => {
   }, []);
 
   const filteredProperties = properties.filter((property) => {
-    // Filter by country first
+    // Filter by country first (if a country is selected)
     if (selectedCountry && property.country !== selectedCountry.code) {
       return false;
     }
@@ -76,6 +86,19 @@ const Index = () => {
 
   return (
     <div className="min-h-screen pb-32">
+      {/* Geolocation Alert */}
+      {showGeoAlert && !user && (
+        <Alert className="mx-4 mt-4 bg-primary/10 border-primary/20">
+          <Info className="h-4 w-4 text-primary" />
+          <AlertDescription className="text-sm">
+            Localisation non disponible. Les annonces de tous les pays africains sont affichées. 
+            <Link to="/auth" className="text-primary font-medium ml-1 underline">
+              Inscrivez-vous
+            </Link> pour choisir votre pays.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Hero Section with Background */}
       <div 
         className="relative px-4 pt-4 pb-8"
@@ -96,7 +119,8 @@ const Index = () => {
             <div className="flex items-center gap-3">
               <CountrySelector 
                 selectedCountry={selectedCountry} 
-                onCountryChange={setSelectedCountry} 
+                onCountryChange={setSelectedCountry}
+                isAuthenticated={!!user}
               />
               <NotificationDropdown variant="hero" />
               <Link to="/profile" className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform">
@@ -143,7 +167,7 @@ const Index = () => {
             <h3 className="section-title">
               {selectedCountry 
                 ? `Propriétés en ${selectedCountry.name}` 
-                : 'Propriétés récentes'}
+                : 'Toutes les propriétés'}
             </h3>
             <button className="text-sm text-primary font-medium active:scale-95 transition-transform">
               Voir tout
