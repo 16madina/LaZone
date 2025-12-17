@@ -31,6 +31,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatPriceWithCurrency } from '@/data/currencies';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useShare } from '@/hooks/useNativePlugins';
 
 interface PropertyDetail {
   id: string;
@@ -64,6 +65,7 @@ const PropertyDetailPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { shareProperty } = useShare();
   const [showGallery, setShowGallery] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [property, setProperty] = useState<PropertyDetail | null>(null);
@@ -332,6 +334,12 @@ const PropertyDetailPage = () => {
           <div className="flex gap-2">
             <motion.button
               whileTap={{ scale: 0.9 }}
+              onClick={() => shareProperty({
+                id: property.id,
+                title: property.title,
+                price: property.price,
+                city: property.city
+              })}
               className="glass w-10 h-10 rounded-full flex items-center justify-center"
             >
               <Share2 className="w-5 h-5" />
