@@ -181,7 +181,7 @@ interface ConversationViewProps {
 }
 
 const ConversationView = ({ participantId, propertyId, onBack }: ConversationViewProps) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { isUserOnline, getLastSeen, fetchLastSeen } = useOnlineStatus();
   const { messages, loading, sendMessage, deleteMessage, addReaction, uploadAttachment, isTyping, setTyping } = useConversation(participantId, propertyId);
@@ -395,7 +395,8 @@ const ConversationView = ({ participantId, propertyId, onBack }: ConversationVie
                   isMe={isMe}
                   userId={user?.id || ''}
                   participantAvatar={participant?.avatar_url}
-                  showAvatar={!isMe && isLastInGroup}
+                  myAvatar={profile?.avatar_url}
+                  showAvatar={isLastInGroup}
                   onDelete={async (messageId) => {
                     const { error } = await deleteMessage(messageId);
                     if (error) {
