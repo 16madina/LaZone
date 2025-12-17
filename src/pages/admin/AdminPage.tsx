@@ -858,23 +858,43 @@ const AdminPage = () => {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs - Two rows for mobile */}
       <div className="px-4 -mt-3">
-        <div className="bg-card rounded-xl shadow-sm p-1 flex gap-1 overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 min-w-0 py-2 px-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5 ${
-                activeTab === tab.id
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-muted'
-              }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              <span className="truncate">{tab.label}</span>
-            </button>
-          ))}
+        <div className="bg-card rounded-xl shadow-sm p-2 space-y-2">
+          {/* First row - 3 tabs */}
+          <div className="grid grid-cols-3 gap-1">
+            {tabs.slice(0, 3).map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`py-2 px-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
+                  activeTab === tab.id
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                <tab.icon className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+          {/* Second row - remaining tabs */}
+          <div className="grid grid-cols-3 gap-1">
+            {tabs.slice(3).map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`py-2 px-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
+                  activeTab === tab.id
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                <tab.icon className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">{tab.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
