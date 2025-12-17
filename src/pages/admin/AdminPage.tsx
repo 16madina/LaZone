@@ -31,8 +31,26 @@ import {
   Plus,
   Edit2,
   ExternalLink,
-  Upload
+  Upload,
+  GripVertical
 } from 'lucide-react';
+import { 
+  DndContext, 
+  closestCenter, 
+  KeyboardSensor, 
+  PointerSensor, 
+  useSensor, 
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -199,6 +217,105 @@ const isValidUrl = (url: string): boolean => {
   }
 };
 
+// Sortable Banner Item Component
+interface SortableBannerItemProps {
+  banner: BannerData;
+  onToggleActive: (id: string, isActive: boolean) => void;
+  onEdit: (banner: BannerData) => void;
+  onDelete: (id: string) => void;
+}
+
+const SortableBannerItem = ({ banner, onToggleActive, onEdit, onDelete }: SortableBannerItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: banner.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1000 : 'auto',
+  };
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      style={style}
+      className="bg-card rounded-xl overflow-hidden shadow-sm border border-border"
+    >
+      <div className="aspect-[3/1] relative">
+        <img 
+          src={banner.image_url} 
+          alt={banner.title}
+          className="w-full h-full object-cover"
+        />
+        {!banner.is_active && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <Badge variant="secondary">Désactivée</Badge>
+          </div>
+        )}
+        {/* Click stats badge */}
+        <div className="absolute top-2 right-2">
+          <Badge variant="secondary" className="bg-black/60 text-white border-0">
+            {banner.click_count || 0} clics
+          </Badge>
+        </div>
+        {/* Drag handle */}
+        <div 
+          {...attributes} 
+          {...listeners}
+          className="absolute top-2 left-2 p-2 bg-black/60 backdrop-blur-sm rounded-lg cursor-grab active:cursor-grabbing touch-none"
+        >
+          <GripVertical className="w-4 h-4 text-white" />
+        </div>
+      </div>
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium truncate">{banner.title}</h3>
+            {banner.link_url && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                <ExternalLink className="w-3 h-3" />
+                <span className="truncate">{banner.link_url}</span>
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => onToggleActive(banner.id, banner.is_active)}
+              className={`p-2 rounded-lg hover:bg-muted transition-colors ${
+                banner.is_active ? 'text-green-500' : 'text-muted-foreground'
+              }`}
+              title={banner.is_active ? 'Désactiver' : 'Activer'}
+            >
+              {banner.is_active ? <Eye className="w-4 h-4" /> : <X className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={() => onEdit(banner)}
+              className="p-2 rounded-lg hover:bg-muted transition-colors"
+              title="Modifier"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => onDelete(banner.id)}
+              className="p-2 rounded-lg hover:bg-muted transition-colors"
+              title="Supprimer"
+            >
+              <Trash2 className="w-4 h-4 text-destructive" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AdminPage = () => {
   const navigate = useNavigate();
   const { isAdmin, isModerator, loading: loadingRoles } = useAdmin();
@@ -253,6 +370,64 @@ const AdminPage = () => {
   const [notificationTargetType, setNotificationTargetType] = useState<'all' | 'single'>('all');
   const [selectedUserId, setSelectedUserId] = useState('');
   const [sendingNotification, setSendingNotification] = useState(false);
+
+  // Drag and drop sensors for banner reordering
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle banner drag end
+  const handleBannerDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = banners.findIndex(b => b.id === active.id);
+    const newIndex = banners.findIndex(b => b.id === over.id);
+    
+    // Optimistically update UI
+    const reorderedBanners = arrayMove(banners, oldIndex, newIndex);
+    setBanners(reorderedBanners);
+
+    // Update display_order in database
+    try {
+      const updates = reorderedBanners.map((banner, index) => ({
+        id: banner.id,
+        display_order: index,
+      }));
+
+      for (const update of updates) {
+        await supabase
+          .from('ad_banners')
+          .update({ display_order: update.display_order })
+          .eq('id', update.id);
+      }
+      
+      toast({ title: 'Ordre mis à jour' });
+    } catch (error) {
+      console.error('Error updating banner order:', error);
+      toast({ title: 'Erreur lors de la mise à jour', variant: 'destructive' });
+      // Revert on error
+      fetchBanners();
+    }
+  };
+
+  const fetchBanners = async () => {
+    const { data, error } = await supabase
+      .from('ad_banners')
+      .select('*')
+      .order('display_order', { ascending: true });
+    
+    if (error) throw error;
+    setBanners(data || []);
+  };
 
   useEffect(() => {
     if (!loadingRoles && !isAdmin && !isModerator) {
@@ -479,15 +654,6 @@ const AdminPage = () => {
     setProperties(propertiesWithOwner);
   };
 
-  const fetchBanners = async () => {
-    const { data, error } = await supabase
-      .from('ad_banners')
-      .select('*')
-      .order('display_order', { ascending: true });
-    
-    if (error) throw error;
-    setBanners(data || []);
-  };
 
   // Actions
   const handleDeleteProperty = async (propertyId: string) => {
@@ -1591,75 +1757,43 @@ const AdminPage = () => {
             {/* Banners Tab */}
             {activeTab === 'banners' && (
               <div className="space-y-3">
-                <Button
-                  onClick={() => handleOpenBannerDialog()}
-                  className="w-full"
-                  variant="outline"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Ajouter une bannière
-                </Button>
+                <div className="flex items-center justify-between gap-2">
+                  <Button
+                    onClick={() => handleOpenBannerDialog()}
+                    className="flex-1"
+                    variant="outline"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Ajouter une bannière
+                  </Button>
+                </div>
                 
-                {banners.map((banner) => (
-                  <div key={banner.id} className="bg-card rounded-xl overflow-hidden shadow-sm border border-border">
-                    <div className="aspect-[3/1] relative">
-                      <img 
-                        src={banner.image_url} 
-                        alt={banner.title}
-                        className="w-full h-full object-cover"
-                      />
-                      {!banner.is_active && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                          <Badge variant="secondary">Désactivée</Badge>
-                        </div>
-                      )}
-                      {/* Click stats badge */}
-                      <div className="absolute top-2 right-2">
-                        <Badge variant="secondary" className="bg-black/60 text-white border-0">
-                          {banner.click_count || 0} clics
-                        </Badge>
-                      </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  Glissez-déposez pour réorganiser l'ordre d'affichage
+                </p>
+                
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleBannerDragEnd}
+                >
+                  <SortableContext
+                    items={banners.map(b => b.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-3">
+                      {banners.map((banner) => (
+                        <SortableBannerItem
+                          key={banner.id}
+                          banner={banner}
+                          onToggleActive={handleToggleBannerActive}
+                          onEdit={handleOpenBannerDialog}
+                          onDelete={handleDeleteBanner}
+                        />
+                      ))}
                     </div>
-                    <div className="p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium truncate">{banner.title}</h3>
-                          {banner.link_url && (
-                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                              <ExternalLink className="w-3 h-3" />
-                              <span className="truncate">{banner.link_url}</span>
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleToggleBannerActive(banner.id, banner.is_active)}
-                            className={`p-2 rounded-lg hover:bg-muted transition-colors ${
-                              banner.is_active ? 'text-green-500' : 'text-muted-foreground'
-                            }`}
-                            title={banner.is_active ? 'Désactiver' : 'Activer'}
-                          >
-                            {banner.is_active ? <Eye className="w-4 h-4" /> : <X className="w-4 h-4" />}
-                          </button>
-                          <button
-                            onClick={() => handleOpenBannerDialog(banner)}
-                            className="p-2 rounded-lg hover:bg-muted transition-colors"
-                            title="Modifier"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteBanner(banner.id)}
-                            className="p-2 rounded-lg hover:bg-muted transition-colors"
-                            title="Supprimer"
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  </SortableContext>
+                </DndContext>
                 
                 {banners.length === 0 && (
                   <div className="text-center py-8">
