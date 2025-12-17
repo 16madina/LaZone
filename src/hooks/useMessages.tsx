@@ -125,6 +125,10 @@ export const useMessages = () => {
           lastMessageText = lastMsg.attachment_type === 'image' ? '📷 Image' : '📎 Fichier';
         }
 
+        // Find the first message with a property_id (the original inquiry)
+        const messageWithProperty = msgs.find(m => m.property_id);
+        const conversationPropertyId = messageWithProperty?.property_id;
+
         convList.push({
           id: participantId,
           participantId,
@@ -133,8 +137,8 @@ export const useMessages = () => {
           lastMessage: lastMessageText,
           lastMessageTime: lastMsg.created_at,
           unreadCount,
-          propertyId: lastMsg.property_id || undefined,
-          propertyTitle: lastMsg.property_id ? propertyMap.get(lastMsg.property_id) : undefined
+          propertyId: conversationPropertyId || undefined,
+          propertyTitle: conversationPropertyId ? propertyMap.get(conversationPropertyId) : undefined
         });
       });
 
