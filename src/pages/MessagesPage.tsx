@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Search, ArrowLeft, Send, Loader2, 
-  MessageCircle, Paperclip, X, FileText
+  MessageCircle, Paperclip, X, FileText, Reply
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -20,7 +20,7 @@ const MessagesPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { conversations, loading, totalUnread, deleteConversation } = useMessages();
+  const { conversations, loading, totalUnread, deleteConversation, archiveConversation } = useMessages();
   const { isUserOnline, fetchLastSeen } = useOnlineStatus();
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,11 +56,22 @@ const MessagesPage = () => {
     }
   };
 
-  const handleArchiveConversation = (participantId: string) => {
-    toast({
-      title: 'Archivé',
-      description: 'Conversation archivée (fonctionnalité à venir)'
-    });
+  const handleArchiveConversation = async (participantId: string) => {
+    if (archiveConversation) {
+      const { error } = await archiveConversation(participantId);
+      if (error) {
+        toast({
+          title: 'Erreur',
+          description: 'Impossible d\'archiver la conversation',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Archivé',
+          description: 'Conversation archivée'
+        });
+      }
+    }
   };
 
   if (!user) {
@@ -171,6 +182,7 @@ const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
   const [participant, setParticipant] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
   const [pendingAttachment, setPendingAttachment] = useState<{ url: string; type: 'image' | 'file'; name: string } | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [replyTo, setReplyTo] = useState<{ id: string; content: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -257,7 +269,8 @@ const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
     const { error } = await sendMessage(
       newMessage.trim(), 
       undefined, 
-      pendingAttachment || undefined
+      pendingAttachment || undefined,
+      replyTo?.id
     );
     
     setSending(false);
@@ -265,6 +278,7 @@ const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
     if (!error) {
       setNewMessage('');
       setPendingAttachment(null);
+      setReplyTo(null);
     }
   };
 
@@ -354,6 +368,7 @@ const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
                   onReaction={async (messageId, emoji) => {
                     await addReaction(messageId, emoji);
                   }}
+                  onReply={(msg) => setReplyTo({ id: msg.id, content: msg.content || '📎 Pièce jointe' })}
                 />
               );
             })}
@@ -406,6 +421,25 @@ const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
         </div>
       )}
 
+      {/* Reply preview */}
+      {replyTo && (
+        <div className="px-4 py-2 bg-muted/50 border-t border-border">
+          <div className="flex items-center gap-2">
+            <Reply className="w-4 h-4 text-primary" />
+            <div className="flex-1 min-w-0 border-l-2 border-primary pl-2">
+              <p className="text-xs text-muted-foreground">Répondre à</p>
+              <p className="text-sm truncate">{replyTo.content}</p>
+            </div>
+            <button 
+              onClick={() => setReplyTo(null)}
+              className="p-2 hover:bg-muted rounded-full"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <div className="p-4 bg-card border-t border-border">
         <div className="flex items-center gap-2">
@@ -432,7 +466,7 @@ const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
             value={newMessage}
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
-            placeholder="Votre message..."
+            placeholder={replyTo ? "Répondre..." : "Votre message..."}
             className="flex-1 bg-muted px-4 py-3 rounded-full outline-none focus:ring-2 focus:ring-primary"
           />
           <Button

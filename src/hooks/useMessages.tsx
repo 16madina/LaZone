@@ -23,6 +23,8 @@ interface Message {
   attachment_type?: string | null;
   attachment_name?: string | null;
   reactions?: MessageReaction[];
+  reply_to_id?: string | null;
+  reply_to?: Message | null;
 }
 
 interface Conversation {
@@ -40,6 +42,7 @@ interface Conversation {
 export const useMessages = () => {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [archivedConversations, setArchivedConversations] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [totalUnread, setTotalUnread] = useState(0);
 
@@ -47,6 +50,15 @@ export const useMessages = () => {
     if (!user) return;
 
     try {
+      // Fetch archived conversations first
+      const { data: archived } = await supabase
+        .from('archived_conversations')
+        .select('other_user_id')
+        .eq('user_id', user.id);
+      
+      const archivedSet = new Set(archived?.map(a => a.other_user_id) || []);
+      setArchivedConversations(archivedSet);
+
       // Fetch all messages where user is sender or receiver
       const { data: messages, error } = await supabase
         .from('messages')
@@ -61,6 +73,8 @@ export const useMessages = () => {
       
       messages?.forEach(msg => {
         const otherUserId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
+        // Skip archived conversations
+        if (archivedSet.has(otherUserId)) return;
         const existing = conversationMap.get(otherUserId) || [];
         existing.push(msg as Message);
         conversationMap.set(otherUserId, existing);
@@ -216,12 +230,62 @@ export const useMessages = () => {
     }
   };
 
+  const archiveConversation = async (participantId: string) => {
+    if (!user) return { error: 'Not authenticated' };
+
+    try {
+      const { error } = await supabase
+        .from('archived_conversations')
+        .insert({
+          user_id: user.id,
+          other_user_id: participantId
+        });
+
+      if (error) throw error;
+      
+      // Update local state
+      setConversations(prev => prev.filter(c => c.participantId !== participantId));
+      setArchivedConversations(prev => new Set([...prev, participantId]));
+      return { error: null };
+    } catch (error: any) {
+      console.error('Error archiving conversation:', error);
+      return { error: error.message };
+    }
+  };
+
+  const unarchiveConversation = async (participantId: string) => {
+    if (!user) return { error: 'Not authenticated' };
+
+    try {
+      const { error } = await supabase
+        .from('archived_conversations')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('other_user_id', participantId);
+
+      if (error) throw error;
+      
+      setArchivedConversations(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(participantId);
+        return newSet;
+      });
+      await fetchConversations();
+      return { error: null };
+    } catch (error: any) {
+      console.error('Error unarchiving conversation:', error);
+      return { error: error.message };
+    }
+  };
+
   return {
     conversations,
     loading,
     totalUnread,
     refetch: fetchConversations,
-    deleteConversation
+    deleteConversation,
+    archiveConversation,
+    unarchiveConversation
   };
 };
 
@@ -260,10 +324,15 @@ export const useConversation = (participantId: string | null) => {
         });
       }
 
-      const messagesWithReactions = (data || []).map(m => ({
-        ...m,
-        reactions: reactionsMap.get(m.id) || []
-      })) as Message[];
+      // Build messages with reactions and reply references
+      const messagesWithReactions = (data || []).map(m => {
+        const replyTo = m.reply_to_id ? data?.find(msg => msg.id === m.reply_to_id) : null;
+        return {
+          ...m,
+          reactions: reactionsMap.get(m.id) || [],
+          reply_to: replyTo ? { ...replyTo, reactions: [] } : null
+        };
+      }) as Message[];
 
       setMessages(messagesWithReactions);
 
@@ -340,7 +409,7 @@ export const useConversation = (participantId: string | null) => {
     }
   }, [user, participantId, fetchMessages]);
 
-  const sendMessage = async (content: string, propertyId?: string, attachment?: { url: string; type: 'image' | 'file'; name: string }) => {
+  const sendMessage = async (content: string, propertyId?: string, attachment?: { url: string; type: 'image' | 'file'; name: string }, replyToId?: string) => {
     if (!user || !participantId) return { error: 'Not authenticated' };
 
     try {
@@ -353,7 +422,8 @@ export const useConversation = (participantId: string | null) => {
           property_id: propertyId || null,
           attachment_url: attachment?.url || null,
           attachment_type: attachment?.type || null,
-          attachment_name: attachment?.name || null
+          attachment_name: attachment?.name || null,
+          reply_to_id: replyToId || null
         });
 
       if (error) throw error;
