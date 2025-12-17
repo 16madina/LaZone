@@ -88,7 +88,7 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
             <motion.img
               src="/images/logo-lazone.png"
               alt="LaZone"
-              className="w-44 h-44 object-contain relative z-10 drop-shadow-2xl"
+              className="w-64 h-64 object-contain relative z-10 drop-shadow-2xl"
               initial={{ filter: 'brightness(0) invert(1)' }}
               animate={{ filter: 'brightness(1) invert(0)' }}
               transition={{ duration: 0.5, delay: 0.3 }}
