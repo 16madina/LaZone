@@ -24,9 +24,9 @@ export const SponsoredPropertiesSection = ({ userCountry }: SponsoredPropertiesS
   useEffect(() => {
     let cancelled = false;
 
-    const fetchForCountry = async (countryCode: string) => {
+    const fetchSponsoredProperties = async (countryCode?: string | null) => {
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from('properties')
           .select(`
             id,
@@ -38,10 +38,16 @@ export const SponsoredPropertiesSection = ({ userCountry }: SponsoredPropertiesS
           `)
           .eq('is_sponsored', true)
           .eq('is_active', true)
-          .eq('country', countryCode)
           .gte('sponsored_until', new Date().toISOString())
           .order('sponsored_until', { ascending: false })
           .limit(6);
+
+        // Only filter by country if one is selected
+        if (countryCode) {
+          query = query.eq('country', countryCode);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
@@ -66,12 +72,9 @@ export const SponsoredPropertiesSection = ({ userCountry }: SponsoredPropertiesS
       }
     };
 
-    // Default to Côte d'Ivoire if no country is selected
-    const countryToFetch = userCountry || 'CI';
-
     setLoading(true);
     setProperties([]);
-    fetchForCountry(countryToFetch);
+    fetchSponsoredProperties(userCountry);
 
     return () => {
       cancelled = true;

@@ -7,11 +7,18 @@ export const useGeoCountry = () => {
   const [detectedCountry, setDetectedCountry] = useState<Country | null>(null);
   const [loading, setLoading] = useState(true);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [showAllCountries, setShowAllCountries] = useState(false);
 
   useEffect(() => {
     // Check if we already have a cached country
     const cached = localStorage.getItem(STORAGE_KEY);
     if (cached) {
+      if (cached === 'ALL') {
+        setShowAllCountries(true);
+        setDetectedCountry(null);
+        setLoading(false);
+        return;
+      }
       const country = africanCountries.find(c => c.code === cached);
       if (country) {
         setDetectedCountry(country);
@@ -22,9 +29,9 @@ export const useGeoCountry = () => {
 
     // Request geolocation
     if (!navigator.geolocation) {
-      // Fallback to Côte d'Ivoire
-      const defaultCountry = africanCountries.find(c => c.code === 'CI');
-      setDetectedCountry(defaultCountry || null);
+      // No geolocation support - show all countries
+      setShowAllCountries(true);
+      localStorage.setItem(STORAGE_KEY, 'ALL');
       setLoading(false);
       return;
     }
@@ -59,13 +66,13 @@ export const useGeoCountry = () => {
             }
           }
           
-          // If country not found in African countries, fallback to CI
-          const defaultCountry = africanCountries.find(c => c.code === 'CI');
-          setDetectedCountry(defaultCountry || null);
+          // If country not found in African countries, show all countries
+          setShowAllCountries(true);
+          localStorage.setItem(STORAGE_KEY, 'ALL');
         } catch (error) {
           console.error('Error detecting country:', error);
-          const defaultCountry = africanCountries.find(c => c.code === 'CI');
-          setDetectedCountry(defaultCountry || null);
+          setShowAllCountries(true);
+          localStorage.setItem(STORAGE_KEY, 'ALL');
         } finally {
           setLoading(false);
         }
@@ -74,9 +81,9 @@ export const useGeoCountry = () => {
         console.log('Geolocation error:', error.message);
         setPermissionDenied(error.code === error.PERMISSION_DENIED);
         
-        // Fallback to Côte d'Ivoire
-        const defaultCountry = africanCountries.find(c => c.code === 'CI');
-        setDetectedCountry(defaultCountry || null);
+        // Permission denied or error - show all countries
+        setShowAllCountries(true);
+        localStorage.setItem(STORAGE_KEY, 'ALL');
         setLoading(false);
       },
       {
@@ -91,5 +98,5 @@ export const useGeoCountry = () => {
     localStorage.removeItem(STORAGE_KEY);
   };
 
-  return { detectedCountry, loading, permissionDenied, clearCache };
+  return { detectedCountry, loading, permissionDenied, showAllCountries, clearCache };
 };
