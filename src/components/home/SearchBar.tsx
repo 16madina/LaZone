@@ -29,6 +29,22 @@ const transactionTypes = [
   { value: 'rent', label: 'À louer' },
 ];
 
+const bedroomOptions = [
+  { value: null, label: 'Tous' },
+  { value: 1, label: '1+' },
+  { value: 2, label: '2+' },
+  { value: 3, label: '3+' },
+  { value: 4, label: '4+' },
+  { value: 5, label: '5+' },
+];
+
+const bathroomOptions = [
+  { value: null, label: 'Tous' },
+  { value: 1, label: '1+' },
+  { value: 2, label: '2+' },
+  { value: 3, label: '3+' },
+];
+
 const MAX_PRICE = 1000000000; // 1 milliard
 
 const formatPriceLabel = (value: number) => {
@@ -39,23 +55,35 @@ const formatPriceLabel = (value: number) => {
 };
 
 export const SearchBar = ({ variant = 'default' }: SearchBarProps) => {
-  const { searchQuery, setSearchQuery, activeFilter, setActiveFilter, priceRange, setPriceRange } = useAppStore();
+  const { 
+    searchQuery, setSearchQuery, 
+    activeFilter, setActiveFilter, 
+    priceRange, setPriceRange,
+    bedroomsFilter, setBedroomsFilter,
+    bathroomsFilter, setBathroomsFilter
+  } = useAppStore();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedType, setSelectedType] = useState('all');
   const [selectedTransaction, setSelectedTransaction] = useState('all');
   const [localPriceRange, setLocalPriceRange] = useState<[number, number]>(priceRange);
+  const [localBedrooms, setLocalBedrooms] = useState<number | null>(bedroomsFilter);
+  const [localBathrooms, setLocalBathrooms] = useState<number | null>(bathroomsFilter);
 
   const isHero = variant === 'hero';
 
   // Sync local state with store
   useEffect(() => {
     setLocalPriceRange(priceRange);
-  }, [priceRange]);
+    setLocalBedrooms(bedroomsFilter);
+    setLocalBathrooms(bathroomsFilter);
+  }, [priceRange, bedroomsFilter, bathroomsFilter]);
 
   // Calculate number of active filters
   const activeFiltersCount = [
     activeFilter !== 'all',
     priceRange[0] > 0 || priceRange[1] < MAX_PRICE,
+    bedroomsFilter !== null,
+    bathroomsFilter !== null,
   ].filter(Boolean).length;
 
   const applyFilters = () => {
@@ -68,6 +96,8 @@ export const SearchBar = ({ variant = 'default' }: SearchBarProps) => {
       setActiveFilter('all');
     }
     setPriceRange(localPriceRange);
+    setBedroomsFilter(localBedrooms);
+    setBathroomsFilter(localBathrooms);
     setIsOpen(false);
   };
 
@@ -75,8 +105,12 @@ export const SearchBar = ({ variant = 'default' }: SearchBarProps) => {
     setSelectedType('all');
     setSelectedTransaction('all');
     setLocalPriceRange([0, MAX_PRICE]);
+    setLocalBedrooms(null);
+    setLocalBathrooms(null);
     setActiveFilter('all');
     setPriceRange([0, MAX_PRICE]);
+    setBedroomsFilter(null);
+    setBathroomsFilter(null);
     setSearchQuery('');
   };
 
@@ -180,6 +214,46 @@ export const SearchBar = ({ variant = 'default' }: SearchBarProps) => {
                     {formatPriceLabel(localPriceRange[1])} FCFA
                   </span>
                 </div>
+              </div>
+            </div>
+
+            {/* Bedrooms */}
+            <div>
+              <h4 className="font-medium mb-3">Chambres</h4>
+              <div className="flex flex-wrap gap-2">
+                {bedroomOptions.map((option) => (
+                  <button
+                    key={option.value ?? 'all'}
+                    onClick={() => setLocalBedrooms(option.value)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                      localBedrooms === option.value
+                        ? 'gradient-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Bathrooms */}
+            <div>
+              <h4 className="font-medium mb-3">Salles de bain</h4>
+              <div className="flex flex-wrap gap-2">
+                {bathroomOptions.map((option) => (
+                  <button
+                    key={option.value ?? 'all'}
+                    onClick={() => setLocalBathrooms(option.value)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                      localBathrooms === option.value
+                        ? 'gradient-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
             </div>
 
