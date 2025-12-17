@@ -22,30 +22,27 @@ const MessagesPage = () => {
   const { user } = useAuth();
   const { conversations, loading, totalUnread, deleteConversation, archiveConversation } = useMessages();
   const { isUserOnline, fetchLastSeen } = useOnlineStatus();
-  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
-  const [initialPropertyId, setInitialPropertyId] = useState<string | null>(null);
+  const [selectedConversation, setSelectedConversation] = useState<{ participantId: string; propertyId: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Handle recipientId and propertyId from navigation state
+  // Handle recipientId and propertyId from navigation state (when coming from property detail)
   useEffect(() => {
     const state = location.state as any;
     const recipientId = state?.recipientId;
     const propertyId = state?.propertyId;
-    if (recipientId && recipientId !== user?.id) {
-      setSelectedConversation(recipientId);
-      if (propertyId) {
-        setInitialPropertyId(propertyId);
-      }
+    if (recipientId && recipientId !== user?.id && propertyId) {
+      setSelectedConversation({ participantId: recipientId, propertyId });
     }
   }, [location.state, user?.id]);
 
   const filteredConversations = conversations.filter(c =>
+    c.propertyTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.participantName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleDeleteConversation = async (participantId: string) => {
+  const handleDeleteConversation = async (conversationId: string) => {
     if (deleteConversation) {
-      const { error } = await deleteConversation(participantId);
+      const { error } = await deleteConversation(conversationId);
       if (error) {
         toast({
           title: 'Erreur',
@@ -61,9 +58,9 @@ const MessagesPage = () => {
     }
   };
 
-  const handleArchiveConversation = async (participantId: string) => {
+  const handleArchiveConversation = async (conversationId: string) => {
     if (archiveConversation) {
-      const { error } = await archiveConversation(participantId);
+      const { error } = await archiveConversation(conversationId);
       if (error) {
         toast({
           title: 'Erreur',
@@ -94,18 +91,15 @@ const MessagesPage = () => {
 
   if (selectedConversation) {
     // Fetch last seen when selecting a conversation
-    if (!isUserOnline(selectedConversation)) {
-      fetchLastSeen([selectedConversation]);
+    if (!isUserOnline(selectedConversation.participantId)) {
+      fetchLastSeen([selectedConversation.participantId]);
     }
     
     return (
       <ConversationView 
-        participantId={selectedConversation}
-        initialPropertyId={initialPropertyId}
-        onBack={() => {
-          setSelectedConversation(null);
-          setInitialPropertyId(null);
-        }}
+        participantId={selectedConversation.participantId}
+        propertyId={selectedConversation.propertyId}
+        onBack={() => setSelectedConversation(null)}
       />
     );
   }
@@ -166,9 +160,12 @@ const MessagesPage = () => {
               key={conversation.id}
               conversation={conversation}
               isOnline={isUserOnline(conversation.participantId)}
-              onSelect={() => setSelectedConversation(conversation.participantId)}
-              onDelete={() => handleDeleteConversation(conversation.participantId)}
-              onArchive={() => handleArchiveConversation(conversation.participantId)}
+              onSelect={() => setSelectedConversation({ 
+                participantId: conversation.participantId, 
+                propertyId: conversation.propertyId 
+              })}
+              onDelete={() => handleDeleteConversation(conversation.id)}
+              onArchive={() => handleArchiveConversation(conversation.id)}
               index={index}
             />
           ))}
@@ -179,15 +176,15 @@ const MessagesPage = () => {
 };
 interface ConversationViewProps {
   participantId: string;
-  initialPropertyId?: string | null;
+  propertyId: string;
   onBack: () => void;
 }
 
-const ConversationView = ({ participantId, initialPropertyId, onBack }: ConversationViewProps) => {
+const ConversationView = ({ participantId, propertyId, onBack }: ConversationViewProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { isUserOnline, getLastSeen, fetchLastSeen } = useOnlineStatus();
-  const { messages, loading, sendMessage, deleteMessage, addReaction, uploadAttachment, isTyping, setTyping } = useConversation(participantId);
+  const { messages, loading, sendMessage, deleteMessage, addReaction, uploadAttachment, isTyping, setTyping } = useConversation(participantId, propertyId);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [participant, setParticipant] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
@@ -221,23 +218,14 @@ const ConversationView = ({ participantId, initialPropertyId, onBack }: Conversa
     fetchParticipant();
   }, [participantId]);
 
-  // Fetch property info from initialPropertyId or existing messages
+  // Fetch property info
   useEffect(() => {
     const fetchPropertyInfo = async () => {
-      // First check if we have an initialPropertyId from navigation
-      let propertyIdToFetch = initialPropertyId;
-      
-      // If not, look for property_id in existing messages
-      if (!propertyIdToFetch && messages.length > 0) {
-        const messageWithProperty = messages.find(m => m.property_id);
-        propertyIdToFetch = messageWithProperty?.property_id || null;
-      }
-      
-      if (propertyIdToFetch) {
+      if (propertyId) {
         const { data } = await supabase
           .from('properties')
           .select('id, title')
-          .eq('id', propertyIdToFetch)
+          .eq('id', propertyId)
           .maybeSingle();
         
         if (data) {
@@ -246,7 +234,7 @@ const ConversationView = ({ participantId, initialPropertyId, onBack }: Conversa
       }
     };
     fetchPropertyInfo();
-  }, [initialPropertyId, messages]);
+  }, [propertyId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -305,12 +293,8 @@ const ConversationView = ({ participantId, initialPropertyId, onBack }: Conversa
     setSending(true);
     setTyping(false);
     
-    // Use propertyId for first message if available
-    const propertyIdToSend = messages.length === 0 ? propertyInfo?.id : undefined;
-    
     const { error } = await sendMessage(
       newMessage.trim(), 
-      propertyIdToSend, 
       pendingAttachment || undefined,
       replyTo?.id
     );
