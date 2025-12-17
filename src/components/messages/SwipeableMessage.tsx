@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, CheckCheck, FileText, Reply } from 'lucide-react';
+import { Check, CheckCheck, FileText, Reply, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -43,6 +43,7 @@ const EMOJI_OPTIONS = ['❤️', '👍', '😂', '😮', '😢', '🙏'];
 
 const SwipeableMessage = ({ message, isMe, userId, participantAvatar, myAvatar, showAvatar = false, onReaction, onReply }: SwipeableMessageProps) => {
   const [showReactions, setShowReactions] = useState(false);
+  const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
   const longPressRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleTouchStart = () => {
@@ -134,8 +135,8 @@ const SwipeableMessage = ({ message, isMe, userId, participantAvatar, myAvatar, 
                 <img 
                   src={message.attachment_url} 
                   alt="Image" 
-                  className="max-w-full rounded-lg cursor-pointer"
-                  onClick={() => window.open(message.attachment_url!, '_blank')}
+                  className="max-w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => setEnlargedImage(message.attachment_url!)}
                 />
               ) : (
                 <a 
@@ -250,6 +251,35 @@ const SwipeableMessage = ({ message, isMe, userId, participantAvatar, myAvatar, 
           )}
         </div>
       )}
+
+      {/* Image Lightbox */}
+      <AnimatePresence>
+        {enlargedImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4"
+            onClick={() => setEnlargedImage(null)}
+          >
+            <button
+              onClick={() => setEnlargedImage(null)}
+              className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10"
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+            <motion.img
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              src={enlargedImage}
+              alt="Image agrandie"
+              className="max-w-full max-h-full object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
