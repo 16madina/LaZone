@@ -382,14 +382,20 @@ const ConversationView = ({ participantId, propertyId, onBack }: ConversationVie
           </div>
         ) : (
           <>
-            {messages.map((message) => {
+            {messages.map((message, index) => {
               const isMe = message.sender_id === user?.id;
+              // Show avatar only for the last message in a consecutive group from same sender
+              const nextMessage = messages[index + 1];
+              const isLastInGroup = !nextMessage || nextMessage.sender_id !== message.sender_id;
+              
               return (
                 <SwipeableMessage
                   key={message.id}
                   message={message}
                   isMe={isMe}
                   userId={user?.id || ''}
+                  participantAvatar={participant?.avatar_url}
+                  showAvatar={!isMe && isLastInGroup}
                   onDelete={async (messageId) => {
                     const { error } = await deleteMessage(messageId);
                     if (error) {
