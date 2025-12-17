@@ -19,7 +19,7 @@ const faqCategories: FaqCategory[] = [
     questions: [
       {
         question: "Comment créer un compte sur LaZone ?",
-        answer: "Pour créer un compte, cliquez sur l'icône profil en haut à droite, puis sur 'S'inscrire'. Remplissez vos informations personnelles (nom, email, pays, ville, téléphone) et créez un mot de passe sécurisé. Vous recevrez un email de vérification pour activer votre compte."
+        answer: "Pour créer un compte, cliquez sur l'icône profil en haut à droite, puis sur 'S'inscrire'. Remplissez vos informations personnelles (nom, email, pays, ville) et créez un mot de passe sécurisé. Vous recevrez un email de vérification pour activer votre compte."
       },
       {
         question: "L'application est-elle gratuite ?",
