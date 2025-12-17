@@ -1,6 +1,8 @@
 import { Home, Map, PlusCircle, MessageCircle, User } from 'lucide-react';
 import { NavLink as RouterNavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useMessages } from '@/hooks/useMessages';
+import { useAuth } from '@/hooks/useAuth';
 
 const navItems = [
   { to: '/', icon: Home, label: 'Accueil' },
@@ -12,6 +14,8 @@ const navItems = [
 
 export const BottomNavigation = () => {
   const location = useLocation();
+  const { user } = useAuth();
+  const { totalUnread } = useMessages();
 
   return (
     <motion.nav 
@@ -24,6 +28,8 @@ export const BottomNavigation = () => {
         {navItems.map((item) => {
           const isActive = location.pathname === item.to;
           const isPublish = item.to === '/publish';
+          const isMessages = item.to === '/messages';
+          const showBadge = isMessages && user && totalUnread > 0;
           
           return (
             <RouterNavLink
@@ -45,7 +51,14 @@ export const BottomNavigation = () => {
                   </motion.div>
                 ) : (
                   <>
-                    <item.icon className={`w-5 h-5 transition-all duration-300 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <div className="relative">
+                      <item.icon className={`w-5 h-5 transition-all duration-300 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                      {showBadge && (
+                        <span className="absolute -top-2 -right-2 min-w-4 h-4 bg-primary rounded-full flex items-center justify-center text-[10px] text-primary-foreground font-bold px-1">
+                          {totalUnread > 99 ? '99+' : totalUnread}
+                        </span>
+                      )}
+                    </div>
                     <span className={`text-xs font-medium transition-all duration-300 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
                       {item.label}
                     </span>
