@@ -487,6 +487,27 @@ const ConversationView = ({ participantId, propertyId, onBack }: ConversationVie
         </div>
       )}
 
+      {/* Quick Replies */}
+      {messages.length === 0 && !newMessage && (
+        <div className="px-4 py-2 bg-card border-t border-border">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+            {[
+              "Bonjour, je suis intéressé(e)",
+              "Le prix est-il négociable ?",
+              "Est-il toujours disponible ?"
+            ].map((quickMessage) => (
+              <button
+                key={quickMessage}
+                onClick={() => setNewMessage(quickMessage)}
+                className="flex-shrink-0 px-3 py-1.5 text-sm bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors"
+              >
+                {quickMessage}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <div className="p-4 bg-card border-t border-border">
         <div className="flex items-center gap-2">
