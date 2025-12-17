@@ -84,54 +84,30 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               className="absolute inset-0 blur-3xl bg-white/40 rounded-full"
             />
             
-            {/* Logo */}
+            {/* Logo - Enlarged */}
             <motion.img
               src="/images/logo-lazone.png"
               alt="LaZone"
-              className="w-28 h-28 object-contain relative z-10 drop-shadow-2xl"
+              className="w-44 h-44 object-contain relative z-10 drop-shadow-2xl"
               initial={{ filter: 'brightness(0) invert(1)' }}
               animate={{ filter: 'brightness(1) invert(0)' }}
               transition={{ duration: 0.5, delay: 0.3 }}
             />
           </motion.div>
 
-          {/* App name with staggered letters */}
+          {/* Slogan */}
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: phase === 'text' || phase === 'logo' ? 1 : 0 }}
-            className="mt-8 relative z-10"
+            animate={{ opacity: 1 }}
+            className="mt-8 relative z-10 px-8"
           >
-            <motion.h1
-              className="text-5xl font-bold text-white tracking-tight"
+            <motion.p
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.5, ease: 'easeOut' }}
+              transition={{ delay: 0.8, duration: 0.6, ease: 'easeOut' }}
+              className="text-center text-white text-xl font-medium leading-relaxed"
             >
-              {'LaZone'.split('').map((letter, index) => (
-                <motion.span
-                  key={index}
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{
-                    delay: 0.6 + index * 0.08,
-                    duration: 0.4,
-                    ease: 'easeOut',
-                  }}
-                  className="inline-block"
-                >
-                  {letter}
-                </motion.span>
-              ))}
-            </motion.h1>
-            
-            {/* Tagline */}
-            <motion.p
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 1.2, duration: 0.5 }}
-              className="text-center text-white/90 text-lg mt-3 font-medium"
-            >
-              Immobilier en Afrique
+              Trouvez votre chez vous dans votre Zone
             </motion.p>
           </motion.div>
 
