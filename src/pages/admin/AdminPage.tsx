@@ -25,7 +25,8 @@ import {
   CalendarIcon,
   MapPin,
   Bell,
-  Send
+  Send,
+  Phone
 } from 'lucide-react';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useAuth } from '@/hooks/useAuth';
@@ -117,9 +118,14 @@ interface UserData {
   full_name: string | null;
   email: string;
   phone: string | null;
+  country: string | null;
+  avatar_url: string | null;
   created_at: string;
   is_banned?: boolean;
   warnings_count?: number;
+  properties_count?: number;
+  average_rating?: number;
+  reviews_count?: number;
 }
 
 interface PropertyData {
@@ -255,31 +261,52 @@ const AdminPage = () => {
     
     if (error) throw error;
 
-    // Get emails from auth metadata - we'll use email from profile join
-    const usersWithEmail = await Promise.all((profiles || []).map(async (profile) => {
-      // Get ban status
-      const { data: banData } = await supabase
-        .from('user_bans')
-        .select('id')
-        .eq('user_id', profile.user_id)
-        .eq('is_active', true)
-        .maybeSingle();
-      
-      // Get warnings count
-      const { count: warningsCount } = await supabase
-        .from('user_warnings')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', profile.user_id);
+    // Get all user IDs
+    const userIds = (profiles || []).map(p => p.user_id);
 
+    // Fetch additional data in parallel
+    const [bansResult, warningsResult, propertiesResult, reviewsResult] = await Promise.all([
+      supabase.from('user_bans').select('user_id').eq('is_active', true).in('user_id', userIds),
+      supabase.from('user_warnings').select('user_id').in('user_id', userIds),
+      supabase.from('properties').select('user_id').in('user_id', userIds),
+      supabase.from('user_reviews').select('reviewed_user_id, rating').in('reviewed_user_id', userIds),
+    ]);
+
+    // Create maps for quick lookup
+    const bannedUsers = new Set((bansResult.data || []).map(b => b.user_id));
+    
+    const warningsCountMap = new Map<string, number>();
+    (warningsResult.data || []).forEach(w => {
+      warningsCountMap.set(w.user_id, (warningsCountMap.get(w.user_id) || 0) + 1);
+    });
+
+    const propertiesCountMap = new Map<string, number>();
+    (propertiesResult.data || []).forEach(p => {
+      propertiesCountMap.set(p.user_id, (propertiesCountMap.get(p.user_id) || 0) + 1);
+    });
+
+    const reviewsMap = new Map<string, { total: number; count: number }>();
+    (reviewsResult.data || []).forEach(r => {
+      const existing = reviewsMap.get(r.reviewed_user_id) || { total: 0, count: 0 };
+      reviewsMap.set(r.reviewed_user_id, { total: existing.total + r.rating, count: existing.count + 1 });
+    });
+
+    const usersWithData: UserData[] = (profiles || []).map((profile) => {
+      const reviewData = reviewsMap.get(profile.user_id);
+      const avgRating = reviewData ? Math.round((reviewData.total / reviewData.count) * 10) / 10 : 0;
+      
       return {
         ...profile,
-        email: '', // Will be filled from auth if available
-        is_banned: !!banData,
-        warnings_count: warningsCount || 0,
+        email: '',
+        is_banned: bannedUsers.has(profile.user_id),
+        warnings_count: warningsCountMap.get(profile.user_id) || 0,
+        properties_count: propertiesCountMap.get(profile.user_id) || 0,
+        average_rating: avgRating,
+        reviews_count: reviewData?.count || 0,
       };
-    }));
+    });
 
-    setUsers(usersWithEmail);
+    setUsers(usersWithData);
   };
 
   const fetchProperties = async () => {
@@ -863,11 +890,12 @@ const AdminPage = () => {
             {activeTab === 'users' && (
               <div className="space-y-3">
                 {filteredUsers.map((userData) => (
-                  <div key={userData.id} className="bg-card rounded-xl p-4 shadow-sm">
-                    <div className="flex items-start justify-between gap-3">
+                  <div key={userData.id} className="bg-card rounded-xl p-4 shadow-sm border border-border">
+                    <div className="flex gap-4">
+                      {/* User Info */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium truncate">{userData.full_name || 'Sans nom'}</h3>
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-foreground">{userData.full_name || 'Sans nom'}</h3>
                           {userData.is_banned && (
                             <Badge variant="destructive" className="text-xs">Banni</Badge>
                           )}
@@ -877,39 +905,86 @@ const AdminPage = () => {
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground truncate">{userData.phone}</p>
+                        
+                        <div className="space-y-1 text-sm text-muted-foreground">
+                          {userData.phone && (
+                            <div className="flex items-center gap-2">
+                              <Phone className="w-4 h-4" />
+                              <span>{userData.phone}</span>
+                            </div>
+                          )}
+                          {userData.country && (
+                            <div className="flex items-center gap-2">
+                              <MapPin className="w-4 h-4" />
+                              <span>
+                                {africanCountries.find(c => c.code === userData.country)?.name || userData.country}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <CalendarIcon className="w-4 h-4" />
+                            <span>Inscrit: {format(new Date(userData.created_at), 'dd/MM/yyyy', { locale: fr })}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Home className="w-4 h-4" />
+                            <span>Annonces: {userData.properties_count || 0}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Star className="w-4 h-4" />
+                            <span>Note: {userData.average_rating || 0}/5 ({userData.reviews_count || 0} avis)</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex gap-1">
-                        <button
+
+                      {/* Action Buttons */}
+                      <div className="flex flex-col gap-2 flex-shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/user/${userData.user_id}`)}
+                          className="justify-start gap-2"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Voir
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => setMessageDialog({ open: true, userId: userData.user_id, userName: userData.full_name || '', type: 'app' })}
-                          className="p-2 rounded-lg hover:bg-muted transition-colors"
-                          title="Message"
+                          className="justify-start gap-2"
                         >
-                          <MessageCircle className="w-4 h-4 text-muted-foreground" />
-                        </button>
-                        <button
-                          onClick={() => setWarningDialog({ open: true, userId: userData.user_id, userName: userData.full_name || '' })}
-                          className="p-2 rounded-lg hover:bg-muted transition-colors"
-                          title="Avertissement"
+                          <MessageCircle className="w-4 h-4" />
+                          Message
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setMessageDialog({ open: true, userId: userData.user_id, userName: userData.full_name || '', type: 'email' })}
+                          className="justify-start gap-2"
                         >
-                          <AlertTriangle className="w-4 h-4 text-amber-500" />
-                        </button>
+                          <Mail className="w-4 h-4" />
+                          Email
+                        </Button>
                         {userData.is_banned ? (
-                          <button
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleUnbanUser(userData.user_id)}
-                            className="p-2 rounded-lg hover:bg-muted transition-colors"
-                            title="Débannir"
+                            className="justify-start gap-2 text-green-600 border-green-600 hover:bg-green-50"
                           >
-                            <Check className="w-4 h-4 text-green-500" />
-                          </button>
+                            <Check className="w-4 h-4" />
+                            Débannir
+                          </Button>
                         ) : (
-                          <button
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => setBanDialog({ open: true, userId: userData.user_id, userName: userData.full_name || '' })}
-                            className="p-2 rounded-lg hover:bg-muted transition-colors"
-                            title="Bannir"
+                            className="justify-start gap-2 text-destructive border-destructive hover:bg-destructive/10"
                           >
-                            <Ban className="w-4 h-4 text-destructive" />
-                          </button>
+                            <Ban className="w-4 h-4" />
+                            Bannir
+                          </Button>
                         )}
                       </div>
                     </div>
