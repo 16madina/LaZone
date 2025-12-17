@@ -1,10 +1,13 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, ArrowLeft, Eye, EyeOff, Phone, MapPin, ChevronDown, Check, Globe, AlertCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Mail, Lock, User, ArrowLeft, Eye, EyeOff, Phone, MapPin, ChevronDown, Check, Globe, AlertCircle, Moon, Sun, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { africanCountries, Country } from '@/data/africanCountries';
+import { useTheme } from '@/hooks/useTheme';
 import logoLazone from '@/assets/logo-lazone.png';
+import heroBg from '@/assets/hero-bg.jpg';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +29,7 @@ interface FormErrors {
 
 const AuthPage = () => {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -307,26 +311,60 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url(${heroBg})` }}
+      />
+      {/* Overlay gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/20 to-background/60" />
+      
       {/* Header */}
-      <header className="p-4 flex items-center gap-3">
-        <button
+      <header className="relative z-20 p-4 flex items-center justify-between">
+        <motion.button
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
           onClick={() => navigate('/')}
-          className="icon-button active:scale-90 transition-transform"
+          className="w-12 h-12 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 flex items-center justify-center shadow-lg active:scale-90 transition-transform"
         >
           <ArrowLeft className="w-5 h-5" />
-        </button>
-        <h2 className="font-display font-semibold">{isLogin ? 'Connexion' : 'Inscription'}</h2>
+        </motion.button>
+        
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <img src={logoLazone} alt="LaZone" className="h-12" />
+        </motion.div>
+        
+        <motion.button
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          onClick={toggleTheme}
+          className="w-12 h-12 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 flex items-center justify-center shadow-lg active:scale-90 transition-transform"
+        >
+          {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </motion.button>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-6 pb-8">
-        {/* Logo */}
-        <div className="text-center mb-6">
-          <img src={logoLazone} alt="LaZone" className="h-16 mx-auto mb-2" />
-          <p className="text-muted-foreground text-sm mt-1">
-            {isLogin ? 'Connectez-vous à votre compte' : 'Créez votre compte'}
-          </p>
-        </div>
+      {/* Main Content */}
+      <div className="relative z-10 flex-1 px-4 pb-8 pt-4">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-card/90 backdrop-blur-md rounded-3xl shadow-2xl border border-border/50 p-6 max-w-md mx-auto max-h-[calc(100vh-140px)] overflow-y-auto"
+        >
+          {/* Title */}
+          <div className="text-center mb-6">
+            <h1 className="font-display text-2xl font-bold mb-1">
+              {isLogin ? 'Bon retour!' : 'Créer un compte'}
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              {isLogin ? 'Connectez-vous pour accéder à vos favoris' : 'Rejoignez la communauté LaZone'}
+            </p>
+          </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-3">
@@ -556,7 +594,17 @@ const AuthPage = () => {
                 </button>
               </div>
             </div>
-            <InputError message={touched.password ? errors.password : undefined} />
+            <div className="flex justify-between items-center mt-1">
+              <InputError message={touched.password ? errors.password : undefined} />
+              {isLogin && (
+                <button 
+                  type="button"
+                  className="text-xs text-primary font-medium hover:underline"
+                >
+                  Mot de passe oublié?
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Confirm Password */}
@@ -631,45 +679,47 @@ const AuthPage = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full gradient-primary py-3.5 rounded-2xl text-primary-foreground font-display font-semibold shadow-lg disabled:opacity-50 active:scale-[0.98] transition-transform mt-4"
+            className="w-full gradient-primary py-4 rounded-2xl text-primary-foreground font-display font-semibold shadow-lg disabled:opacity-50 active:scale-[0.98] transition-all mt-6 flex items-center justify-center gap-2 group"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                 Chargement...
               </span>
-            ) : isLogin ? (
-              'Se connecter'
             ) : (
-              'Créer un compte'
+              <>
+                {isLogin ? 'Se connecter' : 'Créer un compte'}
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </>
             )}
           </button>
         </form>
 
-        {/* Toggle */}
-        <div className="text-center mt-6">
-          <button
-            type="button"
-            onClick={() => {
-              setIsLogin(!isLogin);
-              setErrors({});
-              setTouched({});
-            }}
-            className="text-muted-foreground text-sm"
-          >
-            {isLogin ? (
-              <>
-                Pas de compte?{' '}
-                <span className="text-primary font-semibold">Créer un compte</span>
-              </>
-            ) : (
-              <>
-                Déjà un compte?{' '}
-                <span className="text-primary font-semibold">Se connecter</span>
-              </>
-            )}
-          </button>
+        {/* Divider */}
+        <div className="flex items-center gap-4 my-6">
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-muted-foreground text-sm">ou</span>
+          <div className="flex-1 h-px bg-border" />
         </div>
+
+        {/* Toggle */}
+        <div className="text-center">
+          <p className="text-muted-foreground text-sm">
+            {isLogin ? 'Pas encore de compte?' : 'Déjà un compte?'}{' '}
+            <button
+              type="button"
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setErrors({});
+                setTouched({});
+              }}
+              className="text-primary font-semibold hover:underline"
+            >
+              {isLogin ? "S'inscrire" : 'Se connecter'}
+            </button>
+          </p>
+        </div>
+        </motion.div>
       </div>
 
       {/* Terms Dialog */}
