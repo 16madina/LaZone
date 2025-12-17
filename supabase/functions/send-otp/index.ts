@@ -50,13 +50,14 @@ serve(async (req) => {
     }
 
     // Format phone number (ensure it has + prefix)
-    const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
+    const sanitizedPhone = String(phoneNumber).replace(/\s+/g, '');
+    const formattedPhone = sanitizedPhone.startsWith('+') ? sanitizedPhone : `+${sanitizedPhone}`;
 
+    // Africa's Talking uses a separate base URL for Sandbox
+    const isSandbox = username === 'sandbox';
+    const baseUrl = isSandbox ? 'https://api.sandbox.africastalking.com' : 'https://api.africastalking.com';
     // Send SMS via Africa's Talking API
-    console.log('Sending SMS to:', formattedPhone);
-    console.log('Using username:', username);
-    
-    const smsResponse = await fetch('https://api.africastalking.com/version1/messaging', {
+    const smsResponse = await fetch(`${baseUrl}/version1/messaging`, {
       method: 'POST',
       headers: {
         'apiKey': apiKey,
