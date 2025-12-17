@@ -98,26 +98,29 @@ export const SponsoredPropertiesSection = ({ userCountry }: SponsoredPropertiesS
       </div>
 
       {/* Horizontal Scroll */}
-      <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+      <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
         {properties.map((property) => (
           <Link
             key={property.id}
             to={`/property/${property.id}`}
             className="flex-shrink-0 w-[160px] group"
           >
-            <div className="relative rounded-2xl overflow-hidden shadow-lg">
+            <div className="relative rounded-2xl overflow-hidden shadow-lg transition-all duration-300 group-hover:shadow-[0_0_25px_rgba(255,140,0,0.5)] group-hover:scale-[1.02]">
+              {/* Glow Background */}
+              <div className="absolute -inset-1 bg-gradient-to-r from-primary/0 via-primary/0 to-primary/0 rounded-2xl opacity-0 group-hover:opacity-100 group-hover:from-primary/30 group-hover:via-primary/50 group-hover:to-primary/30 blur-xl transition-all duration-300 -z-10" />
+              
               {/* Image */}
               <div className="aspect-[3/4] relative">
                 <img
                   src={property.imageUrl}
                   alt={property.title}
-                  className="w-full h-full object-cover group-active:scale-105 transition-transform"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                 />
                 {/* Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                 
                 {/* Sponsor Badge */}
-                <div className="absolute top-2.5 left-2.5 px-2.5 py-1 bg-primary rounded-full flex items-center gap-1 shadow-md">
+                <div className="absolute top-2.5 left-2.5 px-2.5 py-1 bg-primary rounded-full flex items-center gap-1 shadow-md transition-transform duration-300 group-hover:scale-110">
                   <Star className="w-3 h-3 text-white fill-white" />
                   <span className="text-[11px] font-bold text-white">Sponsor</span>
                 </div>
