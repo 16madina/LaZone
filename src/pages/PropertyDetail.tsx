@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination } from 'swiper/modules';
+import type { Swiper as SwiperType } from 'swiper';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import { 
@@ -69,6 +70,7 @@ const PropertyDetailPage = () => {
   const { shareProperty } = useShare();
   const [showGallery, setShowGallery] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [swiperRef, setSwiperRef] = useState<SwiperType | null>(null);
   const [property, setProperty] = useState<PropertyDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [ownerInfo, setOwnerInfo] = useState<{ full_name: string | null; phone: string | null; avatar_url: string | null; email_verified: boolean | null } | null>(null);
@@ -296,6 +298,7 @@ const PropertyDetailPage = () => {
           modules={[Pagination]}
           spaceBetween={0}
           slidesPerView={1}
+          onSwiper={setSwiperRef}
           onSlideChange={(swiper) => setCurrentImageIndex(swiper.activeIndex)}
           className="h-full"
         >
@@ -354,12 +357,15 @@ const PropertyDetailPage = () => {
 
         {/* Thumbnails */}
         {property.images.length > 1 && (
-          <div className="absolute bottom-4 left-4 flex gap-1.5 z-20">
+          <div className="absolute bottom-4 left-4 flex gap-2 z-20">
             {visibleThumbnails.map((img, idx) => (
               <button
                 key={idx}
-                onClick={() => setCurrentImageIndex(idx)}
-                className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all shadow-lg ${
+                onClick={() => {
+                  setCurrentImageIndex(idx);
+                  swiperRef?.slideTo(idx);
+                }}
+                className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all shadow-lg ${
                   idx === currentImageIndex 
                     ? 'border-primary' 
                     : 'border-white/50'
@@ -378,7 +384,7 @@ const PropertyDetailPage = () => {
             {hasMoreImages && (
               <button
                 onClick={() => setShowGallery(true)}
-                className="w-12 h-12 rounded-lg overflow-hidden border-2 border-white/50 relative shadow-lg"
+                className="w-16 h-16 rounded-lg overflow-hidden border-2 border-white/50 relative shadow-lg"
               >
                 <img 
                   src={property.images[maxThumbnails]} 
@@ -411,8 +417,8 @@ const PropertyDetailPage = () => {
           animate={{ opacity: 1, y: 0 }}
           className="glass-card p-5 mb-4"
         >
-          <h1 className="font-display text-2xl font-bold mb-2">{property.title}</h1>
-          <p className="gradient-text font-display font-bold text-3xl mb-3">
+          <h1 className="font-display text-xl font-bold mb-2">{property.title}</h1>
+          <p className="gradient-text font-display font-bold text-2xl mb-3">
             {formatPrice(property.price, property.type, property.country)}
           </p>
           
