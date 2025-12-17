@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from './use-toast';
+import { getSoundInstance } from './useSound';
 
 interface MessageReaction {
   id: string;
@@ -200,11 +201,10 @@ export const useMessages = () => {
                 description: 'Vous avez reçu un nouveau message',
               });
               
-              // Play notification sound
+              // Play message notification sound
               try {
-                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleShSp93teleShSp+r4VsXV90n6a1iP//////////');
-                audio.volume = 0.5;
-                audio.play().catch(() => {});
+                const sound = getSoundInstance();
+                sound.playMessageSound();
               } catch (e) {
                 // Ignore audio errors
               }

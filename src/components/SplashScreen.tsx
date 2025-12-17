@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getSoundInstance } from '@/hooks/useSound';
 import heroBg1 from '@/assets/hero-bg.jpg';
 import heroBg2 from '@/assets/hero-bg-2.jpg';
 import heroBg3 from '@/assets/hero-bg-3.jpg';
@@ -37,6 +38,16 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   }, []);
 
   useEffect(() => {
+    // Play startup sound after a short delay
+    const soundTimer = setTimeout(() => {
+      try {
+        const sound = getSoundInstance();
+        sound.playStartupSound();
+      } catch (error) {
+        console.log('Could not play startup sound');
+      }
+    }, 500);
+
     // Phase 1: Logo animation (0-1s)
     const textTimer = setTimeout(() => setPhase('text'), 1000);
     // Phase 2: Text animation (1-3s), then exit
@@ -45,6 +56,7 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
     const completeTimer = setTimeout(() => onComplete(), 4800);
 
     return () => {
+      clearTimeout(soundTimer);
       clearTimeout(textTimer);
       clearTimeout(exitTimer);
       clearTimeout(completeTimer);

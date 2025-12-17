@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, MessageCircle, Heart, Tag, Home, Mail } from 'lucide-react';
+import { ArrowLeft, Bell, MessageCircle, Heart, Tag, Home, Mail, Volume2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { useSound } from '@/hooks/useSound';
 
 const NotificationSettingsPage = () => {
   const navigate = useNavigate();
+  const { playNotificationSound, isMuted, setMuted } = useSound();
   const [notifications, setNotifications] = useState({
     push: true,
     messages: true,
@@ -13,9 +15,24 @@ const NotificationSettingsPage = () => {
     newListings: true,
     email: false,
   });
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  useEffect(() => {
+    setSoundEnabled(!isMuted());
+  }, [isMuted]);
 
   const handleToggle = (key: keyof typeof notifications) => {
     setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleSoundToggle = () => {
+    const newValue = !soundEnabled;
+    setSoundEnabled(newValue);
+    setMuted(!newValue);
+    if (newValue) {
+      // Play a test sound when enabling
+      setTimeout(() => playNotificationSound(), 100);
+    }
   };
 
   return (
@@ -34,6 +51,30 @@ const NotificationSettingsPage = () => {
       </div>
 
       <div className="px-4 py-6 space-y-6">
+        {/* Sound Settings */}
+        <div className="bg-card rounded-2xl overflow-hidden">
+          <div className="p-4 border-b border-border">
+            <h2 className="font-semibold flex items-center gap-2">
+              <Volume2 className="w-5 h-5 text-primary" />
+              Sons
+            </h2>
+          </div>
+          <div className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-sm">Sons de notification</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Jouer un son lors des notifications
+                </p>
+              </div>
+              <Switch 
+                checked={soundEnabled} 
+                onCheckedChange={handleSoundToggle} 
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Push Notifications */}
         <div className="bg-card rounded-2xl overflow-hidden">
           <div className="p-4 border-b border-border">

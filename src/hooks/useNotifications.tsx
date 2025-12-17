@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { getSoundInstance } from './useSound';
 
 interface Notification {
   id: string;
@@ -145,6 +146,14 @@ export const useNotifications = () => {
             // Update state immediately
             setNotifications(prev => [enrichedNotification, ...prev]);
             setUnreadCount(prev => prev + 1);
+
+            // Play notification sound
+            try {
+              const sound = getSoundInstance();
+              sound.playNotificationSound();
+            } catch (error) {
+              console.log('Could not play notification sound');
+            }
 
             // Show browser notification if permission granted
             if (permissionGranted) {
