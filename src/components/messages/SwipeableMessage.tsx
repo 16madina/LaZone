@@ -31,6 +31,8 @@ interface SwipeableMessageProps {
   message: Message;
   isMe: boolean;
   userId: string;
+  participantAvatar?: string | null;
+  showAvatar?: boolean;
   onDelete: (messageId: string) => void;
   onReaction: (messageId: string, emoji: string) => void;
   onReply: (message: Message) => void;
@@ -38,7 +40,7 @@ interface SwipeableMessageProps {
 
 const EMOJI_OPTIONS = ['❤️', '👍', '😂', '😮', '😢', '🙏'];
 
-const SwipeableMessage = ({ message, isMe, userId, onReaction, onReply }: SwipeableMessageProps) => {
+const SwipeableMessage = ({ message, isMe, userId, participantAvatar, showAvatar = false, onReaction, onReply }: SwipeableMessageProps) => {
   const [showReactions, setShowReactions] = useState(false);
   const longPressRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -70,12 +72,30 @@ const SwipeableMessage = ({ message, isMe, userId, onReaction, onReply }: Swipea
     message.reactions?.some(r => r.emoji === emoji && r.user_id === userId);
 
   return (
-    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} group`}>
+    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} group items-end gap-2`}>
+      {/* Avatar for received messages */}
+      {!isMe && (
+        <div className="flex-shrink-0 w-8">
+          {showAvatar ? (
+            <img
+              src={participantAvatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop'}
+              alt="Avatar"
+              className="w-8 h-8 rounded-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop';
+              }}
+            />
+          ) : (
+            <div className="w-8" />
+          )}
+        </div>
+      )}
+      
       {/* Reply button - left side for received messages */}
       {!isMe && (
         <button
           onClick={() => onReply(message)}
-          className="opacity-0 group-hover:opacity-100 self-center mr-2 p-1.5 hover:bg-muted rounded-full transition-opacity"
+          className="opacity-0 group-hover:opacity-100 self-center p-1.5 hover:bg-muted rounded-full transition-opacity"
         >
           <Reply className="w-4 h-4 text-muted-foreground" />
         </button>
