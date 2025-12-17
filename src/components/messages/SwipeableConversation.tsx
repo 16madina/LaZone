@@ -1,8 +1,17 @@
 import { useState, useRef } from 'react';
 import { motion, PanInfo, useMotionValue } from 'framer-motion';
-import { MoreVertical, Trash2, Archive, ArchiveRestore } from 'lucide-react';
+import { MoreVertical, Trash2, Archive, ArchiveRestore, Calendar, Ban, Volume2, VolumeX } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import AppointmentDialog from '@/components/appointment/AppointmentDialog';
+import { ReportUserDialog } from '@/components/messages/ReportUserDialog';
 
 interface Conversation {
   id: string;
@@ -15,6 +24,7 @@ interface Conversation {
   propertyId: string;
   propertyTitle: string;
   propertyImage?: string;
+  propertyOwnerId?: string;
 }
 
 interface SwipeableConversationProps {
@@ -25,6 +35,8 @@ interface SwipeableConversationProps {
   onArchive: () => void;
   isArchived?: boolean;
   index: number;
+  isMuted?: boolean;
+  onToggleMute?: () => void;
 }
 
 const SwipeableConversation = ({ 
@@ -34,9 +46,12 @@ const SwipeableConversation = ({
   onDelete, 
   onArchive,
   isArchived = false,
-  index 
+  index,
+  isMuted = false,
+  onToggleMute
 }: SwipeableConversationProps) => {
   const [showActions, setShowActions] = useState(false);
+  const [showAppointmentDialog, setShowAppointmentDialog] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
 
@@ -91,7 +106,7 @@ const SwipeableConversation = ({
       )}
 
       {/* Conversation card */}
-      <motion.button
+      <motion.div
         drag="x"
         dragConstraints={{ left: -120, right: 0 }}
         dragElastic={0.1}
@@ -99,7 +114,7 @@ const SwipeableConversation = ({
         style={{ x }}
         animate={{ x: showActions ? -120 : 0 }}
         onClick={() => !showActions && onSelect()}
-        className={`w-full glass-card p-4 flex items-center gap-3 text-left relative bg-card ${showActions ? 'z-0' : 'z-10'}`}
+        className={`w-full glass-card p-4 flex items-center gap-3 text-left relative bg-card cursor-pointer ${showActions ? 'z-0' : 'z-10'}`}
       >
         <div className="relative">
           <img
@@ -137,8 +152,69 @@ const SwipeableConversation = ({
           </p>
         </div>
 
-        <MoreVertical className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-      </motion.button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+            <button className="p-1 hover:bg-muted rounded-full transition-colors">
+              <MoreVertical className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 bg-card border-border z-50">
+            <DropdownMenuItem 
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowAppointmentDialog(true);
+              }}
+              className="cursor-pointer"
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              Prendre un RDV
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleMute?.();
+              }}
+              className="cursor-pointer"
+            >
+              {isMuted ? (
+                <>
+                  <Volume2 className="w-4 h-4 mr-2" />
+                  Activer le son
+                </>
+              ) : (
+                <>
+                  <VolumeX className="w-4 h-4 mr-2" />
+                  Désactiver le son
+                </>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <ReportUserDialog 
+              userId={conversation.participantId} 
+              userName={conversation.participantName}
+              trigger={
+                <DropdownMenuItem 
+                  onSelect={(e) => e.preventDefault()}
+                  className="cursor-pointer text-destructive focus:text-destructive"
+                >
+                  <Ban className="w-4 h-4 mr-2" />
+                  Signaler l'utilisateur
+                </DropdownMenuItem>
+              }
+            />
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </motion.div>
+
+      {/* Appointment Dialog */}
+      <AppointmentDialog
+        propertyId={conversation.propertyId}
+        ownerId={conversation.propertyOwnerId || conversation.participantId}
+        propertyTitle={conversation.propertyTitle}
+        open={showAppointmentDialog}
+        onOpenChange={setShowAppointmentDialog}
+        onSuccess={() => setShowAppointmentDialog(false)}
+      />
     </motion.div>
   );
 };

@@ -25,6 +25,8 @@ interface AppointmentDialogProps {
   propertyTitle: string;
   trigger?: React.ReactNode;
   onSuccess?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const TIME_SLOTS = [
@@ -37,10 +39,16 @@ export const AppointmentDialog = ({
   ownerId, 
   propertyTitle,
   trigger,
-  onSuccess
+  onSuccess,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange
 }: AppointmentDialogProps) => {
   const { user } = useAuth();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = controlledOnOpenChange || setInternalOpen;
+  
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>();
   const [message, setMessage] = useState('');
