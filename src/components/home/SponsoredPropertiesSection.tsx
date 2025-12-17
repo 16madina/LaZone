@@ -22,55 +22,65 @@ export const SponsoredPropertiesSection = ({ userCountry }: SponsoredPropertiesS
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchSponsoredProperties();
-  }, [userCountry]);
+    let cancelled = false;
 
-  const fetchSponsoredProperties = async () => {
-    try {
-      // Sponsored properties are filtered by user's country
-      let query = supabase
-        .from('properties')
-        .select(`
-          id,
-          title,
-          city,
-          country,
-          price,
-          property_images (url, is_primary)
-        `)
-        .eq('is_sponsored', true)
-        .eq('is_active', true)
-        .gte('sponsored_until', new Date().toISOString())
-        .order('sponsored_until', { ascending: false })
-        .limit(6);
+    const fetchForCountry = async (countryCode: string) => {
+      try {
+        const { data, error } = await supabase
+          .from('properties')
+          .select(`
+            id,
+            title,
+            city,
+            country,
+            price,
+            property_images (url, is_primary)
+          `)
+          .eq('is_sponsored', true)
+          .eq('is_active', true)
+          .eq('country', countryCode)
+          .gte('sponsored_until', new Date().toISOString())
+          .order('sponsored_until', { ascending: false })
+          .limit(6);
 
-      // Filter by user's country if specified
-      if (userCountry) {
-        query = query.eq('country', userCountry);
+        if (error) throw error;
+
+        const formattedProperties: SponsoredProperty[] = (data || []).map((p) => ({
+          id: p.id,
+          title: p.title,
+          city: p.city,
+          country: p.country,
+          price: p.price,
+          imageUrl:
+            p.property_images?.find((img: any) => img.is_primary)?.url ||
+            p.property_images?.[0]?.url ||
+            'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&h=300&fit=crop',
+        }));
+
+        if (!cancelled) setProperties(formattedProperties);
+      } catch (error) {
+        console.error('Error fetching sponsored properties:', error);
+        if (!cancelled) setProperties([]);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
+    };
 
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      const formattedProperties: SponsoredProperty[] = (data || []).map(p => ({
-        id: p.id,
-        title: p.title,
-        city: p.city,
-        country: p.country,
-        price: p.price,
-        imageUrl: p.property_images?.find((img: any) => img.is_primary)?.url 
-          || p.property_images?.[0]?.url 
-          || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&h=300&fit=crop',
-      }));
-
-      setProperties(formattedProperties);
-    } catch (error) {
-      console.error('Error fetching sponsored properties:', error);
-    } finally {
+    // Important: don't fetch without a country, otherwise users briefly see other countries.
+    if (!userCountry) {
+      setProperties([]);
       setLoading(false);
+      return;
     }
-  };
+
+    setLoading(true);
+    setProperties([]);
+    fetchForCountry(userCountry);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userCountry]);
 
   const formatPrice = (price: number, countryCode: string | null) => {
     const currency = countryCode ? countryCurrencyMap[countryCode] : null;
