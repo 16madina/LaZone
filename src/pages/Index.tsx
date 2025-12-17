@@ -9,6 +9,7 @@ import { CountrySelector } from '@/components/home/CountrySelector';
 import { useAppStore } from '@/stores/appStore';
 import { useProperties } from '@/hooks/useProperties';
 import { useAuth } from '@/hooks/useAuth';
+import { useNotifications } from '@/hooks/useNotifications';
 import { africanCountries, Country } from '@/data/africanCountries';
 import logoLazone from '@/assets/logo-lazone.png';
 import heroBg1 from '@/assets/hero-bg.jpg';
@@ -22,9 +23,9 @@ const Index = () => {
   const { activeFilter, searchQuery } = useAppStore();
   const { properties, loading } = useProperties();
   const { profile } = useAuth();
+  const { unreadCount } = useNotifications();
   const [currentBg, setCurrentBg] = useState(heroBg1);
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
-
   // Initialize country from user profile
   useEffect(() => {
     if (profile?.country) {
@@ -91,10 +92,17 @@ const Index = () => {
                 selectedCountry={selectedCountry} 
                 onCountryChange={setSelectedCountry} 
               />
-              <button className="relative w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform">
+              <Link 
+                to="/notifications"
+                className="relative w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform"
+              >
                 <Bell className="w-5 h-5 text-white" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full" />
-              </button>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-5 h-5 bg-primary rounded-full flex items-center justify-center text-xs text-primary-foreground font-bold px-1">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </Link>
               <Link to="/profile" className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform">
                 <User className="w-5 h-5 text-white" />
               </Link>
