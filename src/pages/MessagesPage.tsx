@@ -88,7 +88,16 @@ const MessagesPage = () => {
 
   if (!user) {
     return (
-      <div className="page-container flex flex-col items-center justify-center min-h-[70vh] px-6">
+      <div className="min-h-screen relative overflow-hidden">
+        {/* Background gradient and pattern */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-primary/5" />
+        <div className="absolute inset-0 opacity-30" style={{
+          backgroundImage: `radial-gradient(circle at 20% 50%, hsl(var(--primary) / 0.15) 0%, transparent 50%),
+                           radial-gradient(circle at 80% 20%, hsl(var(--primary) / 0.1) 0%, transparent 40%),
+                           radial-gradient(circle at 40% 80%, hsl(var(--primary) / 0.08) 0%, transparent 45%)`
+        }} />
+        
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-[70vh] px-6">
         {/* Animated illustration */}
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
@@ -96,7 +105,7 @@ const MessagesPage = () => {
           transition={{ duration: 0.5, ease: "easeOut" }}
           className="relative mb-8"
         >
-          <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+          <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center backdrop-blur-sm border border-primary/10">
             <motion.div
               animate={{ 
                 y: [0, -8, 0],
@@ -115,7 +124,7 @@ const MessagesPage = () => {
           <motion.div
             animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
             transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-            className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary/30"
+            className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary/30 backdrop-blur-sm"
           />
           <motion.div
             animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.8, 0.3] }}
@@ -191,6 +200,7 @@ const MessagesPage = () => {
             Pas encore de compte ? <button onClick={() => navigate('/auth')} className="text-primary font-medium">Créer un compte</button>
           </p>
         </motion.div>
+        </div>
       </div>
     );
   }

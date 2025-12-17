@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
   LogOut, 
   Mail,
@@ -59,6 +60,7 @@ import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { AppointmentsTab } from '@/components/appointment/AppointmentsTab';
 
@@ -541,25 +543,119 @@ const ProfilePage = () => {
   // Guest view
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-primary/20 to-background">
-        <div className="h-32 bg-gradient-to-r from-primary to-primary/80" />
-        <div className="px-4 -mt-16 pb-32">
-          <div className="bg-card rounded-2xl shadow-lg p-6 text-center">
-            <div className="w-24 h-24 mx-auto rounded-full bg-muted flex items-center justify-center mb-4">
-              <span className="text-4xl">👤</span>
+      <div className="min-h-screen relative overflow-hidden">
+        {/* Background gradient and pattern */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-primary/5" />
+        <div className="absolute inset-0 opacity-30" style={{
+          backgroundImage: `radial-gradient(circle at 20% 50%, hsl(var(--primary) / 0.15) 0%, transparent 50%),
+                           radial-gradient(circle at 80% 20%, hsl(var(--primary) / 0.1) 0%, transparent 40%),
+                           radial-gradient(circle at 40% 80%, hsl(var(--primary) / 0.08) 0%, transparent 45%)`
+        }} />
+        
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-[70vh] px-6">
+          {/* Animated illustration */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="relative mb-8"
+          >
+            <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center backdrop-blur-sm border border-primary/10">
+              <motion.div
+                animate={{ 
+                  y: [0, -8, 0],
+                  rotate: [0, 5, -5, 0]
+                }}
+                transition={{ 
+                  duration: 3, 
+                  repeat: Infinity, 
+                  ease: "easeInOut" 
+                }}
+              >
+                <User className="w-16 h-16 text-primary" strokeWidth={1.5} />
+              </motion.div>
             </div>
-            <h2 className="text-xl font-bold mb-2">Invité</h2>
-            <p className="text-muted-foreground text-sm mb-6">
-              Connectez-vous pour accéder à toutes les fonctionnalités
-            </p>
-            <button
-              onClick={() => navigate('/auth')}
-              className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-medium flex items-center justify-center gap-2"
+            {/* Decorative elements */}
+            <motion.div
+              animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+              className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary/30 backdrop-blur-sm"
+            />
+            <motion.div
+              animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.8, 0.3] }}
+              transition={{ duration: 2.5, repeat: Infinity, delay: 1 }}
+              className="absolute bottom-0 -left-3 w-4 h-4 rounded-full bg-primary/20"
+            />
+          </motion.div>
+
+          {/* Title and subtitle */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="text-center mb-8"
+          >
+            <h2 className="font-display text-2xl font-bold mb-2">Votre espace personnel</h2>
+            <p className="text-muted-foreground">Connectez-vous pour gérer votre profil</p>
+          </motion.div>
+
+          {/* Features list */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="glass-card p-5 w-full max-w-sm mb-8"
+          >
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Home className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Gérez vos annonces</p>
+                  <p className="text-xs text-muted-foreground">Publiez et modifiez vos biens</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Heart className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Vos favoris</p>
+                  <p className="text-xs text-muted-foreground">Retrouvez vos coups de cœur</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <CalendarDays className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Rendez-vous</p>
+                  <p className="text-xs text-muted-foreground">Gérez vos visites</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* CTA Button */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="w-full max-w-sm"
+          >
+            <Button 
+              onClick={() => navigate('/auth')} 
+              className="w-full h-12 text-base font-semibold"
+              size="lg"
             >
-              <LogIn className="w-5 h-5" />
+              <LogIn className="w-5 h-5 mr-2" />
               Se connecter
-            </button>
-          </div>
+            </Button>
+            <p className="text-center text-xs text-muted-foreground mt-3">
+              Pas encore de compte ? <button onClick={() => navigate('/auth')} className="text-primary font-medium">Créer un compte</button>
+            </p>
+          </motion.div>
         </div>
       </div>
     );

@@ -460,109 +460,119 @@ const PublishPage = () => {
   // Login prompt for unauthenticated users
   if (!user) {
     return (
-      <div className="page-container flex flex-col items-center justify-center min-h-[70vh] px-6">
-        {/* Animated illustration */}
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="relative mb-8"
-        >
-          <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-            <motion.div
-              animate={{ 
-                y: [0, -8, 0],
-                rotate: [0, 5, -5, 0]
-              }}
-              transition={{ 
-                duration: 3, 
-                repeat: Infinity, 
-                ease: "easeInOut" 
-              }}
-            >
-              <Home className="w-16 h-16 text-primary" strokeWidth={1.5} />
-            </motion.div>
-          </div>
-          {/* Decorative elements */}
+      <div className="min-h-screen relative overflow-hidden">
+        {/* Background gradient and pattern */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-primary/5" />
+        <div className="absolute inset-0 opacity-30" style={{
+          backgroundImage: `radial-gradient(circle at 20% 50%, hsl(var(--primary) / 0.15) 0%, transparent 50%),
+                           radial-gradient(circle at 80% 20%, hsl(var(--primary) / 0.1) 0%, transparent 40%),
+                           radial-gradient(circle at 40% 80%, hsl(var(--primary) / 0.08) 0%, transparent 45%)`
+        }} />
+        
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-[70vh] px-6">
+          {/* Animated illustration */}
           <motion.div
-            animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-            className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary/30"
-          />
-          <motion.div
-            animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.8, 0.3] }}
-            transition={{ duration: 2.5, repeat: Infinity, delay: 1 }}
-            className="absolute bottom-0 -left-3 w-4 h-4 rounded-full bg-primary/20"
-          />
-        </motion.div>
-
-        {/* Title and subtitle */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="text-center mb-8"
-        >
-          <h2 className="font-display text-2xl font-bold mb-2">Publiez votre bien</h2>
-          <p className="text-muted-foreground">Connectez-vous pour créer votre annonce</p>
-        </motion.div>
-
-        {/* Features list */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="glass-card p-5 w-full max-w-sm mb-8"
-        >
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Camera className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="font-medium text-sm">Photos illimitées</p>
-                <p className="text-xs text-muted-foreground">Jusqu'à 6 photos par annonce</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <MapPin className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="font-medium text-sm">Géolocalisation</p>
-                <p className="text-xs text-muted-foreground">Positionnez sur la carte</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <DollarSign className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="font-medium text-sm">100% Gratuit</p>
-                <p className="text-xs text-muted-foreground">Aucun frais de publication</p>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* CTA Button */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="w-full max-w-sm"
-        >
-          <Button 
-            onClick={() => navigate('/auth')} 
-            className="w-full h-12 text-base font-semibold"
-            size="lg"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="relative mb-8"
           >
-            Se connecter
-          </Button>
-          <p className="text-center text-xs text-muted-foreground mt-3">
-            Pas encore de compte ? <button onClick={() => navigate('/auth')} className="text-primary font-medium">Créer un compte</button>
-          </p>
-        </motion.div>
+            <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center backdrop-blur-sm border border-primary/10">
+              <motion.div
+                animate={{ 
+                  y: [0, -8, 0],
+                  rotate: [0, 5, -5, 0]
+                }}
+                transition={{ 
+                  duration: 3, 
+                  repeat: Infinity, 
+                  ease: "easeInOut" 
+                }}
+              >
+                <Home className="w-16 h-16 text-primary" strokeWidth={1.5} />
+              </motion.div>
+            </div>
+            {/* Decorative elements */}
+            <motion.div
+              animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+              className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary/30 backdrop-blur-sm"
+            />
+            <motion.div
+              animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.8, 0.3] }}
+              transition={{ duration: 2.5, repeat: Infinity, delay: 1 }}
+              className="absolute bottom-0 -left-3 w-4 h-4 rounded-full bg-primary/20"
+            />
+          </motion.div>
+
+          {/* Title and subtitle */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="text-center mb-8"
+          >
+            <h2 className="font-display text-2xl font-bold mb-2">Publiez votre bien</h2>
+            <p className="text-muted-foreground">Connectez-vous pour créer votre annonce</p>
+          </motion.div>
+
+          {/* Features list */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="glass-card p-5 w-full max-w-sm mb-8"
+          >
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Camera className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Photos illimitées</p>
+                  <p className="text-xs text-muted-foreground">Jusqu'à 6 photos par annonce</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <MapPin className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Géolocalisation</p>
+                  <p className="text-xs text-muted-foreground">Positionnez sur la carte</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <DollarSign className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">100% Gratuit</p>
+                  <p className="text-xs text-muted-foreground">Aucun frais de publication</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* CTA Button */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="w-full max-w-sm"
+          >
+            <Button 
+              onClick={() => navigate('/auth')} 
+              className="w-full h-12 text-base font-semibold"
+              size="lg"
+            >
+              Se connecter
+            </Button>
+            <p className="text-center text-xs text-muted-foreground mt-3">
+              Pas encore de compte ? <button onClick={() => navigate('/auth')} className="text-primary font-medium">Créer un compte</button>
+            </p>
+          </motion.div>
+        </div>
       </div>
     );
   }
