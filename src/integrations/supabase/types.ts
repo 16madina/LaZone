@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      archived_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          other_user_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          other_user_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          other_user_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string
@@ -86,6 +107,7 @@ export type Database = {
           is_read: boolean | null
           property_id: string | null
           receiver_id: string
+          reply_to_id: string | null
           sender_id: string
         }
         Insert: {
@@ -98,6 +120,7 @@ export type Database = {
           is_read?: boolean | null
           property_id?: string | null
           receiver_id: string
+          reply_to_id?: string | null
           sender_id: string
         }
         Update: {
@@ -110,6 +133,7 @@ export type Database = {
           is_read?: boolean | null
           property_id?: string | null
           receiver_id?: string
+          reply_to_id?: string | null
           sender_id?: string
         }
         Relationships: [
@@ -118,6 +142,13 @@ export type Database = {
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
         ]

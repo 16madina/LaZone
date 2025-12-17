@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, CheckCheck, FileText } from 'lucide-react';
+import { Check, CheckCheck, FileText, Reply } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -23,6 +23,8 @@ interface Message {
   attachment_type?: string | null;
   attachment_name?: string | null;
   reactions?: MessageReaction[];
+  reply_to_id?: string | null;
+  reply_to?: Message | null;
 }
 
 interface SwipeableMessageProps {
@@ -31,11 +33,12 @@ interface SwipeableMessageProps {
   userId: string;
   onDelete: (messageId: string) => void;
   onReaction: (messageId: string, emoji: string) => void;
+  onReply: (message: Message) => void;
 }
 
 const EMOJI_OPTIONS = ['❤️', '👍', '😂', '😮', '😢', '🙏'];
 
-const SwipeableMessage = ({ message, isMe, userId, onReaction }: SwipeableMessageProps) => {
+const SwipeableMessage = ({ message, isMe, userId, onReaction, onReply }: SwipeableMessageProps) => {
   const [showReactions, setShowReactions] = useState(false);
   const longPressRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -67,7 +70,17 @@ const SwipeableMessage = ({ message, isMe, userId, onReaction }: SwipeableMessag
     message.reactions?.some(r => r.emoji === emoji && r.user_id === userId);
 
   return (
-    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} group`}>
+      {/* Reply button - left side for received messages */}
+      {!isMe && (
+        <button
+          onClick={() => onReply(message)}
+          className="opacity-0 group-hover:opacity-100 self-center mr-2 p-1.5 hover:bg-muted rounded-full transition-opacity"
+        >
+          <Reply className="w-4 h-4 text-muted-foreground" />
+        </button>
+      )}
+      
       <motion.div
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -75,10 +88,19 @@ const SwipeableMessage = ({ message, isMe, userId, onReaction }: SwipeableMessag
         onMouseUp={handleTouchEnd}
         onMouseLeave={handleTouchEnd}
         whileTap={{ scale: 0.98 }}
-        className="relative"
+        className="relative max-w-[80%]"
       >
+        {/* Reply preview */}
+        {message.reply_to && (
+          <div className={`mb-1 px-3 py-1.5 rounded-lg text-xs ${isMe ? 'bg-primary/20' : 'bg-muted/70'} border-l-2 border-primary/50`}>
+            <p className="text-muted-foreground truncate">
+              {message.reply_to.content || (message.reply_to.attachment_url ? '📎 Pièce jointe' : '')}
+            </p>
+          </div>
+        )}
+        
         <div
-          className={`max-w-[80%] p-3 rounded-2xl ${
+          className={`p-3 rounded-2xl ${
             isMe
               ? 'bg-primary text-primary-foreground rounded-br-sm'
               : 'bg-muted rounded-bl-sm'
@@ -179,6 +201,16 @@ const SwipeableMessage = ({ message, isMe, userId, onReaction }: SwipeableMessag
           )}
         </AnimatePresence>
       </motion.div>
+      
+      {/* Reply button - right side for sent messages */}
+      {isMe && (
+        <button
+          onClick={() => onReply(message)}
+          className="opacity-0 group-hover:opacity-100 self-center ml-2 p-1.5 hover:bg-muted rounded-full transition-opacity"
+        >
+          <Reply className="w-4 h-4 text-muted-foreground" />
+        </button>
+      )}
     </div>
   );
 };
