@@ -195,11 +195,33 @@ export const useMessages = () => {
     }
   }, [user, fetchConversations]);
 
+  const deleteConversation = async (participantId: string) => {
+    if (!user) return { error: 'Not authenticated' };
+
+    try {
+      // Delete all messages between user and participant
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${participantId}),and(sender_id.eq.${participantId},receiver_id.eq.${user.id})`);
+
+      if (error) throw error;
+      
+      // Update local state
+      setConversations(prev => prev.filter(c => c.participantId !== participantId));
+      return { error: null };
+    } catch (error: any) {
+      console.error('Error deleting conversation:', error);
+      return { error: error.message };
+    }
+  };
+
   return {
     conversations,
     loading,
     totalUnread,
-    refetch: fetchConversations
+    refetch: fetchConversations,
+    deleteConversation
   };
 };
 
