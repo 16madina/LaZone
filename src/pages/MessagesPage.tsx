@@ -19,6 +19,7 @@ import SwipeableConversation from '@/components/messages/SwipeableConversation';
 import { AppointmentDialog } from '@/components/appointment/AppointmentDialog';
 import { ReportUserDialog } from '@/components/messages/ReportUserDialog';
 import SectionTutorialButton from '@/components/tutorial/SectionTutorialButton';
+import EmailVerificationRequired from '@/components/EmailVerificationRequired';
 import heroBg2 from '@/assets/hero-bg-2.jpg';
 import {
   DropdownMenu,
@@ -31,7 +32,7 @@ import {
 const MessagesPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, isEmailVerified } = useAuth();
   const { conversations, loading, totalUnread, deleteConversation, archiveConversation } = useMessages();
   const { isUserOnline, fetchLastSeen } = useOnlineStatus();
   const [selectedConversation, setSelectedConversation] = useState<{ participantId: string; propertyId: string } | null>(null);
@@ -202,6 +203,26 @@ const MessagesPage = () => {
             Pas encore de compte ? <button onClick={() => navigate('/auth')} className="text-primary font-medium">Créer un compte</button>
           </p>
         </motion.div>
+        </div>
+      </div>
+    );
+  }
+
+  // Email verification required
+  if (!isEmailVerified) {
+    return (
+      <div className="min-h-screen relative overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${heroBg2})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/30 to-background/70" />
+        <div className="relative z-10">
+          <EmailVerificationRequired 
+            title="Vérifiez votre email"
+            description="Pour envoyer des messages, vous devez d'abord vérifier votre adresse email."
+            icon={<MessageCircle className="w-16 h-16 text-amber-500" strokeWidth={1.5} />}
+          />
         </div>
       </div>
     );

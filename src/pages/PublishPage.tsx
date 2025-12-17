@@ -37,6 +37,7 @@ import { africanCountries } from '@/data/africanCountries';
 import LocationMapPicker, { countryCoordinates } from '@/components/publish/LocationMapPicker';
 import { useCamera, isNativePlatform } from '@/hooks/useNativePlugins';
 import SectionTutorialButton from '@/components/tutorial/SectionTutorialButton';
+import EmailVerificationRequired from '@/components/EmailVerificationRequired';
 import heroBg3 from '@/assets/hero-bg-3.jpg';
 
 type PropertyType = 'house' | 'apartment' | 'land' | 'commercial';
@@ -94,7 +95,7 @@ const createValidationSchema = (propertyType: PropertyType, transactionType: Tra
 
 const PublishPage = () => {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, isEmailVerified } = useAuth();
   const { takePicture, pickMultiple, loading: cameraLoading } = useCamera();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
@@ -574,6 +575,26 @@ const PublishPage = () => {
               Pas encore de compte ? <button onClick={() => navigate('/auth')} className="text-primary font-medium">Créer un compte</button>
             </p>
           </motion.div>
+        </div>
+      </div>
+    );
+  }
+
+  // Email verification required
+  if (!isEmailVerified) {
+    return (
+      <div className="min-h-screen relative overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${heroBg3})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/30 to-background/70" />
+        <div className="relative z-10">
+          <EmailVerificationRequired 
+            title="Vérifiez votre email"
+            description="Pour publier une annonce, vous devez d'abord vérifier votre adresse email."
+            icon={<Home className="w-16 h-16 text-amber-500" strokeWidth={1.5} />}
+          />
         </div>
       </div>
     );
