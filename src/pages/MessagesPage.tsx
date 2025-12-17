@@ -18,6 +18,7 @@ import SwipeableMessage from '@/components/messages/SwipeableMessage';
 import SwipeableConversation from '@/components/messages/SwipeableConversation';
 import { AppointmentDialog } from '@/components/appointment/AppointmentDialog';
 import { ReportUserDialog } from '@/components/messages/ReportUserDialog';
+import SectionTutorialButton from '@/components/tutorial/SectionTutorialButton';
 import heroBg2 from '@/assets/hero-bg-2.jpg';
 import {
   DropdownMenu,
@@ -706,6 +707,8 @@ const ConversationView = ({ participantId, propertyId, onBack }: ConversationVie
           </Button>
         </div>
       </div>
+
+      {user && <SectionTutorialButton section="messages" />}
     </div>
   );
 };

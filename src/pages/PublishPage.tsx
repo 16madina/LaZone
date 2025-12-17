@@ -36,6 +36,7 @@ import { z } from 'zod';
 import { africanCountries } from '@/data/africanCountries';
 import LocationMapPicker, { countryCoordinates } from '@/components/publish/LocationMapPicker';
 import { useCamera, isNativePlatform } from '@/hooks/useNativePlugins';
+import SectionTutorialButton from '@/components/tutorial/SectionTutorialButton';
 import heroBg3 from '@/assets/hero-bg-3.jpg';
 
 type PropertyType = 'house' | 'apartment' | 'land' | 'commercial';
@@ -1215,6 +1216,8 @@ const PublishPage = () => {
           )}
         </motion.button>
       </div>
+
+      {user && <SectionTutorialButton section="publish" />}
     </div>
   );
 };
