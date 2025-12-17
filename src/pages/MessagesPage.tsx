@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Search, ArrowLeft, Send, Loader2, 
-  MessageCircle, Paperclip, X, FileText, Reply
+  MessageCircle, Paperclip, X, FileText, Reply, MapPin
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -23,14 +23,19 @@ const MessagesPage = () => {
   const { conversations, loading, totalUnread, deleteConversation, archiveConversation } = useMessages();
   const { isUserOnline, fetchLastSeen } = useOnlineStatus();
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const [initialPropertyId, setInitialPropertyId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Handle recipientId from navigation state
+  // Handle recipientId and propertyId from navigation state
   useEffect(() => {
     const state = location.state as any;
     const recipientId = state?.recipientId;
+    const propertyId = state?.propertyId;
     if (recipientId && recipientId !== user?.id) {
       setSelectedConversation(recipientId);
+      if (propertyId) {
+        setInitialPropertyId(propertyId);
+      }
     }
   }, [location.state, user?.id]);
 
@@ -96,7 +101,11 @@ const MessagesPage = () => {
     return (
       <ConversationView 
         participantId={selectedConversation}
-        onBack={() => setSelectedConversation(null)}
+        initialPropertyId={initialPropertyId}
+        onBack={() => {
+          setSelectedConversation(null);
+          setInitialPropertyId(null);
+        }}
       />
     );
   }
@@ -170,16 +179,19 @@ const MessagesPage = () => {
 };
 interface ConversationViewProps {
   participantId: string;
+  initialPropertyId?: string | null;
   onBack: () => void;
 }
 
-const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
+const ConversationView = ({ participantId, initialPropertyId, onBack }: ConversationViewProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { isUserOnline, getLastSeen, fetchLastSeen } = useOnlineStatus();
   const { messages, loading, sendMessage, deleteMessage, addReaction, uploadAttachment, isTyping, setTyping } = useConversation(participantId);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [participant, setParticipant] = useState<{ full_name: string; avatar_url: string | null } | null>(null);
+  const [propertyInfo, setPropertyInfo] = useState<{ id: string; title: string } | null>(null);
   const [pendingAttachment, setPendingAttachment] = useState<{ url: string; type: 'image' | 'file'; name: string } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [replyTo, setReplyTo] = useState<{ id: string; content: string } | null>(null);
@@ -208,6 +220,33 @@ const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
     };
     fetchParticipant();
   }, [participantId]);
+
+  // Fetch property info from initialPropertyId or existing messages
+  useEffect(() => {
+    const fetchPropertyInfo = async () => {
+      // First check if we have an initialPropertyId from navigation
+      let propertyIdToFetch = initialPropertyId;
+      
+      // If not, look for property_id in existing messages
+      if (!propertyIdToFetch && messages.length > 0) {
+        const messageWithProperty = messages.find(m => m.property_id);
+        propertyIdToFetch = messageWithProperty?.property_id || null;
+      }
+      
+      if (propertyIdToFetch) {
+        const { data } = await supabase
+          .from('properties')
+          .select('id, title')
+          .eq('id', propertyIdToFetch)
+          .maybeSingle();
+        
+        if (data) {
+          setPropertyInfo({ id: data.id, title: data.title });
+        }
+      }
+    };
+    fetchPropertyInfo();
+  }, [initialPropertyId, messages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -266,9 +305,12 @@ const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
     setSending(true);
     setTyping(false);
     
+    // Use propertyId for first message if available
+    const propertyIdToSend = messages.length === 0 ? propertyInfo?.id : undefined;
+    
     const { error } = await sendMessage(
       newMessage.trim(), 
-      undefined, 
+      propertyIdToSend, 
       pendingAttachment || undefined,
       replyTo?.id
     );
@@ -297,37 +339,51 @@ const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
   return (
     <div className="flex flex-col h-[calc(100vh-80px)]">
       {/* Header */}
-      <div className="bg-card border-b border-border p-4 flex items-center gap-3">
-        <button onClick={onBack} className="p-2 hover:bg-muted rounded-full">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div className="relative">
-          <img
-            src={participant?.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop'}
-            alt={participant?.full_name || 'Utilisateur'}
-            className="w-10 h-10 rounded-full object-cover"
-            onError={(e) => {
-              e.currentTarget.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop';
-            }}
-          />
-          {isOnline && (
-            <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-card rounded-full" />
-          )}
+      <div className="bg-card border-b border-border">
+        <div className="p-4 flex items-center gap-3">
+          <button onClick={onBack} className="p-2 hover:bg-muted rounded-full">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="relative">
+            <img
+              src={participant?.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop'}
+              alt={participant?.full_name || 'Utilisateur'}
+              className="w-10 h-10 rounded-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop';
+              }}
+            />
+            {isOnline && (
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-card rounded-full" />
+            )}
+          </div>
+          <div className="flex-1">
+            <h2 className="font-semibold">{participant?.full_name || 'Utilisateur'}</h2>
+            {isTyping ? (
+              <p className="text-xs text-primary animate-pulse">En train d'écrire...</p>
+            ) : isOnline ? (
+              <p className="text-xs text-green-500">En ligne</p>
+            ) : lastSeen ? (
+              <p className="text-xs text-muted-foreground">
+                Vu {formatDistanceToNow(new Date(lastSeen), { addSuffix: true, locale: fr })}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">Hors ligne</p>
+            )}
+          </div>
         </div>
-        <div className="flex-1">
-          <h2 className="font-semibold">{participant?.full_name || 'Utilisateur'}</h2>
-          {isTyping ? (
-            <p className="text-xs text-primary animate-pulse">En train d'écrire...</p>
-          ) : isOnline ? (
-            <p className="text-xs text-green-500">En ligne</p>
-          ) : lastSeen ? (
-            <p className="text-xs text-muted-foreground">
-              Vu {formatDistanceToNow(new Date(lastSeen), { addSuffix: true, locale: fr })}
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground">Hors ligne</p>
-          )}
-        </div>
+        
+        {/* Property Banner */}
+        {propertyInfo && (
+          <button
+            onClick={() => navigate(`/property/${propertyInfo.id}`)}
+            className="w-full px-4 py-2 bg-primary/10 border-t border-primary/20 flex items-center gap-2 hover:bg-primary/20 transition-colors"
+          >
+            <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+            <span className="text-sm text-primary font-medium truncate">{propertyInfo.title}</span>
+            <ArrowLeft className="w-4 h-4 text-primary rotate-180 ml-auto flex-shrink-0" />
+          </button>
+        )}
       </div>
 
       {/* Messages */}
