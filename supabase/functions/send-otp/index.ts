@@ -38,11 +38,18 @@ serve(async (req) => {
       }
     }
 
-    const apiKey = Deno.env.get('AFRICASTALKING_API_KEY');
-    const username = Deno.env.get('AFRICASTALKING_USERNAME');
+    const apiKey = (Deno.env.get('AFRICASTALKING_API_KEY') ?? '').trim();
+    const username = (Deno.env.get('AFRICASTALKING_USERNAME') ?? '').trim();
+
+    const isSandbox = (username || '').toLowerCase() === 'sandbox';
+    console.log("Africa's Talking config:", {
+      username,
+      isSandbox,
+      apiKeyLength: apiKey.length,
+    });
 
     if (!apiKey || !username) {
-      console.error('Africa\'s Talking credentials not configured');
+      console.error("Africa's Talking credentials not configured");
       return new Response(
         JSON.stringify({ error: 'SMS service not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -54,7 +61,6 @@ serve(async (req) => {
     const formattedPhone = sanitizedPhone.startsWith('+') ? sanitizedPhone : `+${sanitizedPhone}`;
 
     // Africa's Talking uses a separate base URL for Sandbox
-    const isSandbox = username === 'sandbox';
     const baseUrl = isSandbox ? 'https://api.sandbox.africastalking.com' : 'https://api.africastalking.com';
     // Send SMS via Africa's Talking API
     const smsResponse = await fetch(`${baseUrl}/version1/messaging`, {
