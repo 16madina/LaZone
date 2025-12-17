@@ -238,13 +238,17 @@ const AuthPage = () => {
     
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: fullPhone,
+      const { data, error } = await supabase.functions.invoke('send-otp', {
+        body: { phoneNumber: fullPhone },
       });
+      
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      
       setOtpSent(true);
       toast({ title: 'Code envoyé', description: 'Un code de vérification a été envoyé à votre téléphone' });
     } catch (error: any) {
+      console.error('Error sending OTP:', error);
       toast({ title: 'Erreur', description: error.message || 'Impossible d\'envoyer le code', variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -260,15 +264,41 @@ const AuthPage = () => {
     
     setLoading(true);
     try {
-      const { error } = await supabase.auth.verifyOtp({
-        phone: fullPhone,
-        token: otp,
-        type: 'sms',
+      const { data, error } = await supabase.functions.invoke('verify-otp', {
+        body: { phoneNumber: fullPhone, otp },
       });
+      
       if (error) throw error;
+      if (data?.error) {
+        if (data.code === 'USER_NOT_FOUND') {
+          toast({ title: 'Compte non trouvé', description: 'Aucun compte n\'est associé à ce numéro de téléphone. Veuillez vous inscrire.', variant: 'destructive' });
+        } else {
+          throw new Error(data.error);
+        }
+        return;
+      }
+      
+      // If we got an action link, use it to sign in
+      if (data?.actionLink) {
+        // Extract the token from the action link and verify it
+        const url = new URL(data.actionLink);
+        const token = url.searchParams.get('token');
+        const type = url.searchParams.get('type') as 'magiclink';
+        
+        if (token) {
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: token,
+            type: 'magiclink',
+          });
+          
+          if (verifyError) throw verifyError;
+        }
+      }
+      
       toast({ title: 'Connexion réussie', description: 'Bienvenue sur LaZone!' });
       navigate('/profile');
     } catch (error: any) {
+      console.error('Error verifying OTP:', error);
       toast({ title: 'Erreur', description: 'Code invalide ou expiré', variant: 'destructive' });
     } finally {
       setLoading(false);
