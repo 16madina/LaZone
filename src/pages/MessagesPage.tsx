@@ -3,10 +3,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Search, MoreVertical, ArrowLeft, Send, Loader2, 
-  MessageCircle, Check, CheckCheck, Paperclip, Image, X, FileText
+  MessageCircle, Check, CheckCheck, Paperclip, Image, X, FileText, Circle
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useMessages, useConversation } from '@/hooks/useMessages';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -17,6 +18,7 @@ const MessagesPage = () => {
   const location = useLocation();
   const { user } = useAuth();
   const { conversations, loading, totalUnread } = useMessages();
+  const { isUserOnline } = useOnlineStatus();
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -51,6 +53,7 @@ const MessagesPage = () => {
       <ConversationView 
         participantId={selectedConversation}
         onBack={() => setSelectedConversation(null)}
+        isOnline={isUserOnline(selectedConversation)}
       />
     );
   }
@@ -124,6 +127,10 @@ const MessagesPage = () => {
                     e.currentTarget.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
                   }}
                 />
+                {/* Online indicator */}
+                {isUserOnline(conversation.participantId) && (
+                  <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-card rounded-full" />
+                )}
                 {conversation.unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 gradient-primary rounded-full flex items-center justify-center text-xs text-primary-foreground font-bold">
                     {conversation.unreadCount}
@@ -162,9 +169,10 @@ const MessagesPage = () => {
 interface ConversationViewProps {
   participantId: string;
   onBack: () => void;
+  isOnline: boolean;
 }
 
-const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
+const ConversationView = ({ participantId, onBack, isOnline }: ConversationViewProps) => {
   const { user } = useAuth();
   const { messages, loading, sendMessage, uploadAttachment, isTyping, setTyping } = useConversation(participantId);
   const [newMessage, setNewMessage] = useState('');
@@ -279,20 +287,27 @@ const ConversationView = ({ participantId, onBack }: ConversationViewProps) => {
         <button onClick={onBack} className="p-2 hover:bg-muted rounded-full">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <img
-          src={participant?.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop'}
-          alt={participant?.full_name || 'Utilisateur'}
-          className="w-10 h-10 rounded-full object-cover"
-          onError={(e) => {
-            e.currentTarget.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop';
-          }}
-        />
+        <div className="relative">
+          <img
+            src={participant?.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop'}
+            alt={participant?.full_name || 'Utilisateur'}
+            className="w-10 h-10 rounded-full object-cover"
+            onError={(e) => {
+              e.currentTarget.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=50&h=50&fit=crop';
+            }}
+          />
+          {isOnline && (
+            <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-card rounded-full" />
+          )}
+        </div>
         <div className="flex-1">
           <h2 className="font-semibold">{participant?.full_name || 'Utilisateur'}</h2>
           {isTyping ? (
             <p className="text-xs text-primary animate-pulse">En train d'écrire...</p>
+          ) : isOnline ? (
+            <p className="text-xs text-green-500">En ligne</p>
           ) : (
-            <p className="text-xs text-muted-foreground">En ligne</p>
+            <p className="text-xs text-muted-foreground">Hors ligne</p>
           )}
         </div>
       </div>
