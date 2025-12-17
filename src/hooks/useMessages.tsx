@@ -45,6 +45,7 @@ interface Conversation {
 export const useMessages = () => {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [archivedConvList, setArchivedConvList] = useState<Conversation[]>([]);
   const [archivedConversations, setArchivedConversations] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [totalUnread, setTotalUnread] = useState(0);
@@ -72,38 +73,52 @@ export const useMessages = () => {
 
       if (error) throw error;
 
-      // Group messages by property_id + participant_id
+      // Group messages by property_id + participant_id (separate active and archived)
       const conversationMap = new Map<string, Message[]>();
+      const archivedConversationMap = new Map<string, Message[]>();
       
       messages?.forEach(msg => {
         const otherUserId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
         const propertyId = msg.property_id;
-        
-        // Skip archived conversations
-        if (archivedSet.has(`${propertyId}_${otherUserId}`)) return;
-        
         const conversationKey = `${propertyId}_${otherUserId}`;
-        const existing = conversationMap.get(conversationKey) || [];
-        existing.push(msg as Message);
-        conversationMap.set(conversationKey, existing);
+        
+        // Separate archived from active
+        if (archivedSet.has(conversationKey)) {
+          const existing = archivedConversationMap.get(conversationKey) || [];
+          existing.push(msg as Message);
+          archivedConversationMap.set(conversationKey, existing);
+        } else {
+          const existing = conversationMap.get(conversationKey) || [];
+          existing.push(msg as Message);
+          conversationMap.set(conversationKey, existing);
+        }
       });
 
-      if (conversationMap.size === 0) {
+      // Combine all conversation keys for fetching profiles and properties
+      const allConversationMaps = [conversationMap, archivedConversationMap];
+      
+      if (conversationMap.size === 0 && archivedConversationMap.size === 0) {
         setConversations([]);
+        setArchivedConvList([]);
         setTotalUnread(0);
         setLoading(false);
         return;
       }
 
-      // Get unique participant IDs and property IDs
+      // Get unique participant IDs and property IDs from both maps
       const participantIds = new Set<string>();
       const propertyIds = new Set<string>();
       
-      conversationMap.forEach((msgs, key) => {
-        const [propId, partId] = key.split('_');
-        propertyIds.add(propId);
-        participantIds.add(partId);
-      });
+      const addToSets = (map: Map<string, Message[]>) => {
+        map.forEach((msgs, key) => {
+          const [propId, partId] = key.split('_');
+          propertyIds.add(propId);
+          participantIds.add(partId);
+        });
+      };
+      
+      addToSets(conversationMap);
+      addToSets(archivedConversationMap);
 
       // Fetch participant profiles
       const { data: profiles } = await supabase
@@ -133,44 +148,55 @@ export const useMessages = () => {
         }
       ]) || []);
 
-      // Build conversations list
-      const convList: Conversation[] = [];
-      let totalUnreadCount = 0;
+      // Helper function to build conversation list from map
+      const buildConversationList = (map: Map<string, Message[]>, countUnread: boolean = true) => {
+        const list: Conversation[] = [];
+        let unreadCount = 0;
 
-      conversationMap.forEach((msgs, conversationKey) => {
-        const [propertyId, participantId] = conversationKey.split('_');
-        const profile = profileMap.get(participantId);
-        const propertyInfo = propertyMap.get(propertyId);
-        const lastMsg = msgs[0];
-        const unreadCount = msgs.filter(m => m.receiver_id === user.id && !m.is_read).length;
-        totalUnreadCount += unreadCount;
+        map.forEach((msgs, conversationKey) => {
+          const [propertyId, participantId] = conversationKey.split('_');
+          const profile = profileMap.get(participantId);
+          const propertyInfo = propertyMap.get(propertyId);
+          const lastMsg = msgs[0];
+          const msgUnreadCount = msgs.filter(m => m.receiver_id === user.id && !m.is_read).length;
+          if (countUnread) unreadCount += msgUnreadCount;
 
-        let lastMessageText = lastMsg.content;
-        if (lastMsg.attachment_url && !lastMsg.content) {
-          lastMessageText = lastMsg.attachment_type === 'image' ? '📷 Image' : '📎 Fichier';
-        }
+          let lastMessageText = lastMsg.content;
+          if (lastMsg.attachment_url && !lastMsg.content) {
+            lastMessageText = lastMsg.attachment_type === 'image' ? '📷 Image' : '📎 Fichier';
+          }
 
-        convList.push({
-          id: conversationKey,
-          participantId,
-          participantName: profile?.full_name || 'Utilisateur',
-          participantAvatar: profile?.avatar_url || null,
-          lastMessage: lastMessageText,
-          lastMessageTime: lastMsg.created_at,
-          unreadCount,
-          propertyId,
-          propertyTitle: propertyInfo?.title || 'Annonce supprimée',
-          propertyImage: propertyInfo?.image,
-          propertyOwnerId: propertyInfo?.ownerId
+          list.push({
+            id: conversationKey,
+            participantId,
+            participantName: profile?.full_name || 'Utilisateur',
+            participantAvatar: profile?.avatar_url || null,
+            lastMessage: lastMessageText,
+            lastMessageTime: lastMsg.created_at,
+            unreadCount: msgUnreadCount,
+            propertyId,
+            propertyTitle: propertyInfo?.title || 'Annonce supprimée',
+            propertyImage: propertyInfo?.image,
+            propertyOwnerId: propertyInfo?.ownerId
+          });
         });
-      });
 
-      // Sort by last message time
-      convList.sort((a, b) => 
-        new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
-      );
+        // Sort by last message time
+        list.sort((a, b) => 
+          new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+        );
+
+        return { list, unreadCount };
+      };
+
+      // Build active conversations list
+      const { list: convList, unreadCount: totalUnreadCount } = buildConversationList(conversationMap, true);
+      
+      // Build archived conversations list
+      const { list: archivedList } = buildConversationList(archivedConversationMap, false);
 
       setConversations(convList);
+      setArchivedConvList(archivedList);
       setTotalUnread(totalUnreadCount);
     } catch (error) {
       console.error('Error fetching conversations:', error);
@@ -311,6 +337,7 @@ export const useMessages = () => {
 
   return {
     conversations,
+    archivedConversations: archivedConvList,
     loading,
     totalUnread,
     refetch: fetchConversations,

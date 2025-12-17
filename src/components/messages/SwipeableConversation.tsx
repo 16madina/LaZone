@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { motion, PanInfo, useMotionValue } from 'framer-motion';
-import { MoreVertical, Trash2, Archive } from 'lucide-react';
+import { MoreVertical, Trash2, Archive, ArchiveRestore } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -23,6 +23,7 @@ interface SwipeableConversationProps {
   onSelect: () => void;
   onDelete: () => void;
   onArchive: () => void;
+  isArchived?: boolean;
   index: number;
 }
 
@@ -32,6 +33,7 @@ const SwipeableConversation = ({
   onSelect, 
   onDelete, 
   onArchive,
+  isArchived = false,
   index 
 }: SwipeableConversationProps) => {
   const [showActions, setShowActions] = useState(false);
@@ -71,9 +73,10 @@ const SwipeableConversation = ({
               e.stopPropagation();
               handleActionClick('archive');
             }}
-            className="h-12 w-12 rounded-full bg-blue-500 flex items-center justify-center text-white shadow-lg active:scale-95 transition-transform"
+            className={`h-12 w-12 rounded-full ${isArchived ? 'bg-green-500' : 'bg-blue-500'} flex items-center justify-center text-white shadow-lg active:scale-95 transition-transform`}
+            title={isArchived ? 'Désarchiver' : 'Archiver'}
           >
-            <Archive className="w-5 h-5" />
+            {isArchived ? <ArchiveRestore className="w-5 h-5" /> : <Archive className="w-5 h-5" />}
           </button>
           <button
             onClick={(e) => {
