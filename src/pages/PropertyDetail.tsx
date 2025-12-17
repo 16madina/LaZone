@@ -27,6 +27,7 @@ import {
 import { useFavorites } from '@/hooks/useFavorites';
 import { ImageGallery } from '@/components/property/ImageGallery';
 import { ReportDialog } from '@/components/property/ReportDialog';
+import { AppointmentDialog } from '@/components/appointment/AppointmentDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { formatPriceWithCurrency } from '@/data/currencies';
 import { toast } from '@/hooks/use-toast';
@@ -284,10 +285,7 @@ const PropertyDetailPage = () => {
       navigate('/auth');
       return;
     }
-    toast({
-      title: 'Demande envoyée',
-      description: 'Votre demande de visite a été envoyée au vendeur.',
-    });
+    // Dialog will handle the rest
   };
 
   return (
@@ -579,13 +577,20 @@ const PropertyDetailPage = () => {
                 Contacter le vendeur
               </button>
               
-              <button 
-                onClick={handleScheduleVisit}
-                className="w-full py-3 rounded-xl border border-border hover:bg-muted transition-colors font-medium flex items-center justify-center gap-2"
-              >
-                <Calendar className="w-5 h-5" />
-                Prendre rendez-vous pour une visite
-              </button>
+              <AppointmentDialog
+                propertyId={property.id}
+                ownerId={property.userId}
+                propertyTitle={property.title}
+                trigger={
+                  <button 
+                    onClick={handleScheduleVisit}
+                    className="w-full py-3 rounded-xl border border-border hover:bg-muted transition-colors font-medium flex items-center justify-center gap-2"
+                  >
+                    <Calendar className="w-5 h-5" />
+                    Prendre rendez-vous pour une visite
+                  </button>
+                }
+              />
               
               <button 
                 onClick={handleCall}
