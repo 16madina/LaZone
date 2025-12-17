@@ -181,7 +181,23 @@ interface BannerData {
   is_active: boolean;
   display_order: number;
   created_at: string;
+  click_count: number;
 }
+
+// URL validation helper
+const isValidUrl = (url: string): boolean => {
+  if (!url) return true; // Empty is valid (optional)
+  try {
+    // Add https if no protocol
+    const urlToTest = url.startsWith('http://') || url.startsWith('https://') 
+      ? url 
+      : 'https://' + url;
+    new URL(urlToTest);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 const AdminPage = () => {
   const navigate = useNavigate();
@@ -210,6 +226,7 @@ const AdminPage = () => {
   // Banner form states
   const [bannerTitle, setBannerTitle] = useState('');
   const [bannerLinkUrl, setBannerLinkUrl] = useState('');
+  const [bannerLinkUrlError, setBannerLinkUrlError] = useState('');
   const [bannerIsActive, setBannerIsActive] = useState(true);
   const [bannerImageFile, setBannerImageFile] = useState<File | null>(null);
   const [bannerImagePreview, setBannerImagePreview] = useState<string | null>(null);
@@ -750,12 +767,14 @@ const AdminPage = () => {
     if (banner) {
       setBannerTitle(banner.title);
       setBannerLinkUrl(banner.link_url || '');
+      setBannerLinkUrlError('');
       setBannerIsActive(banner.is_active);
       setBannerImagePreview(banner.image_url);
       setBannerDialog({ open: true, banner });
     } else {
       setBannerTitle('');
       setBannerLinkUrl('');
+      setBannerLinkUrlError('');
       setBannerIsActive(true);
       setBannerImagePreview(null);
       setBannerImageFile(null);
@@ -778,6 +797,11 @@ const AdminPage = () => {
   const handleSaveBanner = async () => {
     if (!bannerTitle.trim()) {
       toast({ title: 'Veuillez entrer un titre', variant: 'destructive' });
+      return;
+    }
+
+    if (bannerLinkUrl && !isValidUrl(bannerLinkUrl)) {
+      toast({ title: 'URL invalide', variant: 'destructive' });
       return;
     }
 
@@ -1589,6 +1613,12 @@ const AdminPage = () => {
                           <Badge variant="secondary">Désactivée</Badge>
                         </div>
                       )}
+                      {/* Click stats badge */}
+                      <div className="absolute top-2 right-2">
+                        <Badge variant="secondary" className="bg-black/60 text-white border-0">
+                          {banner.click_count || 0} clics
+                        </Badge>
+                      </div>
                     </div>
                     <div className="p-4">
                       <div className="flex items-start justify-between gap-3">
@@ -2052,9 +2082,20 @@ const AdminPage = () => {
               <Label>Lien (optionnel)</Label>
               <Input
                 value={bannerLinkUrl}
-                onChange={(e) => setBannerLinkUrl(e.target.value)}
+                onChange={(e) => {
+                  setBannerLinkUrl(e.target.value);
+                  if (e.target.value && !isValidUrl(e.target.value)) {
+                    setBannerLinkUrlError('URL invalide. Exemple: https://example.com');
+                  } else {
+                    setBannerLinkUrlError('');
+                  }
+                }}
                 placeholder="https://..."
+                className={bannerLinkUrlError ? 'border-destructive' : ''}
               />
+              {bannerLinkUrlError && (
+                <p className="text-xs text-destructive mt-1">{bannerLinkUrlError}</p>
+              )}
             </div>
             
             <div className="flex items-center justify-between">
@@ -2069,7 +2110,7 @@ const AdminPage = () => {
             <Button variant="outline" onClick={() => setBannerDialog({ open: false, banner: null })}>
               Annuler
             </Button>
-            <Button onClick={handleSaveBanner} disabled={uploadingBanner}>
+            <Button onClick={handleSaveBanner} disabled={uploadingBanner || !!bannerLinkUrlError}>
               {uploadingBanner && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {bannerDialog.banner ? 'Mettre à jour' : 'Créer'}
             </Button>

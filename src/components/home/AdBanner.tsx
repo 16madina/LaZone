@@ -1,15 +1,27 @@
 import { ExternalLink } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AdBannerProps {
+  bannerId: string;
   imageUrl: string;
   linkUrl?: string | null;
   title: string;
 }
 
-export const AdBanner = ({ imageUrl, linkUrl, title }: AdBannerProps) => {
-  const handleClick = (e: React.MouseEvent) => {
+export const AdBanner = ({ bannerId, imageUrl, linkUrl, title }: AdBannerProps) => {
+  const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Track click in database
+    try {
+      await supabase.from('banner_clicks').insert({
+        banner_id: bannerId,
+      });
+    } catch (error) {
+      console.error('Error tracking banner click:', error);
+    }
+    
     if (linkUrl) {
       // Ensure URL has protocol
       let url = linkUrl;

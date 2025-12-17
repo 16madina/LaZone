@@ -147,6 +147,7 @@ const Index = () => {
         items.push(
           <AdBanner 
             key={`banner-${banner.id}-${index}`}
+            bannerId={banner.id}
             imageUrl={banner.image_url}
             linkUrl={banner.link_url}
             title={banner.title}
