@@ -22,7 +22,7 @@ import heroBg4 from '@/assets/hero-bg-4.jpg';
 const heroImages = [heroBg1, heroBg2, heroBg3, heroBg4];
 
 const Index = () => {
-  const { activeFilter, searchQuery, priceRange } = useAppStore();
+  const { activeFilter, searchQuery, priceRange, bedroomsFilter, bathroomsFilter, setBedroomsFilter, setBathroomsFilter } = useAppStore();
   const { properties, loading } = useProperties();
   const { profile, user } = useAuth();
   const { detectedCountry, permissionDenied, showAllCountries } = useGeoCountry();
@@ -65,6 +65,16 @@ const Index = () => {
 
     // Filter by price range
     if (property.price < priceRange[0] || property.price > priceRange[1]) {
+      return false;
+    }
+
+    // Filter by bedrooms
+    if (bedroomsFilter !== null && (property.bedrooms ?? 0) < bedroomsFilter) {
+      return false;
+    }
+
+    // Filter by bathrooms
+    if (bathroomsFilter !== null && (property.bathrooms ?? 0) < bathroomsFilter) {
       return false;
     }
 
@@ -180,6 +190,8 @@ const Index = () => {
                 useAppStore.getState().setActiveFilter('all');
                 useAppStore.getState().setSearchQuery('');
                 useAppStore.getState().setPriceRange([0, 1000000000]);
+                useAppStore.getState().setBedroomsFilter(null);
+                useAppStore.getState().setBathroomsFilter(null);
               }}
               className="text-sm text-primary font-medium active:scale-95 transition-transform"
             >
