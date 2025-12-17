@@ -53,6 +53,9 @@ serve(async (req) => {
     const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
 
     // Send SMS via Africa's Talking API
+    console.log('Sending SMS to:', formattedPhone);
+    console.log('Using username:', username);
+    
     const smsResponse = await fetch('https://api.africastalking.com/version1/messaging', {
       method: 'POST',
       headers: {
@@ -67,25 +70,57 @@ serve(async (req) => {
       }),
     });
 
-    const smsResult = await smsResponse.json();
-    console.log('Africa\'s Talking response:', JSON.stringify(smsResult));
+    // Read response as text first to handle non-JSON errors
+    const responseText = await smsResponse.text();
+    console.log('Africa\'s Talking raw response:', responseText);
+    console.log('Response status:', smsResponse.status);
+
+    // Check if response is not OK (e.g., 401, 403, 500)
+    if (!smsResponse.ok) {
+      console.error('Africa\'s Talking API error:', responseText);
+      return new Response(
+        JSON.stringify({ 
+          error: 'SMS service error', 
+          details: responseText || `HTTP ${smsResponse.status}`
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Try to parse as JSON
+    let smsResult;
+    try {
+      smsResult = JSON.parse(responseText);
+    } catch {
+      console.error('Failed to parse Africa\'s Talking response as JSON:', responseText);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid response from SMS service', 
+          details: responseText
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Africa\'s Talking parsed response:', JSON.stringify(smsResult));
 
     if (smsResult.SMSMessageData?.Recipients?.[0]?.status === 'Success') {
       return new Response(
         JSON.stringify({ 
           success: true, 
           message: 'OTP sent successfully',
-          // Don't send OTP in response in production!
-          // otp: otp // Only for testing
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else {
-      console.error('SMS sending failed:', smsResult);
+      const errorStatus = smsResult.SMSMessageData?.Recipients?.[0]?.status || 
+                          smsResult.SMSMessageData?.Message || 
+                          'Unknown error';
+      console.error('SMS sending failed:', errorStatus);
       return new Response(
         JSON.stringify({ 
           error: 'Failed to send SMS', 
-          details: smsResult.SMSMessageData?.Recipients?.[0]?.status || 'Unknown error'
+          details: errorStatus
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
