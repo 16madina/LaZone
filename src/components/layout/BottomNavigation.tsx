@@ -51,7 +51,9 @@ export const BottomNavigation = () => {
                   </motion.div>
                 ) : (
                   <>
-                    <div className="relative">
+                    <div className={`relative p-1.5 rounded-full transition-all duration-300 ${
+                      isActive ? 'bg-primary/15 shadow-[0_0_12px_rgba(255,140,0,0.5)]' : ''
+                    }`}>
                       <item.icon 
                         className={`w-5 h-5 transition-all duration-300 ${
                           isActive 
@@ -61,7 +63,7 @@ export const BottomNavigation = () => {
                         strokeWidth={isActive ? 2.5 : 1.5}
                       />
                       {showBadge && (
-                        <span className="absolute -top-2 -right-2 min-w-4 h-4 bg-primary rounded-full flex items-center justify-center text-[10px] text-primary-foreground font-bold px-1">
+                        <span className="absolute -top-1 -right-1 min-w-4 h-4 bg-primary rounded-full flex items-center justify-center text-[10px] text-primary-foreground font-bold px-1">
                           {totalUnread > 99 ? '99+' : totalUnread}
                         </span>
                       )}
