@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { 
   ArrowLeft, 
   Users, 
@@ -19,7 +21,9 @@ import {
   Check,
   X,
   Clock,
-  ChevronRight
+  ChevronRight,
+  CalendarIcon,
+  MapPin
 } from 'lucide-react';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useAuth } from '@/hooks/useAuth';
@@ -46,6 +50,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { africanCountries } from '@/data/africanCountries';
 
 type TabType = 'users' | 'properties' | 'reports' | 'admins' | 'sponsored';
 
@@ -65,12 +73,19 @@ interface PropertyData {
   title: string;
   price: number;
   city: string;
+  country: string | null;
   is_active: boolean;
   is_sponsored: boolean;
   sponsored_until: string | null;
   created_at: string;
   user_id: string;
   owner_name?: string;
+  image_url?: string;
+}
+
+interface SponsorDialogData {
+  open: boolean;
+  property: PropertyData | null;
 }
 
 interface ReportData {
@@ -111,7 +126,7 @@ const AdminPage = () => {
   const [warningDialog, setWarningDialog] = useState<{ open: boolean; userId: string; userName: string }>({ open: false, userId: '', userName: '' });
   const [banDialog, setBanDialog] = useState<{ open: boolean; userId: string; userName: string }>({ open: false, userId: '', userName: '' });
   const [messageDialog, setMessageDialog] = useState<{ open: boolean; userId: string; userName: string; type: 'app' | 'email' }>({ open: false, userId: '', userName: '', type: 'app' });
-  const [sponsorDialog, setSponsorDialog] = useState<{ open: boolean; propertyId: string; propertyTitle: string }>({ open: false, propertyId: '', propertyTitle: '' });
+  const [sponsorDialog, setSponsorDialog] = useState<SponsorDialogData>({ open: false, property: null });
   const [addAdminDialog, setAddAdminDialog] = useState(false);
   
   // Form states
@@ -120,7 +135,10 @@ const AdminPage = () => {
   const [banPermanent, setBanPermanent] = useState(false);
   const [banDays, setBanDays] = useState('7');
   const [messageContent, setMessageContent] = useState('');
+  const [sponsorMode, setSponsorMode] = useState<'days' | 'dates'>('days');
   const [sponsorDays, setSponsorDays] = useState('30');
+  const [sponsorStartDate, setSponsorStartDate] = useState<Date | undefined>(new Date());
+  const [sponsorEndDate, setSponsorEndDate] = useState<Date | undefined>(undefined);
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [newAdminRole, setNewAdminRole] = useState<'admin' | 'moderator'>('moderator');
 
@@ -201,23 +219,32 @@ const AdminPage = () => {
   const fetchProperties = async () => {
     const { data, error } = await supabase
       .from('properties')
-      .select('id, title, price, city, is_active, is_sponsored, sponsored_until, created_at, user_id')
+      .select('id, title, price, city, country, is_active, is_sponsored, sponsored_until, created_at, user_id')
       .order('created_at', { ascending: false });
     
     if (error) throw error;
 
-    // Fetch owner names separately
+    // Fetch owner names and images separately
     const userIds = [...new Set((data || []).map(p => p.user_id))];
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('user_id, full_name')
-      .in('user_id', userIds);
+    const propertyIds = (data || []).map(p => p.id);
+    
+    const [{ data: profiles }, { data: images }] = await Promise.all([
+      supabase.from('profiles').select('user_id, full_name').in('user_id', userIds),
+      supabase.from('property_images').select('property_id, url').in('property_id', propertyIds).order('display_order', { ascending: true })
+    ]);
 
     const profileMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
+    const imageMap = new Map<string, string>();
+    (images || []).forEach(img => {
+      if (!imageMap.has(img.property_id)) {
+        imageMap.set(img.property_id, img.url);
+      }
+    });
 
     const propertiesWithOwner = (data || []).map((p: any) => ({
       ...p,
       owner_name: profileMap.get(p.user_id) || 'Inconnu',
+      image_url: imageMap.get(p.id) || null,
     }));
 
     setProperties(propertiesWithOwner);
@@ -281,24 +308,33 @@ const AdminPage = () => {
   const fetchSponsoredProperties = async () => {
     const { data, error } = await supabase
       .from('properties')
-      .select('id, title, price, city, is_active, is_sponsored, sponsored_until, created_at, user_id')
+      .select('id, title, price, city, country, is_active, is_sponsored, sponsored_until, created_at, user_id')
       .eq('is_sponsored', true)
       .order('sponsored_until', { ascending: false });
     
     if (error) throw error;
 
-    // Fetch owner names separately
+    // Fetch owner names and images separately
     const userIds = [...new Set((data || []).map(p => p.user_id))];
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('user_id, full_name')
-      .in('user_id', userIds);
+    const propertyIds = (data || []).map(p => p.id);
+    
+    const [{ data: profiles }, { data: images }] = await Promise.all([
+      supabase.from('profiles').select('user_id, full_name').in('user_id', userIds),
+      supabase.from('property_images').select('property_id, url').in('property_id', propertyIds).order('display_order', { ascending: true })
+    ]);
 
     const profileMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
+    const imageMap = new Map<string, string>();
+    (images || []).forEach(img => {
+      if (!imageMap.has(img.property_id)) {
+        imageMap.set(img.property_id, img.url);
+      }
+    });
 
     const propertiesWithOwner = (data || []).map((p: any) => ({
       ...p,
       owner_name: profileMap.get(p.user_id) || 'Inconnu',
+      image_url: imageMap.get(p.id) || null,
     }));
 
     setProperties(propertiesWithOwner);
@@ -433,8 +469,20 @@ const AdminPage = () => {
   };
 
   const handleSponsorProperty = async () => {
+    if (!sponsorDialog.property) return;
+    
     try {
-      const sponsoredUntil = new Date(Date.now() + parseInt(sponsorDays) * 24 * 60 * 60 * 1000).toISOString();
+      let sponsoredUntil: string;
+      
+      if (sponsorMode === 'days') {
+        sponsoredUntil = new Date(Date.now() + parseInt(sponsorDays) * 24 * 60 * 60 * 1000).toISOString();
+      } else {
+        if (!sponsorEndDate) {
+          toast({ title: 'Veuillez sélectionner une date de fin', variant: 'destructive' });
+          return;
+        }
+        sponsoredUntil = sponsorEndDate.toISOString();
+      }
 
       const { error } = await supabase
         .from('properties')
@@ -443,12 +491,16 @@ const AdminPage = () => {
           sponsored_until: sponsoredUntil,
           sponsored_by: user?.id,
         })
-        .eq('id', sponsorDialog.propertyId);
+        .eq('id', sponsorDialog.property.id);
 
       if (error) throw error;
 
       toast({ title: 'Annonce sponsorisée' });
-      setSponsorDialog({ open: false, propertyId: '', propertyTitle: '' });
+      setSponsorDialog({ open: false, property: null });
+      setSponsorMode('days');
+      setSponsorDays('30');
+      setSponsorStartDate(new Date());
+      setSponsorEndDate(undefined);
       fetchProperties();
     } catch (error) {
       console.error('Error sponsoring property:', error);
@@ -757,7 +809,7 @@ const AdminPage = () => {
                           </button>
                         ) : (
                           <button
-                            onClick={() => setSponsorDialog({ open: true, propertyId: property.id, propertyTitle: property.title })}
+                            onClick={() => setSponsorDialog({ open: true, property })}
                             className="p-2 rounded-lg hover:bg-muted transition-colors"
                             title="Sponsoriser"
                           >
@@ -1050,34 +1102,175 @@ const AdminPage = () => {
       </Dialog>
 
       {/* Sponsor Dialog */}
-      <Dialog open={sponsorDialog.open} onOpenChange={(open) => setSponsorDialog({ ...sponsorDialog, open })}>
-        <DialogContent>
+      <Dialog open={sponsorDialog.open} onOpenChange={(open) => {
+        if (!open) {
+          setSponsorDialog({ open: false, property: null });
+          setSponsorMode('days');
+          setSponsorDays('30');
+          setSponsorStartDate(new Date());
+          setSponsorEndDate(undefined);
+        }
+      }}>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Sponsoriser l'annonce</DialogTitle>
-            <DialogDescription>
-              {sponsorDialog.propertyTitle}
-            </DialogDescription>
           </DialogHeader>
-          <div>
-            <Label>Durée du sponsoring</Label>
-            <Select value={sponsorDays} onValueChange={setSponsorDays}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">7 jours</SelectItem>
-                <SelectItem value="14">14 jours</SelectItem>
-                <SelectItem value="30">30 jours</SelectItem>
-                <SelectItem value="60">60 jours</SelectItem>
-                <SelectItem value="90">90 jours</SelectItem>
-              </SelectContent>
-            </Select>
+          
+          {/* Property Preview */}
+          {sponsorDialog.property && (
+            <div className="flex gap-4 p-4 bg-muted/50 rounded-xl">
+              {sponsorDialog.property.image_url ? (
+                <img 
+                  src={sponsorDialog.property.image_url} 
+                  alt={sponsorDialog.property.title}
+                  className="w-24 h-24 object-cover rounded-lg flex-shrink-0"
+                />
+              ) : (
+                <div className="w-24 h-24 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Home className="w-8 h-8 text-muted-foreground" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold truncate">{sponsorDialog.property.title}</h3>
+                <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>{sponsorDialog.property.city}</span>
+                  {sponsorDialog.property.country && (
+                    <>
+                      <span>•</span>
+                      <img 
+                        src={`https://flagcdn.com/w40/${sponsorDialog.property.country.toLowerCase()}.png`}
+                        alt=""
+                        className="w-4 h-3 object-cover rounded-sm"
+                      />
+                      <span>{africanCountries.find(c => c.code === sponsorDialog.property?.country)?.name || sponsorDialog.property.country}</span>
+                    </>
+                  )}
+                </div>
+                <p className="font-bold text-primary mt-2">
+                  {sponsorDialog.property.price.toLocaleString('fr-FR')} FCFA
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            {/* Mode Selection */}
+            <div className="flex gap-2">
+              <Button
+                variant={sponsorMode === 'days' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSponsorMode('days')}
+                className="flex-1"
+              >
+                <Clock className="w-4 h-4 mr-1" />
+                Nombre de jours
+              </Button>
+              <Button
+                variant={sponsorMode === 'dates' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSponsorMode('dates')}
+                className="flex-1"
+              >
+                <CalendarIcon className="w-4 h-4 mr-1" />
+                Dates personnalisées
+              </Button>
+            </div>
+
+            {sponsorMode === 'days' ? (
+              <div>
+                <Label>Durée du sponsoring</Label>
+                <Select value={sponsorDays} onValueChange={setSponsorDays}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7">7 jours</SelectItem>
+                    <SelectItem value="14">14 jours</SelectItem>
+                    <SelectItem value="30">30 jours</SelectItem>
+                    <SelectItem value="60">60 jours</SelectItem>
+                    <SelectItem value="90">90 jours</SelectItem>
+                    <SelectItem value="180">180 jours</SelectItem>
+                    <SelectItem value="365">1 an</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Fin prévue: {format(new Date(Date.now() + parseInt(sponsorDays) * 24 * 60 * 60 * 1000), 'dd MMMM yyyy', { locale: fr })}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <Label>Date de début</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !sponsorStartDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {sponsorStartDate ? format(sponsorStartDate, 'dd MMMM yyyy', { locale: fr }) : "Sélectionner"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={sponsorStartDate}
+                        onSelect={setSponsorStartDate}
+                        disabled={(date) => date < new Date()}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div>
+                  <Label>Date de fin</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !sponsorEndDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {sponsorEndDate ? format(sponsorEndDate, 'dd MMMM yyyy', { locale: fr }) : "Sélectionner"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={sponsorEndDate}
+                        onSelect={setSponsorEndDate}
+                        disabled={(date) => date < (sponsorStartDate || new Date())}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                {sponsorStartDate && sponsorEndDate && (
+                  <p className="text-xs text-muted-foreground">
+                    Durée: {Math.ceil((sponsorEndDate.getTime() - sponsorStartDate.getTime()) / (1000 * 60 * 60 * 24))} jours
+                  </p>
+                )}
+              </div>
+            )}
           </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSponsorDialog({ open: false, propertyId: '', propertyTitle: '' })}>
+            <Button variant="outline" onClick={() => setSponsorDialog({ open: false, property: null })}>
               Annuler
             </Button>
-            <Button onClick={handleSponsorProperty}>
+            <Button 
+              onClick={handleSponsorProperty}
+              disabled={sponsorMode === 'dates' && !sponsorEndDate}
+            >
               <Star className="w-4 h-4 mr-1" />
               Sponsoriser
             </Button>
