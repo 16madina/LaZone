@@ -35,7 +35,6 @@ Nous nous réservons le droit de modifier ces CGU à tout moment. Les modificati
 Pour accéder à certaines fonctionnalités, vous devez créer un compte en fournissant :
 - Nom et prénom
 - Adresse email valide
-- Numéro de téléphone
 - Pays de résidence
 - Photo de profil (optionnelle)
 
