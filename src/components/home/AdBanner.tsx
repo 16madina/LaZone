@@ -7,9 +7,16 @@ interface AdBannerProps {
 }
 
 export const AdBanner = ({ imageUrl, linkUrl, title }: AdBannerProps) => {
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (linkUrl) {
-      window.open(linkUrl, '_blank', 'noopener,noreferrer');
+      // Ensure URL has protocol
+      let url = linkUrl;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
 
