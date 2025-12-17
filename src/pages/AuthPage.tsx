@@ -55,6 +55,12 @@ const AuthPage = () => {
   const [isDiaspora, setIsDiaspora] = useState(false);
   const [residenceCountry, setResidenceCountry] = useState<DiasporaCountry | null>(null);
   const [showResidenceDropdown, setShowResidenceDropdown] = useState(false);
+  
+  // Signup phone verification states
+  const [signupOtpSent, setSignupOtpSent] = useState(false);
+  const [signupOtp, setSignupOtp] = useState('');
+  const [signupPhoneNumber, setSignupPhoneNumber] = useState('');
+  const [signupOtpCooldown, setSignupOtpCooldown] = useState(0);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -69,7 +75,7 @@ const AuthPage = () => {
 
   const availableCities = formData.country?.cities || [];
 
-  // OTP cooldown timer
+  // OTP cooldown timer (login)
   useEffect(() => {
     if (otpCooldown <= 0) return;
     const timer = setInterval(() => {
@@ -77,6 +83,15 @@ const AuthPage = () => {
     }, 1000);
     return () => clearInterval(timer);
   }, [otpCooldown]);
+
+  // Signup OTP cooldown timer
+  useEffect(() => {
+    if (signupOtpCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setSignupOtpCooldown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [signupOtpCooldown]);
 
   const FlagImg = ({
     code,
@@ -367,7 +382,6 @@ const AuthPage = () => {
         if (data.user && avatarFile) {
           const avatarUrl = await uploadAvatar(data.user.id, avatarFile);
           if (avatarUrl) {
-            // Update profile with avatar URL
             await supabase
               .from('profiles')
               .update({ avatar_url: avatarUrl })
@@ -380,11 +394,31 @@ const AuthPage = () => {
           await sendVerificationEmail(formData.email, formData.firstName, data.user.id);
         }
         
-        toast({ 
-          title: 'Compte créé', 
-          description: 'Un email de vérification vous a été envoyé!' 
-        });
-        navigate('/profile');
+        // Send OTP to verify phone number
+        try {
+          const { data: otpData, error: otpError } = await supabase.functions.invoke('send-otp', {
+            body: { phoneNumber: fullPhoneNumber },
+          });
+          
+          if (otpError) throw otpError;
+          if (otpData?.error) throw new Error(otpData.error);
+          
+          setSignupPhoneNumber(fullPhoneNumber);
+          setSignupOtpSent(true);
+          setSignupOtpCooldown(60);
+          toast({ 
+            title: 'Compte créé!', 
+            description: 'Vérifiez votre téléphone pour le code de confirmation' 
+          });
+        } catch (otpErr) {
+          console.error('Error sending signup OTP:', otpErr);
+          // If OTP fails, still allow access but inform user
+          toast({ 
+            title: 'Compte créé', 
+            description: 'La vérification du téléphone a échoué, mais votre compte est actif.' 
+          });
+          navigate('/');
+        }
       }
     } catch (error: any) {
       let message = 'Une erreur est survenue';
@@ -396,6 +430,55 @@ const AuthPage = () => {
         message = 'Le mot de passe doit contenir au moins 6 caractères';
       }
       toast({ title: 'Erreur', description: message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifySignupOtp = async () => {
+    if (!signupOtp || signupOtp.length !== 6) {
+      toast({ title: 'Erreur', description: 'Veuillez entrer le code à 6 chiffres', variant: 'destructive' });
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-otp', {
+        body: { phoneNumber: signupPhoneNumber, otp: signupOtp, skipLogin: true },
+      });
+      
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      
+      // Phone verified successfully
+      
+      toast({ title: 'Téléphone vérifié!', description: 'Bienvenue sur LaZone!' });
+      navigate('/');
+    } catch (error: any) {
+      console.error('Error verifying signup OTP:', error);
+      toast({ title: 'Erreur', description: 'Code invalide ou expiré', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendSignupOtp = async () => {
+    if (signupOtpCooldown > 0) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-otp', {
+        body: { phoneNumber: signupPhoneNumber },
+      });
+      
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      
+      setSignupOtpCooldown(60);
+      toast({ title: 'Code renvoyé', description: 'Un nouveau code a été envoyé à votre téléphone' });
+    } catch (error: any) {
+      console.error('Error resending signup OTP:', error);
+      toast({ title: 'Erreur', description: error.message || 'Impossible de renvoyer le code', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -458,15 +541,84 @@ const AuthPage = () => {
           className="bg-card/90 backdrop-blur-md rounded-3xl shadow-2xl border border-border/50 p-6 max-w-md mx-auto max-h-[calc(100vh-140px)] overflow-y-auto scrollbar-hide"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {/* Title */}
-          <div className="text-center mb-6">
-            <h1 className="font-display text-2xl font-bold mb-1">
-              {isLogin ? 'Bon retour!' : 'Créer un compte'}
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              {isLogin ? 'Connectez-vous pour accéder à vos favoris' : 'Rejoignez la communauté LaZone'}
-            </p>
-          </div>
+          {/* Signup OTP Verification Screen */}
+          {signupOtpSent ? (
+            <>
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Phone className="w-8 h-8 text-primary" />
+                </div>
+                <h1 className="font-display text-2xl font-bold mb-1">
+                  Vérifiez votre téléphone
+                </h1>
+                <p className="text-muted-foreground text-sm">
+                  Un code de vérification a été envoyé au
+                </p>
+                <p className="text-foreground font-medium mt-1">{signupPhoneNumber}</p>
+              </div>
+
+              <div className="space-y-4">
+                {/* OTP Input */}
+                <div className="glass-card p-1">
+                  <div className="flex items-center gap-2 px-3 py-2.5">
+                    <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="Code à 6 chiffres"
+                      value={signupOtp}
+                      onChange={(e) => setSignupOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      className="flex-1 bg-transparent outline-none text-sm text-center tracking-widest font-mono"
+                      maxLength={6}
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleVerifySignupOtp}
+                  disabled={loading || signupOtp.length !== 6}
+                  className="w-full gradient-primary py-4 rounded-2xl text-primary-foreground font-display font-semibold shadow-lg disabled:opacity-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                      Vérification...
+                    </span>
+                  ) : (
+                    <>Vérifier et continuer</>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResendSignupOtp}
+                  disabled={signupOtpCooldown > 0 || loading}
+                  className="w-full text-sm text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {signupOtpCooldown > 0 ? `Renvoyer le code (${signupOtpCooldown}s)` : 'Renvoyer le code'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate('/')}
+                  className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Passer cette étape
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Title */}
+              <div className="text-center mb-6">
+                <h1 className="font-display text-2xl font-bold mb-1">
+                  {isLogin ? 'Bon retour!' : 'Créer un compte'}
+                </h1>
+                <p className="text-muted-foreground text-sm">
+                  {isLogin ? 'Connectez-vous pour accéder à vos favoris' : 'Rejoignez la communauté LaZone'}
+                </p>
+              </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-3">
@@ -1085,6 +1237,8 @@ const AuthPage = () => {
             </button>
           </p>
         </div>
+            </>
+          )}
         </motion.div>
       </div>
 
