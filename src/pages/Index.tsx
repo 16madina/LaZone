@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Loader2, Info } from 'lucide-react';
+import { Loader2, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SearchBar } from '@/components/home/SearchBar';
 import { FilterChips } from '@/components/home/FilterChips';
@@ -7,6 +7,7 @@ import { SponsoredPropertiesSection } from '@/components/home/SponsoredPropertie
 import { PropertyCard } from '@/components/property/PropertyCard';
 import { CountrySelector } from '@/components/home/CountrySelector';
 import { NotificationDropdown } from '@/components/NotificationDropdown';
+import { ProfileDropdown } from '@/components/ProfileDropdown';
 import { AdBanner } from '@/components/home/AdBanner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import SectionTutorialButton from '@/components/tutorial/SectionTutorialButton';
@@ -191,7 +192,7 @@ const Index = () => {
         <div className="relative z-10">
           {/* Header */}
           <header className="flex items-center justify-between mb-8">
-            <img src={logoLazone} alt="LaZone" className="h-14" />
+            <img src={logoLazone} alt="LaZone" className="h-10" />
             <div className="flex items-center gap-3">
               <CountrySelector 
                 selectedCountry={selectedCountry} 
@@ -199,17 +200,7 @@ const Index = () => {
                 isAuthenticated={!!user}
               />
               <NotificationDropdown variant="hero" />
-              <Link to={user ? "/profile" : "/auth"} className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform overflow-hidden">
-                {user && profile?.avatar_url ? (
-                  <img 
-                    src={profile.avatar_url} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <User className="w-5 h-5 text-white" />
-                )}
-              </Link>
+              <ProfileDropdown variant="hero" />
             </div>
           </header>
 

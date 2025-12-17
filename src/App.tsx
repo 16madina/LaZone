@@ -38,6 +38,7 @@ import PublicProfilePage from "./pages/PublicProfilePage";
 import NotificationsPage from "./pages/NotificationsPage";
 import FollowersPage from "./pages/FollowersPage";
 import InstallPage from "./pages/InstallPage";
+import DashboardPage from "./pages/DashboardPage";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +77,7 @@ const App = () => {
                       <Route path="/followers" element={<FollowersPage />} />
                       <Route path="/followers/:userId" element={<FollowersPage />} />
                       <Route path="/install" element={<InstallPage />} />
+                      <Route path="/dashboard" element={<DashboardPage />} />
                       <Route path="/admin" element={<AdminPage />} />
                       <Route path="/settings/edit-profile" element={<EditProfilePage />} />
                       <Route path="/settings/change-password" element={<ChangePasswordPage />} />
