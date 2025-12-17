@@ -365,4 +365,13 @@
   .marker-cluster div {
     background: linear-gradient(135deg, #ea580c, #f97316) !important;
   }
+
+  /* Property Card Swiper Pagination */
+  .property-card-swiper .swiper-pagination {
+    bottom: 8px !important;
+  }
+
+  .property-card-swiper .swiper-pagination-bullet {
+    transition: all 0.2s ease;
+  }
 }
