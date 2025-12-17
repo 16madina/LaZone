@@ -138,7 +138,7 @@ const Index = () => {
                 isAuthenticated={!!user}
               />
               <NotificationDropdown variant="hero" />
-              <Link to="/profile" className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform overflow-hidden">
+              <Link to={user ? "/profile" : "/auth"} className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center active:scale-90 transition-transform overflow-hidden">
                 {user && profile?.avatar_url ? (
                   <img 
                     src={profile.avatar_url} 
