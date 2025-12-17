@@ -3,6 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from './use-toast';
 
+interface MessageReaction {
+  id: string;
+  message_id: string;
+  user_id: string;
+  emoji: string;
+  created_at: string;
+}
+
 interface Message {
   id: string;
   content: string;
@@ -14,6 +22,7 @@ interface Message {
   attachment_url?: string | null;
   attachment_type?: string | null;
   attachment_name?: string | null;
+  reactions?: MessageReaction[];
 }
 
 interface Conversation {
@@ -211,7 +220,30 @@ export const useConversation = (participantId: string | null) => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setMessages((data as Message[]) || []);
+
+      // Fetch reactions for all messages
+      const messageIds = data?.map(m => m.id) || [];
+      let reactionsMap = new Map<string, MessageReaction[]>();
+
+      if (messageIds.length > 0) {
+        const { data: reactions } = await supabase
+          .from('message_reactions')
+          .select('*')
+          .in('message_id', messageIds);
+
+        reactions?.forEach(r => {
+          const existing = reactionsMap.get(r.message_id) || [];
+          existing.push(r as MessageReaction);
+          reactionsMap.set(r.message_id, existing);
+        });
+      }
+
+      const messagesWithReactions = (data || []).map(m => ({
+        ...m,
+        reactions: reactionsMap.get(m.id) || []
+      })) as Message[];
+
+      setMessages(messagesWithReactions);
 
       // Mark messages as read
       await supabase
@@ -310,6 +342,72 @@ export const useConversation = (participantId: string | null) => {
     }
   };
 
+  const deleteMessage = async (messageId: string) => {
+    if (!user) return { error: 'Not authenticated' };
+
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('sender_id', user.id);
+
+      if (error) throw error;
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+      return { error: null };
+    } catch (error: any) {
+      console.error('Error deleting message:', error);
+      return { error: error.message };
+    }
+  };
+
+  const addReaction = async (messageId: string, emoji: string) => {
+    if (!user) return { error: 'Not authenticated' };
+
+    try {
+      const { error } = await supabase
+        .from('message_reactions')
+        .insert({
+          message_id: messageId,
+          user_id: user.id,
+          emoji
+        });
+
+      if (error) {
+        // If duplicate, remove reaction instead
+        if (error.code === '23505') {
+          return removeReaction(messageId, emoji);
+        }
+        throw error;
+      }
+      await fetchMessages();
+      return { error: null };
+    } catch (error: any) {
+      console.error('Error adding reaction:', error);
+      return { error: error.message };
+    }
+  };
+
+  const removeReaction = async (messageId: string, emoji: string) => {
+    if (!user) return { error: 'Not authenticated' };
+
+    try {
+      const { error } = await supabase
+        .from('message_reactions')
+        .delete()
+        .eq('message_id', messageId)
+        .eq('user_id', user.id)
+        .eq('emoji', emoji);
+
+      if (error) throw error;
+      await fetchMessages();
+      return { error: null };
+    } catch (error: any) {
+      console.error('Error removing reaction:', error);
+      return { error: error.message };
+    }
+  };
+
   const uploadAttachment = async (file: File): Promise<{ url: string; type: 'image' | 'file'; name: string } | null> => {
     if (!user) return null;
 
@@ -360,6 +458,9 @@ export const useConversation = (participantId: string | null) => {
     messages,
     loading,
     sendMessage,
+    deleteMessage,
+    addReaction,
+    removeReaction,
     uploadAttachment,
     refetch: fetchMessages,
     isTyping,
