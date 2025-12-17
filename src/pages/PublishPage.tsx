@@ -9,6 +9,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { filterMultipleFields, getContentViolationMessage } from '@/lib/contentFilter';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -377,6 +378,22 @@ const PublishPage = () => {
       toast({ 
         title: 'Formulaire incomplet', 
         description: 'Veuillez corriger les erreurs avant de publier',
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    // Content filtering check
+    const contentCheck = filterMultipleFields({
+      title: title.trim(),
+      description: description.trim(),
+      address: address.trim(),
+    });
+
+    if (!contentCheck.isClean) {
+      toast({ 
+        title: 'Contenu inapproprié détecté', 
+        description: getContentViolationMessage(contentCheck.allFlaggedWords),
         variant: 'destructive' 
       });
       return;

@@ -60,9 +60,32 @@ export const ReportUserDialog = ({ userId, userName, trigger }: ReportUserDialog
 
     setLoading(true);
     try {
-      // We'll store this in a user_reports table or handle via admin messaging
-      // For now, send an admin notification
-      const { error } = await supabase.functions.invoke('send-admin-message', {
+      // Save report to user_reports table
+      const { error: dbError } = await supabase
+        .from('user_reports')
+        .insert({
+          reported_user_id: userId,
+          reporter_id: user.id,
+          reason,
+          description: description || null,
+        });
+
+      if (dbError) {
+        // If duplicate report, show appropriate message
+        if (dbError.code === '23505') {
+          toast({
+            title: 'Déjà signalé',
+            description: 'Vous avez déjà signalé cet utilisateur.',
+            variant: 'destructive',
+          });
+          setOpen(false);
+          return;
+        }
+        throw dbError;
+      }
+
+      // Also send admin notification
+      await supabase.functions.invoke('send-admin-message', {
         body: {
           userId: user.id,
           subject: `Signalement d'utilisateur: ${userName || userId}`,
@@ -81,8 +104,6 @@ export const ReportUserDialog = ({ userId, userName, trigger }: ReportUserDialog
         }
       });
 
-      if (error) throw error;
-
       toast({
         title: 'Signalement envoyé',
         description: 'Merci pour votre signalement. Notre équipe va l\'examiner.',
@@ -94,12 +115,10 @@ export const ReportUserDialog = ({ userId, userName, trigger }: ReportUserDialog
     } catch (error) {
       console.error('Error reporting user:', error);
       toast({
-        title: 'Signalement enregistré',
-        description: 'Votre signalement a été pris en compte.',
+        title: 'Erreur',
+        description: 'Une erreur est survenue lors du signalement.',
+        variant: 'destructive',
       });
-      setOpen(false);
-      setReason('');
-      setDescription('');
     } finally {
       setLoading(false);
     }

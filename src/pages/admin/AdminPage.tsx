@@ -182,6 +182,18 @@ interface ReportData {
   created_at: string;
 }
 
+interface UserReportData {
+  id: string;
+  reported_user_id: string;
+  reported_user_name?: string;
+  reporter_id: string;
+  reporter_name?: string;
+  reason: string;
+  description: string | null;
+  status: string;
+  created_at: string;
+}
+
 interface AdminData {
   id: string;
   user_id: string;
@@ -329,6 +341,7 @@ const AdminPage = () => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [properties, setProperties] = useState<PropertyData[]>([]);
   const [reports, setReports] = useState<ReportData[]>([]);
+  const [userReports, setUserReports] = useState<UserReportData[]>([]);
   const [admins, setAdmins] = useState<AdminData[]>([]);
   const [banners, setBanners] = useState<BannerData[]>([]);
   
@@ -565,6 +578,7 @@ const AdminPage = () => {
   };
 
   const fetchReports = async () => {
+    // Fetch property reports
     const { data, error } = await supabase
       .from('property_reports')
       .select('*')
@@ -591,6 +605,37 @@ const AdminPage = () => {
     }));
 
     setReports(reportsWithDetails);
+
+    // Fetch user reports
+    const { data: userReportsData, error: userReportsError } = await supabase
+      .from('user_reports')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (userReportsError) throw userReportsError;
+
+    // Fetch reporter and reported user names
+    const allUserIds = [
+      ...new Set([
+        ...(userReportsData || []).map(r => r.reporter_id),
+        ...(userReportsData || []).map(r => r.reported_user_id)
+      ])
+    ];
+
+    const { data: userProfiles } = await supabase
+      .from('profiles')
+      .select('user_id, full_name')
+      .in('user_id', allUserIds);
+
+    const userProfileMap = new Map((userProfiles || []).map(p => [p.user_id, p.full_name]));
+
+    const userReportsWithDetails = (userReportsData || []).map((r: any) => ({
+      ...r,
+      reported_user_name: userProfileMap.get(r.reported_user_id) || 'Inconnu',
+      reporter_name: userProfileMap.get(r.reporter_id) || 'Anonyme',
+    }));
+
+    setUserReports(userReportsWithDetails);
   };
 
   const fetchAdmins = async () => {
@@ -920,6 +965,27 @@ const AdminPage = () => {
     }
   };
 
+  const handleUserReportAction = async (reportId: string, action: 'resolved' | 'dismissed') => {
+    try {
+      const { error } = await supabase
+        .from('user_reports')
+        .update({
+          status: action,
+          reviewed_by: user?.id,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq('id', reportId);
+
+      if (error) throw error;
+
+      toast({ title: action === 'resolved' ? 'Signalement résolu' : 'Signalement rejeté' });
+      fetchReports();
+    } catch (error) {
+      console.error('Error updating user report:', error);
+      toast({ title: 'Erreur', variant: 'destructive' });
+    }
+  };
+
   const handleDeleteUser = async (userId: string) => {
     toast({ 
       title: 'Action non disponible', 
@@ -1158,6 +1224,17 @@ const AdminPage = () => {
       inappropriate_content: 'Contenu inapproprié',
       fraud: 'Fraude',
       false_info: 'Fausse information',
+      other: 'Autre',
+    };
+    return labels[reason] || reason;
+  };
+
+  const getUserReportReasonLabel = (reason: string) => {
+    const labels: Record<string, string> = {
+      harassment: 'Harcèlement',
+      spam: 'Spam ou publicité',
+      fraud: 'Fraude ou arnaque',
+      inappropriate_content: 'Contenu inapproprié',
       other: 'Autre',
     };
     return labels[reason] || reason;
@@ -1482,72 +1559,152 @@ const AdminPage = () => {
 
             {/* Reports Tab */}
             {activeTab === 'reports' && (
-              <div className="space-y-3">
-                {reports.filter(r => r.status === 'pending').length > 0 && (
-                  <div className="mb-4">
-                    <h3 className="font-medium text-sm text-muted-foreground mb-2">En attente</h3>
-                    {reports.filter(r => r.status === 'pending').map((report) => (
-                      <div key={report.id} className="bg-card rounded-xl p-4 shadow-sm mb-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-medium truncate">{report.property_title}</h3>
-                            <Badge variant="outline" className="mt-1">{getReasonLabel(report.reason)}</Badge>
-                            {report.description && (
-                              <p className="text-sm text-muted-foreground mt-2">{report.description}</p>
-                            )}
-                            <p className="text-xs text-muted-foreground mt-2">Par {report.reporter_name}</p>
-                          </div>
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => navigate(`/property/${report.property_id}`)}
-                              className="p-2 rounded-lg hover:bg-muted transition-colors"
-                              title="Voir l'annonce"
-                            >
-                              <Eye className="w-4 h-4 text-muted-foreground" />
-                            </button>
-                            <button
-                              onClick={() => handleReportAction(report.id, 'resolved')}
-                              className="p-2 rounded-lg hover:bg-muted transition-colors"
-                              title="Résoudre"
-                            >
-                              <Check className="w-4 h-4 text-green-500" />
-                            </button>
-                            <button
-                              onClick={() => handleReportAction(report.id, 'dismissed')}
-                              className="p-2 rounded-lg hover:bg-muted transition-colors"
-                              title="Rejeter"
-                            >
-                              <X className="w-4 h-4 text-destructive" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {reports.filter(r => r.status !== 'pending').length > 0 && (
-                  <div>
-                    <h3 className="font-medium text-sm text-muted-foreground mb-2">Traités</h3>
-                    {reports.filter(r => r.status !== 'pending').map((report) => (
-                      <div key={report.id} className="bg-card rounded-xl p-4 shadow-sm mb-3 opacity-60">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-medium truncate">{report.property_title}</h3>
-                            <div className="flex gap-2 mt-1">
-                              <Badge variant="outline">{getReasonLabel(report.reason)}</Badge>
-                              <Badge variant={report.status === 'resolved' ? 'default' : 'secondary'}>
-                                {report.status === 'resolved' ? 'Résolu' : 'Rejeté'}
-                              </Badge>
+              <div className="space-y-6">
+                {/* Property Reports Section */}
+                <div>
+                  <h2 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <Home className="w-5 h-5" />
+                    Signalements d'annonces
+                  </h2>
+                  {reports.filter(r => r.status === 'pending').length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="font-medium text-sm text-muted-foreground mb-2">En attente</h3>
+                      {reports.filter(r => r.status === 'pending').map((report) => (
+                        <div key={report.id} className="bg-card rounded-xl p-4 shadow-sm mb-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-medium truncate">{report.property_title}</h3>
+                              <Badge variant="outline" className="mt-1">{getReasonLabel(report.reason)}</Badge>
+                              {report.description && (
+                                <p className="text-sm text-muted-foreground mt-2">{report.description}</p>
+                              )}
+                              <p className="text-xs text-muted-foreground mt-2">Par {report.reporter_name}</p>
+                            </div>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => navigate(`/property/${report.property_id}`)}
+                                className="p-2 rounded-lg hover:bg-muted transition-colors"
+                                title="Voir l'annonce"
+                              >
+                                <Eye className="w-4 h-4 text-muted-foreground" />
+                              </button>
+                              <button
+                                onClick={() => handleReportAction(report.id, 'resolved')}
+                                className="p-2 rounded-lg hover:bg-muted transition-colors"
+                                title="Résoudre"
+                              >
+                                <Check className="w-4 h-4 text-green-500" />
+                              </button>
+                              <button
+                                onClick={() => handleReportAction(report.id, 'dismissed')}
+                                className="p-2 rounded-lg hover:bg-muted transition-colors"
+                                title="Rejeter"
+                              >
+                                <X className="w-4 h-4 text-destructive" />
+                              </button>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {reports.length === 0 && (
-                  <p className="text-center text-muted-foreground py-8">Aucun signalement</p>
-                )}
+                      ))}
+                    </div>
+                  )}
+                  {reports.filter(r => r.status !== 'pending').length > 0 && (
+                    <div>
+                      <h3 className="font-medium text-sm text-muted-foreground mb-2">Traités</h3>
+                      {reports.filter(r => r.status !== 'pending').map((report) => (
+                        <div key={report.id} className="bg-card rounded-xl p-4 shadow-sm mb-3 opacity-60">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-medium truncate">{report.property_title}</h3>
+                              <div className="flex gap-2 mt-1">
+                                <Badge variant="outline">{getReasonLabel(report.reason)}</Badge>
+                                <Badge variant={report.status === 'resolved' ? 'default' : 'secondary'}>
+                                  {report.status === 'resolved' ? 'Résolu' : 'Rejeté'}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {reports.length === 0 && (
+                    <p className="text-center text-muted-foreground py-4">Aucun signalement d'annonce</p>
+                  )}
+                </div>
+
+                {/* User Reports Section */}
+                <div>
+                  <h2 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    Signalements d'utilisateurs
+                  </h2>
+                  {userReports.filter(r => r.status === 'pending').length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="font-medium text-sm text-muted-foreground mb-2">En attente</h3>
+                      {userReports.filter(r => r.status === 'pending').map((report) => (
+                        <div key={report.id} className="bg-card rounded-xl p-4 shadow-sm mb-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-medium truncate">{report.reported_user_name}</h3>
+                              <Badge variant="outline" className="mt-1">{getUserReportReasonLabel(report.reason)}</Badge>
+                              {report.description && (
+                                <p className="text-sm text-muted-foreground mt-2">{report.description}</p>
+                              )}
+                              <p className="text-xs text-muted-foreground mt-2">Par {report.reporter_name}</p>
+                            </div>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => navigate(`/user/${report.reported_user_id}`)}
+                                className="p-2 rounded-lg hover:bg-muted transition-colors"
+                                title="Voir le profil"
+                              >
+                                <Eye className="w-4 h-4 text-muted-foreground" />
+                              </button>
+                              <button
+                                onClick={() => handleUserReportAction(report.id, 'resolved')}
+                                className="p-2 rounded-lg hover:bg-muted transition-colors"
+                                title="Résoudre"
+                              >
+                                <Check className="w-4 h-4 text-green-500" />
+                              </button>
+                              <button
+                                onClick={() => handleUserReportAction(report.id, 'dismissed')}
+                                className="p-2 rounded-lg hover:bg-muted transition-colors"
+                                title="Rejeter"
+                              >
+                                <X className="w-4 h-4 text-destructive" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {userReports.filter(r => r.status !== 'pending').length > 0 && (
+                    <div>
+                      <h3 className="font-medium text-sm text-muted-foreground mb-2">Traités</h3>
+                      {userReports.filter(r => r.status !== 'pending').map((report) => (
+                        <div key={report.id} className="bg-card rounded-xl p-4 shadow-sm mb-3 opacity-60">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-medium truncate">{report.reported_user_name}</h3>
+                              <div className="flex gap-2 mt-1">
+                                <Badge variant="outline">{getUserReportReasonLabel(report.reason)}</Badge>
+                                <Badge variant={report.status === 'resolved' ? 'default' : 'secondary'}>
+                                  {report.status === 'resolved' ? 'Résolu' : 'Rejeté'}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {userReports.length === 0 && (
+                    <p className="text-center text-muted-foreground py-4">Aucun signalement d'utilisateur</p>
+                  )}
+                </div>
               </div>
             )}
 

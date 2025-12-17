@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from './use-toast';
 import { getSoundInstance } from './useSound';
+import { filterContent, getContentViolationMessage } from '@/lib/contentFilter';
 
 interface MessageReaction {
   id: string;
@@ -502,6 +503,17 @@ export const useConversation = (participantId: string | null, propertyId: string
 
   const sendMessage = async (content: string, attachment?: { url: string; type: 'image' | 'file'; name: string }, replyToId?: string) => {
     if (!user || !participantId || !propertyId) return { error: 'Not authenticated' };
+
+    // Content filtering check
+    const contentCheck = filterContent(content);
+    if (!contentCheck.isClean) {
+      toast({
+        title: 'Contenu inapproprié',
+        description: getContentViolationMessage(contentCheck.flaggedWords),
+        variant: 'destructive',
+      });
+      return { error: 'Inappropriate content detected' };
+    }
 
     try {
       const { error } = await supabase
