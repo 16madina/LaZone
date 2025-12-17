@@ -637,10 +637,14 @@ const AdminPage = () => {
     u.phone?.includes(searchQuery)
   );
 
-  const filteredProperties = properties.filter(p =>
-    p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.city.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProperties = properties.filter(p => {
+    const query = searchQuery.toLowerCase();
+    return p.title.toLowerCase().includes(query) ||
+      p.city.toLowerCase().includes(query) ||
+      (p.owner_name?.toLowerCase().includes(query)) ||
+      (p.country?.toLowerCase().includes(query)) ||
+      (africanCountries.find(c => c.code === p.country)?.name.toLowerCase().includes(query));
+  });
 
   if (loadingRoles) {
     return (
