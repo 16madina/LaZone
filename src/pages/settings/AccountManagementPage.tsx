@@ -33,11 +33,65 @@ const AccountManagementPage = () => {
 
     setLoading(true);
     try {
-      // Delete user data from profiles
-      await supabase.from('profiles').delete().eq('user_id', user?.id);
+      const userId = user?.id;
+      if (!userId) throw new Error('User not found');
+
+      // Delete all user related data in order (respecting foreign key constraints)
+      // 1. Delete message reactions (depends on messages)
+      await supabase.from('message_reactions').delete().eq('user_id', userId);
       
-      // Delete user properties
-      await supabase.from('properties').delete().eq('user_id', user?.id);
+      // 2. Delete messages where user is sender or receiver
+      await supabase.from('messages').delete().eq('sender_id', userId);
+      await supabase.from('messages').delete().eq('receiver_id', userId);
+      
+      // 3. Delete appointments
+      await supabase.from('appointments').delete().eq('requester_id', userId);
+      await supabase.from('appointments').delete().eq('owner_id', userId);
+      
+      // 4. Delete archived conversations
+      await supabase.from('archived_conversations').delete().eq('user_id', userId);
+      
+      // 5. Delete favorites
+      await supabase.from('favorites').delete().eq('user_id', userId);
+      
+      // 6. Delete FCM tokens
+      await supabase.from('fcm_tokens').delete().eq('user_id', userId);
+      
+      // 7. Delete notifications
+      await supabase.from('notifications').delete().eq('user_id', userId);
+      await supabase.from('notifications').delete().eq('actor_id', userId);
+      
+      // 8. Delete property images (needs to be done before properties)
+      const { data: userProperties } = await supabase
+        .from('properties')
+        .select('id')
+        .eq('user_id', userId);
+      
+      if (userProperties && userProperties.length > 0) {
+        const propertyIds = userProperties.map(p => p.id);
+        await supabase.from('property_images').delete().in('property_id', propertyIds);
+        await supabase.from('property_reports').delete().in('property_id', propertyIds);
+      }
+      
+      // 9. Delete property reports made by user
+      await supabase.from('property_reports').delete().eq('reporter_id', userId);
+      
+      // 10. Delete push subscriptions
+      await supabase.from('push_subscriptions').delete().eq('user_id', userId);
+      
+      // 11. Delete user follows
+      await supabase.from('user_follows').delete().eq('follower_id', userId);
+      await supabase.from('user_follows').delete().eq('following_id', userId);
+      
+      // 12. Delete user reviews
+      await supabase.from('user_reviews').delete().eq('reviewer_id', userId);
+      await supabase.from('user_reviews').delete().eq('reviewed_user_id', userId);
+      
+      // 13. Delete user properties
+      await supabase.from('properties').delete().eq('user_id', userId);
+      
+      // 14. Delete user profile
+      await supabase.from('profiles').delete().eq('user_id', userId);
       
       // Sign out
       await signOut();
