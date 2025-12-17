@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, getDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { 
   CalendarDays, 
@@ -10,7 +10,10 @@ import {
   MessageCircle,
   Clock,
   MapPin,
-  User
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  List
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -51,6 +54,9 @@ export const AppointmentsTab = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -126,15 +132,52 @@ export const AppointmentsTab = () => {
     };
   };
 
+  const sendAppointmentNotification = async (
+    userId: string, 
+    status: 'approved' | 'rejected',
+    propertyTitle: string
+  ) => {
+    try {
+      const title = status === 'approved' 
+        ? 'Rendez-vous approuvé ✓' 
+        : 'Rendez-vous refusé';
+      const body = status === 'approved'
+        ? `Votre demande de visite pour "${propertyTitle}" a été acceptée !`
+        : `Votre demande de visite pour "${propertyTitle}" a été refusée.`;
+
+      await supabase.functions.invoke('send-push-notification', {
+        body: {
+          userId,
+          title,
+          body,
+          data: { type: 'appointment', status }
+        }
+      });
+    } catch (error) {
+      console.error('Error sending push notification:', error);
+    }
+  };
+
   const handleUpdateStatus = async (appointmentId: string, status: 'approved' | 'rejected') => {
     setProcessingId(appointmentId);
     try {
+      const appointment = appointments.find(a => a.id === appointmentId);
+      
       const { error } = await supabase
         .from('appointments')
         .update({ status })
         .eq('id', appointmentId);
 
       if (error) throw error;
+
+      // Send push notification to requester
+      if (appointment) {
+        await sendAppointmentNotification(
+          appointment.requester_id,
+          status,
+          appointment.property?.title || 'Propriété'
+        );
+      }
 
       toast({
         title: status === 'approved' ? 'Rendez-vous approuvé' : 'Rendez-vous refusé',
@@ -176,22 +219,25 @@ export const AppointmentsTab = () => {
     }
   };
 
+  const getAppointmentsForDate = (date: Date) => {
+    return appointments.filter(a => isSameDay(new Date(a.requested_date), date));
+  };
+
+  const getDaysInMonth = () => {
+    const start = startOfMonth(currentMonth);
+    const end = endOfMonth(currentMonth);
+    return eachDayOfInterval({ start, end });
+  };
+
+  const getStartPadding = () => {
+    const firstDay = getDay(startOfMonth(currentMonth));
+    return firstDay === 0 ? 6 : firstDay - 1; // Monday = 0
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (appointments.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <CalendarDays className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-        <h3 className="font-semibold mb-1">Aucun rendez-vous</h3>
-        <p className="text-sm text-muted-foreground">
-          Vos demandes et rendez-vous apparaîtront ici
-        </p>
       </div>
     );
   }
@@ -297,44 +343,206 @@ export const AppointmentsTab = () => {
     </motion.div>
   );
 
-  return (
-    <Tabs defaultValue="received" className="w-full">
-      <TabsList className="grid w-full grid-cols-2 mb-4">
-        <TabsTrigger value="received" className="relative">
-          Reçus
-          {receivedAppointments.filter(a => a.status === 'pending').length > 0 && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center">
-              {receivedAppointments.filter(a => a.status === 'pending').length}
-            </span>
+  const CalendarView = () => {
+    const days = getDaysInMonth();
+    const padding = getStartPadding();
+    const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+
+    return (
+      <div className="space-y-4">
+        {/* Calendar Header */}
+        <div className="flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </Button>
+          <h3 className="font-semibold text-lg">
+            {format(currentMonth, 'MMMM yyyy', { locale: fr })}
+          </h3>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+          >
+            <ChevronRight className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Week Days */}
+        <div className="grid grid-cols-7 gap-1">
+          {weekDays.map(day => (
+            <div key={day} className="text-center text-xs font-medium text-muted-foreground py-2">
+              {day}
+            </div>
+          ))}
+        </div>
+
+        {/* Calendar Grid */}
+        <div className="grid grid-cols-7 gap-1">
+          {/* Padding for first week */}
+          {Array.from({ length: padding }).map((_, i) => (
+            <div key={`pad-${i}`} className="aspect-square" />
+          ))}
+
+          {/* Days */}
+          {days.map(day => {
+            const dayAppointments = getAppointmentsForDate(day);
+            const hasAppointments = dayAppointments.length > 0;
+            const hasPending = dayAppointments.some(a => a.status === 'pending');
+            const hasApproved = dayAppointments.some(a => a.status === 'approved');
+            const isSelected = selectedDate && isSameDay(day, selectedDate);
+            const isToday = isSameDay(day, new Date());
+
+            return (
+              <button
+                key={day.toISOString()}
+                onClick={() => setSelectedDate(isSelected ? null : day)}
+                className={`
+                  aspect-square rounded-lg flex flex-col items-center justify-center relative
+                  transition-colors text-sm
+                  ${isSelected ? 'bg-primary text-primary-foreground' : ''}
+                  ${isToday && !isSelected ? 'border-2 border-primary' : ''}
+                  ${hasAppointments && !isSelected ? 'bg-muted/50' : ''}
+                  hover:bg-muted
+                `}
+              >
+                <span>{format(day, 'd')}</span>
+                {hasAppointments && (
+                  <div className="flex gap-0.5 mt-0.5">
+                    {hasPending && (
+                      <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-amber-300' : 'bg-amber-500'}`} />
+                    )}
+                    {hasApproved && (
+                      <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-green-300' : 'bg-green-500'}`} />
+                    )}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Selected Date Appointments */}
+        <AnimatePresence>
+          {selectedDate && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="space-y-3 pt-4 border-t"
+            >
+              <h4 className="font-medium text-sm">
+                {format(selectedDate, 'd MMMM yyyy', { locale: fr })}
+              </h4>
+              {getAppointmentsForDate(selectedDate).length === 0 ? (
+                <p className="text-sm text-muted-foreground">Aucun rendez-vous ce jour</p>
+              ) : (
+                getAppointmentsForDate(selectedDate).map(appointment => (
+                  <AppointmentCard 
+                    key={appointment.id} 
+                    appointment={appointment} 
+                    isReceived={appointment.owner_id === user?.id}
+                  />
+                ))
+              )}
+            </motion.div>
           )}
-        </TabsTrigger>
-        <TabsTrigger value="sent">Envoyés</TabsTrigger>
-      </TabsList>
+        </AnimatePresence>
 
-      <TabsContent value="received" className="space-y-3">
-        {receivedAppointments.length === 0 ? (
-          <div className="text-center py-6">
-            <p className="text-sm text-muted-foreground">Aucune demande reçue</p>
+        {/* Legend */}
+        <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            <span>En attente</span>
           </div>
-        ) : (
-          receivedAppointments.map(appointment => (
-            <AppointmentCard key={appointment.id} appointment={appointment} isReceived />
-          ))
-        )}
-      </TabsContent>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-green-500" />
+            <span>Approuvé</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
-      <TabsContent value="sent" className="space-y-3">
-        {sentAppointments.length === 0 ? (
-          <div className="text-center py-6">
-            <p className="text-sm text-muted-foreground">Aucune demande envoyée</p>
-          </div>
-        ) : (
-          sentAppointments.map(appointment => (
-            <AppointmentCard key={appointment.id} appointment={appointment} isReceived={false} />
-          ))
-        )}
-      </TabsContent>
-    </Tabs>
+  if (appointments.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <CalendarDays className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+        <h3 className="font-semibold mb-1">Aucun rendez-vous</h3>
+        <p className="text-sm text-muted-foreground">
+          Vos demandes et rendez-vous apparaîtront ici
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* View Toggle */}
+      <div className="flex items-center justify-end gap-2">
+        <Button
+          variant={viewMode === 'list' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setViewMode('list')}
+        >
+          <List className="w-4 h-4 mr-1" />
+          Liste
+        </Button>
+        <Button
+          variant={viewMode === 'calendar' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setViewMode('calendar')}
+        >
+          <Calendar className="w-4 h-4 mr-1" />
+          Calendrier
+        </Button>
+      </div>
+
+      {viewMode === 'calendar' ? (
+        <CalendarView />
+      ) : (
+        <Tabs defaultValue="received" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="received" className="relative">
+              Reçus
+              {receivedAppointments.filter(a => a.status === 'pending').length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center">
+                  {receivedAppointments.filter(a => a.status === 'pending').length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="sent">Envoyés</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="received" className="space-y-3">
+            {receivedAppointments.length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-sm text-muted-foreground">Aucune demande reçue</p>
+              </div>
+            ) : (
+              receivedAppointments.map(appointment => (
+                <AppointmentCard key={appointment.id} appointment={appointment} isReceived />
+              ))
+            )}
+          </TabsContent>
+
+          <TabsContent value="sent" className="space-y-3">
+            {sentAppointments.length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-sm text-muted-foreground">Aucune demande envoyée</p>
+              </div>
+            ) : (
+              sentAppointments.map(appointment => (
+                <AppointmentCard key={appointment.id} appointment={appointment} isReceived={false} />
+              ))
+            )}
+          </TabsContent>
+        </Tabs>
+      )}
+    </div>
   );
 };
 
