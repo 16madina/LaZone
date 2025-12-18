@@ -136,16 +136,24 @@ const SwipeableMessage = ({ message, isMe, userId, participantAvatar, myAvatar, 
       {!isMe && (
         <div className="flex-shrink-0 w-6">
           {showAvatar ? (
-            <img
-              src={participantAvatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop'}
-              alt="Avatar"
-              className="w-6 h-6 rounded-full object-cover"
-              onError={(e) => {
-                e.currentTarget.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop';
-              }}
-            />
+            participantAvatar ? (
+              <img
+                src={participantAvatar}
+                alt="Avatar"
+                className="w-6 h-6 rounded-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  (e.currentTarget.nextElementSibling as HTMLElement)?.classList.remove('hidden');
+                }}
+              />
+            ) : null
           ) : (
             <div className="w-6" />
+          )}
+          {showAvatar && (
+            <div className={`w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary ${participantAvatar ? 'hidden' : ''}`}>
+              ?
+            </div>
           )}
         </div>
       )}
@@ -295,16 +303,24 @@ const SwipeableMessage = ({ message, isMe, userId, participantAvatar, myAvatar, 
       {isMe && (
         <div className="flex-shrink-0 w-6">
           {showAvatar ? (
-            <img
-              src={myAvatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop'}
-              alt="Mon avatar"
-              className="w-6 h-6 rounded-full object-cover"
-              onError={(e) => {
-                e.currentTarget.src = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop';
-              }}
-            />
+            myAvatar ? (
+              <img
+                src={myAvatar}
+                alt="Mon avatar"
+                className="w-6 h-6 rounded-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  (e.currentTarget.nextElementSibling as HTMLElement)?.classList.remove('hidden');
+                }}
+              />
+            ) : null
           ) : (
             <div className="w-6" />
+          )}
+          {showAvatar && (
+            <div className={`w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary ${myAvatar ? 'hidden' : ''}`}>
+              ?
+            </div>
           )}
         </div>
       )}
