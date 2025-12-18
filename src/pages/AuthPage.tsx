@@ -424,12 +424,12 @@ const AuthPage = () => {
       </header>
 
       {/* Main Content */}
-      <div className="relative z-10 flex-1 px-4 pb-8 pt-4">
+      <div className="relative z-10 flex-1 px-4 pb-8 pt-4 overflow-y-auto" style={{ paddingBottom: 'env(keyboard-inset-height, 2rem)' }}>
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-card/90 backdrop-blur-md rounded-3xl shadow-2xl border border-border/50 p-6 max-w-md mx-auto max-h-[calc(100vh-140px)] overflow-y-auto scrollbar-hide"
+          className="bg-card/90 backdrop-blur-md rounded-3xl shadow-2xl border border-border/50 p-6 max-w-md mx-auto mb-[50vh] overflow-visible scrollbar-hide"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {/* Title */}

@@ -455,10 +455,10 @@ const MapPage = () => {
               </button>
             </SheetTrigger>
             <SheetContent side="left" className="w-80 p-0">
-              <SheetHeader className="p-4 border-b">
+              <SheetHeader className="p-4 border-b" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}>
                 <SheetTitle>Sélectionner un pays</SheetTitle>
               </SheetHeader>
-              <div className="overflow-y-auto max-h-[calc(100vh-120px)]">
+              <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - env(safe-area-inset-top, 0px) - 120px)' }}>
                 {/* All countries option */}
                 <button
                   onClick={() => handleCountrySelect(null)}
