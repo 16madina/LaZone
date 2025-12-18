@@ -56,6 +56,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useShare } from '@/hooks/useNativePlugins';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import SectionTutorialButton from '@/components/tutorial/SectionTutorialButton';
@@ -204,6 +205,38 @@ const AdminButton = () => {
     >
       <Crown className="w-4 h-4" />
       Admin
+    </button>
+  );
+};
+
+// Share App Button Component using native share
+const ShareAppButton = () => {
+  const { share, loading } = useShare();
+
+  const handleShare = async () => {
+    await share({
+      title: 'LaZone - Immobilier en Afrique',
+      text: 'Découvrez LaZone, l\'application immobilière n°1 en Afrique ! Trouvez ou publiez des biens facilement.',
+      url: window.location.origin,
+      dialogTitle: 'Partager LaZone'
+    });
+  };
+
+  return (
+    <button 
+      onClick={handleShare}
+      disabled={loading}
+      className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors disabled:opacity-50"
+    >
+      <div className="flex items-center gap-3">
+        <Share2 className="w-5 h-5 text-primary" />
+        <span className="text-sm font-medium">Partager l'application</span>
+      </div>
+      {loading ? (
+        <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
+      ) : (
+        <ChevronRight className="w-5 h-5 text-muted-foreground" />
+      )}
     </button>
   );
 };
@@ -1286,34 +1319,7 @@ const ProfilePage = () => {
                 <div>
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Application</h3>
                   <div className="space-y-2">
-                    <button 
-                      onClick={async () => {
-                        const shareData = { 
-                          title: 'LaZone - Immobilier en Afrique', 
-                          text: 'Découvrez LaZone, l\'application immobilière n°1 en Afrique ! Trouvez ou publiez des biens facilement.', 
-                          url: window.location.origin 
-                        };
-                        try {
-                          if (navigator.share && navigator.canShare?.(shareData)) {
-                            await navigator.share(shareData);
-                          } else {
-                            await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
-                            toast({ title: 'Lien copié !', description: 'Le lien a été copié dans le presse-papiers.' });
-                          }
-                        } catch (error) {
-                          if ((error as Error).name !== 'AbortError') {
-                            toast({ title: 'Erreur', description: 'Impossible de partager.', variant: 'destructive' });
-                          }
-                        }
-                      }} 
-                      className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Share2 className="w-5 h-5 text-primary" />
-                        <span className="text-sm font-medium">Partager l'application</span>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                    </button>
+                    <ShareAppButton />
                     <button 
                       onClick={() => {
                         // Detect platform and redirect to appropriate store
