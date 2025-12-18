@@ -37,15 +37,18 @@ const TutorialOverlay = () => {
     };
 
     findTarget();
-    const interval = setInterval(() => {
+    
+    // Only update position on window resize, not continuously
+    const handleResize = () => {
       const element = document.querySelector(step.target!);
       if (element) {
         const rect = element.getBoundingClientRect();
         setTargetRect(rect);
       }
-    }, 500);
-
-    return () => clearInterval(interval);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, [isActive, step, currentStep]);
 
   useEffect(() => {

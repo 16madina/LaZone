@@ -131,49 +131,49 @@ const sectionTutorials: Record<TutorialSection, TutorialStep[]> = {
     {
       id: 'map-intro',
       title: 'Carte 🗺️',
-      description: 'Localisez les biens sur la carte.',
-      position: 'center'
-    },
-    {
-      id: 'map-view',
-      title: 'Carte interactive',
-      description: 'Cliquez sur un marqueur pour voir le bien.',
-      target: '[data-tutorial="map-view"]',
-      position: 'center'
+      description: 'Explorez les biens immobiliers sur la carte interactive.',
+      position: 'bottom'
     },
     {
       id: 'map-country',
-      title: 'Pays',
-      description: 'Sélectionnez un pays africain.',
+      title: 'Sélecteur de pays',
+      description: 'Choisissez un pays africain pour voir ses propriétés.',
       target: '[data-tutorial="map-country"]',
-      position: 'right'
+      position: 'bottom'
     },
     {
       id: 'map-search',
-      title: 'Recherche',
-      description: 'Recherchez une ville ou quartier.',
+      title: 'Barre de recherche',
+      description: 'Tapez une ville ou un quartier pour localiser rapidement.',
       target: '[data-tutorial="map-search"]',
       position: 'bottom'
     },
     {
       id: 'map-filters',
-      title: 'Filtres',
-      description: 'Filtrez par type (vente/location).',
+      title: 'Filtres rapides',
+      description: 'Filtrez par type : Vente, Location ou Terrain.',
       target: '[data-tutorial="map-filters"]',
       position: 'bottom'
     },
     {
+      id: 'map-markers',
+      title: 'Marqueurs 📍',
+      description: 'Chaque marqueur = une propriété. Cliquez dessus pour voir les détails et le prix.',
+      target: '[data-tutorial="map-view"]',
+      position: 'top'
+    },
+    {
       id: 'map-zoom',
-      title: 'Zoom',
-      description: 'Utilisez +/- pour zoomer.',
+      title: 'Contrôles de zoom',
+      description: 'Zoomez avec + et - ou pincez l\'écran.',
       target: '[data-tutorial="map-zoom"]',
       position: 'left'
     },
     {
       id: 'map-complete',
-      title: 'Explorez ! 📍',
-      description: 'Bonne exploration !',
-      position: 'center'
+      title: 'Prêt à explorer ! 🎉',
+      description: 'Trouvez votre prochain bien sur la carte !',
+      position: 'bottom'
     }
   ],
   publish: [
