@@ -528,9 +528,9 @@ const ProfilePage = () => {
     : 'décembre 2025';
 
   const tabs = [
-    { id: 'annonces' as TabType, label: 'Annonces', icon: Home },
-    { id: 'rdv' as TabType, label: 'Mes RDV', icon: CalendarDays },
-    { id: 'parametres' as TabType, label: 'Paramètres', icon: Settings },
+    { id: 'annonces' as TabType, label: 'Annonces', icon: Home, tutorial: 'profile-listings' },
+    { id: 'rdv' as TabType, label: 'Mes RDV', icon: CalendarDays, tutorial: 'profile-appointments' },
+    { id: 'parametres' as TabType, label: 'Paramètres', icon: Settings, tutorial: 'profile-settings' },
   ];
 
   if (loading) {
@@ -719,7 +719,10 @@ const ProfilePage = () => {
                 <div className="mt-4 flex items-center gap-2">
                   <Sheet open={showProfileSheet} onOpenChange={setShowProfileSheet}>
                     <SheetTrigger asChild>
-                      <button className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors">
+                      <button 
+                        data-tutorial="profile-info"
+                        className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:bg-primary/90 transition-colors"
+                      >
                         <User className="w-4 h-4" />
                       </button>
                     </SheetTrigger>
@@ -888,6 +891,7 @@ const ProfilePage = () => {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
+                data-tutorial={tab.tutorial}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex-1 min-w-max px-4 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
                   activeTab === tab.id

@@ -135,25 +135,39 @@ const sectionTutorials: Record<TutorialSection, TutorialStep[]> = {
       position: 'center'
     },
     {
-      id: 'map-markers',
-      title: 'Marqueurs',
+      id: 'map-country',
+      title: 'Pays',
+      description: 'Sélectionnez un pays africain.',
+      target: '[data-tutorial="map-country"]',
+      position: 'bottom'
+    },
+    {
+      id: 'map-search',
+      title: 'Recherche',
+      description: 'Recherchez une ville ou quartier.',
+      target: '[data-tutorial="map-search"]',
+      position: 'bottom'
+    },
+    {
+      id: 'map-filters',
+      title: 'Filtres',
+      description: 'Filtrez par type (vente/location).',
+      target: '[data-tutorial="map-filters"]',
+      position: 'bottom'
+    },
+    {
+      id: 'map-view',
+      title: 'Carte',
       description: 'Cliquez sur un marqueur pour voir le bien.',
-      target: '[data-tutorial="map-markers"]',
+      target: '[data-tutorial="map-view"]',
       position: 'top'
     },
     {
       id: 'map-zoom',
-      title: 'Navigation',
-      description: 'Zoomez avec +/- ou pincez sur mobile.',
-      target: '[data-tutorial="map-controls"]',
+      title: 'Zoom',
+      description: 'Utilisez +/- pour zoomer.',
+      target: '[data-tutorial="map-zoom"]',
       position: 'left'
-    },
-    {
-      id: 'map-filter',
-      title: 'Pays',
-      description: 'Filtrez par pays avec le bouton.',
-      target: '[data-tutorial="map-filter"]',
-      position: 'bottom'
     },
     {
       id: 'map-complete',
@@ -241,8 +255,8 @@ const sectionTutorials: Record<TutorialSection, TutorialStep[]> = {
     },
     {
       id: 'profile-info',
-      title: 'Infos',
-      description: 'Modifiez vos informations.',
+      title: 'Mon profil',
+      description: 'Voir et modifier vos infos.',
       target: '[data-tutorial="profile-info"]',
       position: 'bottom'
     },
@@ -255,22 +269,15 @@ const sectionTutorials: Record<TutorialSection, TutorialStep[]> = {
     },
     {
       id: 'profile-appointments',
-      title: 'RDV',
+      title: 'Mes RDV',
       description: 'Gérez vos rendez-vous.',
       target: '[data-tutorial="profile-appointments"]',
       position: 'bottom'
     },
     {
-      id: 'profile-favorites',
-      title: 'Favoris',
-      description: 'Vos propriétés sauvegardées.',
-      target: '[data-tutorial="profile-favorites"]',
-      position: 'bottom'
-    },
-    {
       id: 'profile-settings',
       title: 'Paramètres',
-      description: 'Personnalisez l\'app.',
+      description: 'Notifications, sécurité, etc.',
       target: '[data-tutorial="profile-settings"]',
       position: 'bottom'
     },
