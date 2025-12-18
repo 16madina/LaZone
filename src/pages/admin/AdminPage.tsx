@@ -1809,6 +1809,17 @@ const AdminPage = () => {
             {/* Notifications Tab */}
             {activeTab === 'notifications' && (
               <div className="space-y-4">
+                {/* Test Push Notifications Button */}
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => navigate('/settings/push-test')}
+                >
+                  <Bell className="w-4 h-4 mr-2" />
+                  Tester les notifications push
+                  <ChevronRight className="w-4 h-4 ml-auto" />
+                </Button>
+
                 <div className="bg-card rounded-xl p-4 shadow-sm">
                   <h3 className="font-medium mb-4 flex items-center gap-2">
                     <Bell className="w-5 h-5 text-primary" />
