@@ -455,7 +455,10 @@ const MapPage = () => {
         <div className="flex gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className={`p-3 rounded-xl shadow-md border flex items-center gap-1 ${countryFilter ? 'bg-primary text-primary-foreground' : 'bg-card'}`}>
+              <button 
+                data-tutorial="map-country"
+                className={`p-3 rounded-xl shadow-md border flex items-center gap-1 ${countryFilter ? 'bg-primary text-primary-foreground' : 'bg-card'}`}
+              >
                 {countryFilter ? (
                   <img 
                     src={`https://flagcdn.com/w40/${countryFilter.code.toLowerCase()}.png`}
@@ -525,7 +528,7 @@ const MapPage = () => {
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <div className="flex-1 relative">
+          <div className="flex-1 relative" data-tutorial="map-search">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               value={searchQuery}
@@ -548,7 +551,7 @@ const MapPage = () => {
         </div>
 
         {/* Filter Pills */}
-        <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
+        <div className="flex gap-2 mt-2 overflow-x-auto pb-1" data-tutorial="map-filters">
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-auto bg-card shadow-md border h-9 px-3">
               <SelectValue placeholder="Type" />
@@ -582,6 +585,7 @@ const MapPage = () => {
       {/* Map Container */}
       <div 
         ref={mapContainerRef} 
+        data-tutorial="map-view"
         className="flex-1 w-full z-0"
         style={{ minHeight: '100%' }}
       />
@@ -594,7 +598,7 @@ const MapPage = () => {
       )}
 
       {/* Zoom Controls */}
-      <div className="absolute right-3 top-32 z-[1000] flex flex-col gap-1">
+      <div className="absolute right-3 top-32 z-[1000] flex flex-col gap-1" data-tutorial="map-zoom">
         <button 
           className="p-3 bg-card rounded-lg shadow-md border text-lg font-bold"
           onClick={handleZoomIn}
