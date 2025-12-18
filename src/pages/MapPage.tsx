@@ -279,25 +279,28 @@ const MapPage = () => {
     }
   };
 
-  // Update markers when properties change
+  // Store markers reference for updating selected state without rebuilding
+  const markersRef = useRef<Map<string, L.Marker>>(new Map());
+
+  // Update markers when properties change (but NOT when selectedProperty changes)
   useEffect(() => {
     if (!mapRef.current || !mapLoaded || !clusterGroupRef.current) return;
     
     // Clear existing markers from cluster group
     clusterGroupRef.current.clearLayers();
+    markersRef.current.clear();
     
     // Add new markers to cluster group
     filteredProperties.forEach((property) => {
       if (property.lat && property.lng) {
         const bgColor = property.type === 'sale' ? '#ea580c' : '#16a34a';
         const priceText = formatPriceShort(property.price);
-        const isSelected = selectedProperty?.id === property.id;
         
         const icon = L.divIcon({
           className: 'custom-price-marker',
           html: `
             <div style="
-              background: ${isSelected ? '#1d4ed8' : bgColor};
+              background: ${bgColor};
               color: white;
               padding: 6px 12px;
               border-radius: 20px;
@@ -307,8 +310,6 @@ const MapPage = () => {
               box-shadow: 0 2px 8px rgba(0,0,0,0.3);
               cursor: pointer;
               display: inline-block;
-              transform: ${isSelected ? 'scale(1.2)' : 'scale(1)'};
-              transition: transform 0.2s;
             ">
               ${priceText}
             </div>
@@ -322,6 +323,7 @@ const MapPage = () => {
             setSelectedProperty(property);
           });
         
+        markersRef.current.set(property.id, marker);
         clusterGroupRef.current?.addLayer(marker);
       }
     });
@@ -336,7 +338,79 @@ const MapPage = () => {
         mapRef.current?.fitBounds(bounds, { padding: [50, 50] });
       }
     }
-  }, [filteredProperties, mapLoaded, selectedProperty]);
+  }, [filteredProperties, mapLoaded]); // Removed selectedProperty from dependencies
+
+  // Update selected marker style without rebuilding cluster
+  useEffect(() => {
+    if (!selectedProperty) return;
+    
+    const marker = markersRef.current.get(selectedProperty.id);
+    if (marker) {
+      const bgColor = selectedProperty.type === 'sale' ? '#ea580c' : '#16a34a';
+      const priceText = formatPriceShort(selectedProperty.price);
+      
+      const selectedIcon = L.divIcon({
+        className: 'custom-price-marker',
+        html: `
+          <div style="
+            background: #1d4ed8;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 12px;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            cursor: pointer;
+            display: inline-block;
+            transform: scale(1.2);
+            z-index: 1000;
+          ">
+            ${priceText}
+          </div>
+        `,
+        iconSize: L.point(60, 30),
+        iconAnchor: L.point(30, 15),
+      });
+      
+      marker.setIcon(selectedIcon);
+    }
+    
+    // Reset previous selected marker when selection changes
+    return () => {
+      if (selectedProperty) {
+        const prevMarker = markersRef.current.get(selectedProperty.id);
+        if (prevMarker) {
+          const bgColor = selectedProperty.type === 'sale' ? '#ea580c' : '#16a34a';
+          const priceText = formatPriceShort(selectedProperty.price);
+          
+          const normalIcon = L.divIcon({
+            className: 'custom-price-marker',
+            html: `
+              <div style="
+                background: ${bgColor};
+                color: white;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-weight: 600;
+                font-size: 12px;
+                white-space: nowrap;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                cursor: pointer;
+                display: inline-block;
+              ">
+                ${priceText}
+              </div>
+            `,
+            iconSize: L.point(60, 30),
+            iconAnchor: L.point(30, 15),
+          });
+          
+          prevMarker.setIcon(normalIcon);
+        }
+      }
+    };
+  }, [selectedProperty]);
 
   const getPrimaryImage = (images: string[]) => {
     return images?.[0] || '/placeholder.svg';
