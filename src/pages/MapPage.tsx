@@ -88,6 +88,7 @@ const MapPage = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>('all');
   const [countryFilter, setCountryFilter] = useState<Country | null>(null);
+  const [countrySearchQuery, setCountrySearchQuery] = useState('');
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locatingUser, setLocatingUser] = useState(false);
   const [initialCountrySet, setInitialCountrySet] = useState(false);
@@ -263,18 +264,33 @@ const MapPage = () => {
 
   const handleCountrySelect = (country: Country | null) => {
     setCountryFilter(country);
+    setCountrySearchQuery('');
     
     if (country && mapRef.current) {
       const coords = countryCoordinates[country.code];
       if (coords) {
-        mapRef.current.setView([coords.lat, coords.lng], coords.zoom);
+        mapRef.current.flyTo([coords.lat, coords.lng], coords.zoom, {
+          duration: 1.5,
+          easeLinearity: 0.25
+        });
         toast.success(`Carte centrée sur ${country.name}`);
       }
     } else if (!country && mapRef.current) {
-      // Reset to Africa view
-      mapRef.current.setView([5, 20], 4);
+      // Reset to Africa view with animation
+      mapRef.current.flyTo([5, 20], 4, {
+        duration: 1.5,
+        easeLinearity: 0.25
+      });
     }
   };
+
+  // Filter countries based on search query
+  const filteredCountries = useMemo(() => {
+    if (!countrySearchQuery) return africanCountries;
+    return africanCountries.filter(country => 
+      country.name.toLowerCase().includes(countrySearchQuery.toLowerCase())
+    );
+  }, [countrySearchQuery]);
 
   // Store markers reference for updating selected state without rebuilding
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
@@ -452,35 +468,60 @@ const MapPage = () => {
                 <ChevronDown className="w-3 h-3" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-64 max-h-80 overflow-y-auto bg-card border shadow-lg z-[1001]">
-              {/* All countries option */}
-              <DropdownMenuItem
-                onClick={() => handleCountrySelect(null)}
-                className={`flex items-center gap-3 cursor-pointer ${!countryFilter ? 'bg-primary/10' : ''}`}
-              >
-                <Globe className="w-5 h-5 text-muted-foreground" />
-                <span className="flex-1 text-sm font-medium">Tous les pays</span>
-                {!countryFilter && <Check className="w-4 h-4 text-primary" />}
-              </DropdownMenuItem>
-              
-              {/* Country list */}
-              {africanCountries.map((country) => (
-                <DropdownMenuItem
-                  key={country.code}
-                  onClick={() => handleCountrySelect(country)}
-                  className={`flex items-center gap-3 cursor-pointer ${countryFilter?.code === country.code ? 'bg-primary/10' : ''}`}
-                >
-                  <img
-                    src={`https://flagcdn.com/w40/${country.code.toLowerCase()}.png`}
-                    alt={country.name}
-                    className="w-5 h-4 rounded-sm object-cover"
+            <DropdownMenuContent align="start" className="w-64 bg-card border shadow-lg z-[1001] p-0">
+              {/* Search input */}
+              <div className="p-2 border-b sticky top-0 bg-card">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={countrySearchQuery}
+                    onChange={(e) => setCountrySearchQuery(e.target.value)}
+                    placeholder="Rechercher un pays..."
+                    className="w-full pl-8 pr-3 py-2 text-sm bg-muted rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-primary"
+                    onClick={(e) => e.stopPropagation()}
                   />
-                  <span className="flex-1 text-sm">{country.name}</span>
-                  {countryFilter?.code === country.code && (
-                    <Check className="w-4 h-4 text-primary" />
-                  )}
-                </DropdownMenuItem>
-              ))}
+                </div>
+              </div>
+              
+              <div className="max-h-60 overflow-y-auto">
+                {/* All countries option */}
+                {!countrySearchQuery && (
+                  <DropdownMenuItem
+                    onClick={() => handleCountrySelect(null)}
+                    className={`flex items-center gap-3 cursor-pointer ${!countryFilter ? 'bg-primary/10' : ''}`}
+                  >
+                    <Globe className="w-5 h-5 text-muted-foreground" />
+                    <span className="flex-1 text-sm font-medium">Tous les pays</span>
+                    {!countryFilter && <Check className="w-4 h-4 text-primary" />}
+                  </DropdownMenuItem>
+                )}
+                
+                {/* Country list */}
+                {filteredCountries.map((country) => (
+                  <DropdownMenuItem
+                    key={country.code}
+                    onClick={() => handleCountrySelect(country)}
+                    className={`flex items-center gap-3 cursor-pointer ${countryFilter?.code === country.code ? 'bg-primary/10' : ''}`}
+                  >
+                    <img
+                      src={`https://flagcdn.com/w40/${country.code.toLowerCase()}.png`}
+                      alt={country.name}
+                      className="w-5 h-4 rounded-sm object-cover"
+                    />
+                    <span className="flex-1 text-sm">{country.name}</span>
+                    {countryFilter?.code === country.code && (
+                      <Check className="w-4 h-4 text-primary" />
+                    )}
+                  </DropdownMenuItem>
+                ))}
+                
+                {filteredCountries.length === 0 && (
+                  <div className="p-3 text-center text-sm text-muted-foreground">
+                    Aucun pays trouvé
+                  </div>
+                )}
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
           

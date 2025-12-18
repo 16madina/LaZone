@@ -396,7 +396,10 @@ const AuthPage = () => {
       <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/20 to-background/60" />
       
       {/* Header */}
-      <header className="relative z-20 p-4 flex items-center justify-between">
+      <header 
+        className="relative z-20 p-4 flex items-center justify-between"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
+      >
         <motion.button
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
