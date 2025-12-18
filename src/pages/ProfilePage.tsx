@@ -59,6 +59,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import SectionTutorialButton from '@/components/tutorial/SectionTutorialButton';
+import { useTutorial } from '@/hooks/useTutorial';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Switch } from '@/components/ui/switch';
@@ -225,6 +226,7 @@ const ProfilePage = () => {
   const { user, profile, signOut, loading, isEmailVerified, resendVerificationEmail, refreshVerificationStatus } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { unreadCount: notificationCount } = useNotifications();
+  const { resetTutorial, startTutorial } = useTutorial();
   const [sendingEmail, setSendingEmail] = useState(false);
   const [propertiesCount, setPropertiesCount] = useState(0);
   const [properties, setProperties] = useState<Property[]>([]);
@@ -1221,14 +1223,29 @@ const ProfilePage = () => {
                 <div>
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Stockage & Données</h3>
                   <div className="space-y-2">
-                    <button onClick={() => { localStorage.clear(); toast({ title: 'Cache vidé', description: 'Le cache de l\'application a été vidé.' }); }} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button 
+                      onClick={() => { 
+                        const currentTheme = localStorage.getItem('theme');
+                        localStorage.clear(); 
+                        if (currentTheme) localStorage.setItem('theme', currentTheme);
+                        toast({ title: 'Cache vidé', description: 'Le cache de l\'application a été vidé avec succès.' }); 
+                      }} 
+                      className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors"
+                    >
                       <div className="flex items-center gap-3">
                         <Database className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Vider le cache</span>
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground" />
                     </button>
-                    <button onClick={() => toast({ title: 'Tutoriel réinitialisé', description: 'Le tutoriel sera affiché à nouveau.' })} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button 
+                      onClick={() => { 
+                        resetTutorial(); 
+                        toast({ title: 'Tutoriel réinitialisé', description: 'Le tutoriel sera affiché à votre prochaine visite.' }); 
+                        setTimeout(() => startTutorial(), 500);
+                      }} 
+                      className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors"
+                    >
                       <div className="flex items-center gap-3">
                         <RotateCcw className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Réinitialiser le tutoriel</span>
@@ -1269,14 +1286,53 @@ const ProfilePage = () => {
                 <div>
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Application</h3>
                   <div className="space-y-2">
-                    <button onClick={() => navigator.share?.({ title: 'LaZone', text: 'Découvrez LaZone - Immobilier en Afrique', url: window.location.origin }) || toast({ title: 'Partage non disponible' })} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button 
+                      onClick={async () => {
+                        const shareData = { 
+                          title: 'LaZone - Immobilier en Afrique', 
+                          text: 'Découvrez LaZone, l\'application immobilière n°1 en Afrique ! Trouvez ou publiez des biens facilement.', 
+                          url: window.location.origin 
+                        };
+                        try {
+                          if (navigator.share && navigator.canShare?.(shareData)) {
+                            await navigator.share(shareData);
+                          } else {
+                            await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+                            toast({ title: 'Lien copié !', description: 'Le lien a été copié dans le presse-papiers.' });
+                          }
+                        } catch (error) {
+                          if ((error as Error).name !== 'AbortError') {
+                            toast({ title: 'Erreur', description: 'Impossible de partager.', variant: 'destructive' });
+                          }
+                        }
+                      }} 
+                      className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors"
+                    >
                       <div className="flex items-center gap-3">
                         <Share2 className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Partager l'application</span>
                       </div>
                       <ChevronRight className="w-5 h-5 text-muted-foreground" />
                     </button>
-                    <button onClick={() => toast({ title: 'Merci !', description: 'La notation sera disponible sur les stores mobiles.' })} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button 
+                      onClick={() => {
+                        // Detect platform and redirect to appropriate store
+                        const userAgent = navigator.userAgent.toLowerCase();
+                        const isIOS = /iphone|ipad|ipod/.test(userAgent);
+                        const isAndroid = /android/.test(userAgent);
+                        
+                        if (isIOS) {
+                          // Placeholder for iOS App Store URL
+                          toast({ title: 'Bientôt sur l\'App Store', description: 'L\'application sera disponible prochainement.' });
+                        } else if (isAndroid) {
+                          // Placeholder for Google Play Store URL
+                          toast({ title: 'Bientôt sur Google Play', description: 'L\'application sera disponible prochainement.' });
+                        } else {
+                          toast({ title: 'Merci !', description: 'La notation sera disponible sur les stores mobiles.' });
+                        }
+                      }} 
+                      className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors"
+                    >
                       <div className="flex items-center gap-3">
                         <Star className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Noter l'application</span>
