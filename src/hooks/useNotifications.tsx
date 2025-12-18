@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { getSoundInstance } from './useSound';
@@ -17,10 +17,21 @@ interface Notification {
   };
 }
 
+// Track if we've already logged the notification warning
+let hasLoggedNotificationWarning = false;
+
+// Check if browser notifications are supported
+const isBrowserNotificationSupported = (): boolean => {
+  return typeof window !== 'undefined' && 'Notification' in window;
+};
+
 // Request browser notification permission
 const requestNotificationPermission = async (): Promise<boolean> => {
-  if (!('Notification' in window)) {
-    console.log('This browser does not support notifications');
+  if (!isBrowserNotificationSupported()) {
+    if (!hasLoggedNotificationWarning) {
+      console.log('Browser notifications not supported (using native push instead)');
+      hasLoggedNotificationWarning = true;
+    }
     return false;
   }
 
@@ -62,10 +73,14 @@ export const useNotifications = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [permissionGranted, setPermissionGranted] = useState(false);
+  const permissionCheckedRef = useRef(false);
 
-  // Request permission on mount
+  // Request permission on mount - only once
   useEffect(() => {
-    requestNotificationPermission().then(setPermissionGranted);
+    if (!permissionCheckedRef.current) {
+      permissionCheckedRef.current = true;
+      requestNotificationPermission().then(setPermissionGranted);
+    }
   }, []);
 
   const fetchNotifications = useCallback(async () => {
