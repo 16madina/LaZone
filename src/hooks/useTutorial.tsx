@@ -129,12 +129,6 @@ const sectionTutorials: Record<TutorialSection, TutorialStep[]> = {
   ],
   map: [
     {
-      id: 'map-intro',
-      title: 'Carte interactive 🗺️',
-      description: 'Explorez les biens immobiliers sur la carte.',
-      position: 'center'
-    },
-    {
       id: 'map-country',
       title: 'Sélecteur de pays 🌍',
       description: 'Choisissez un pays africain pour voir ses propriétés.',
@@ -160,7 +154,7 @@ const sectionTutorials: Record<TutorialSection, TutorialStep[]> = {
       title: 'Les marqueurs 📍',
       description: 'Cliquez sur un marqueur pour voir les détails du bien.',
       target: '[data-tutorial="map-view"]',
-      position: 'center'
+      position: 'bottom'
     },
     {
       id: 'map-zoom',
@@ -168,12 +162,6 @@ const sectionTutorials: Record<TutorialSection, TutorialStep[]> = {
       description: 'Zoomez pour plus de détails.',
       target: '[data-tutorial="map-zoom"]',
       position: 'left'
-    },
-    {
-      id: 'map-complete',
-      title: 'Bonne exploration ! 🎉',
-      description: 'Trouvez votre prochain bien !',
-      position: 'center'
     }
   ],
   publish: [
