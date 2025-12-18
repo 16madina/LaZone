@@ -615,7 +615,10 @@ const PublishPage = () => {
   return (
     <div className="min-h-screen bg-muted/30 pb-32">
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary via-primary to-primary/80 text-primary-foreground px-4 py-6">
+      <div
+        className="bg-gradient-to-r from-primary via-primary to-primary/80 text-primary-foreground px-4 pb-6"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.5rem)' }}
+      >
         <h1 className="font-display text-2xl font-bold">Publier une annonce</h1>
         <p className="text-primary-foreground/80 text-sm mt-1">
           Vendez ou louez votre propriété

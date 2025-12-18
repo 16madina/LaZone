@@ -670,7 +670,7 @@ const ProfilePage = () => {
       />
 
       {/* Orange Gradient Header */}
-      <div className="h-32 bg-gradient-to-r from-primary via-primary to-primary/80" />
+      <div className="h-32 top-safe-area bg-gradient-to-r from-primary via-primary to-primary/80" />
 
       {/* Profile Card */}
       <div className="px-4 -mt-16">
