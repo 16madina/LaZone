@@ -750,9 +750,6 @@ const ProfilePage = () => {
               {/* User Info */}
               <div className="flex-1 min-w-0 mt-2">
                 <div className="flex items-start justify-between gap-2">
-                  <h1 className="text-lg font-bold text-foreground truncate">
-                    {user.user_metadata?.full_name || 'Utilisateur'}
-                  </h1>
                   <div className="flex items-center gap-2">
                     {/* Notifications Button */}
                     <button
@@ -778,6 +775,11 @@ const ProfilePage = () => {
                     </button>
                   </div>
                 </div>
+                
+                {/* User Name - on separate line */}
+                <h1 className="text-lg font-bold text-foreground mt-2">
+                  {user.user_metadata?.full_name || profile?.full_name || 'Utilisateur'}
+                </h1>
 
                 {/* Tags */}
                 <div className="flex flex-wrap gap-1.5 mt-2">

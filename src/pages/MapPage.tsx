@@ -127,7 +127,7 @@ const MapPage = () => {
 
   useEffect(() => {
     loadLeaflet();
-    getUserLocation();
+    // Don't auto-fetch location on mount - let user trigger it manually
   }, []);
 
 
