@@ -34,6 +34,7 @@ import AccountManagementPage from "./pages/settings/AccountManagementPage";
 import AboutPage from "./pages/settings/AboutPage";
 import FaqPage from "./pages/settings/FaqPage";
 import VendorBadgesPage from "./pages/settings/VendorBadgesPage";
+import PushNotificationTestPage from "./pages/settings/PushNotificationTestPage";
 import AdminPage from "./pages/admin/AdminPage";
 import PublicProfilePage from "./pages/PublicProfilePage";
 import NotificationsPage from "./pages/NotificationsPage";
@@ -93,6 +94,7 @@ const App = () => {
                       <Route path="/settings/about" element={<AboutPage />} />
                       <Route path="/settings/faq" element={<FaqPage />} />
                       <Route path="/settings/badges" element={<VendorBadgesPage />} />
+                      <Route path="/settings/push-test" element={<PushNotificationTestPage />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                     <BottomNavigation />
