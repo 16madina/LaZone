@@ -1209,7 +1209,7 @@ const ProfilePage = () => {
                       </div>
                       <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
                     </div>
-                    <button onClick={() => toast({ title: 'Bientôt disponible', description: 'Les badges vendeur seront disponibles prochainement.' })} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                    <button onClick={() => navigate('/settings/badges')} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <Award className="w-5 h-5 text-primary" />
                         <span className="text-sm font-medium">Badges vendeur</span>
