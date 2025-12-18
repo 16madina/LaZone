@@ -73,7 +73,7 @@ const TutorialOverlay = () => {
     };
   }, [isActive, currentStep]);
 
-  if (!isActive) return null;
+  if (!isActive || !step) return null;
 
   const getTooltipPosition = () => {
     const padding = 16;
