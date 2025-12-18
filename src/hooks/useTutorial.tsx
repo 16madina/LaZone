@@ -129,9 +129,27 @@ const sectionTutorials: Record<TutorialSection, TutorialStep[]> = {
   ],
   map: [
     {
+      id: 'map-country',
+      title: 'Changer de pays 🌍',
+      description: 'Sélectionnez un pays africain pour voir ses propriétés disponibles.',
+      position: 'map-center'
+    },
+    {
+      id: 'map-filters',
+      title: 'Type de bien 🏠',
+      description: 'Filtrez par Vente, Location ou Terrain selon vos besoins.',
+      position: 'map-center'
+    },
+    {
       id: 'map-markers',
       title: 'Les marqueurs 📍',
-      description: 'Les marqueurs orange groupent plusieurs biens. Cliquez sur un marqueur pour voir les détails et le prix.',
+      description: 'Les marqueurs orange groupent plusieurs biens. Cliquez dessus pour voir les détails.',
+      position: 'map-center'
+    },
+    {
+      id: 'map-zoom',
+      title: 'Zoom + / - 🔍',
+      description: 'Utilisez les boutons + et - pour zoomer et voir plus de détails.',
       position: 'map-center'
     }
   ],
