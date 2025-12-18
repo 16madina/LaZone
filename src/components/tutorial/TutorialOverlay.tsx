@@ -23,15 +23,27 @@ const TutorialOverlay = () => {
     const findTarget = () => {
       const element = document.querySelector(step.target!);
       if (element) {
-        const rect = element.getBoundingClientRect();
-        setTargetRect(rect);
+        // Auto-scroll to bring element into view
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Wait a bit for scroll to complete before measuring
+        setTimeout(() => {
+          const rect = element.getBoundingClientRect();
+          setTargetRect(rect);
+        }, 300);
       } else {
         setTargetRect(null);
       }
     };
 
     findTarget();
-    const interval = setInterval(findTarget, 500);
+    const interval = setInterval(() => {
+      const element = document.querySelector(step.target!);
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        setTargetRect(rect);
+      }
+    }, 500);
 
     return () => clearInterval(interval);
   }, [isActive, step, currentStep]);
