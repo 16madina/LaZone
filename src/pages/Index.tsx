@@ -178,11 +178,12 @@ const Index = () => {
 
       {/* Hero Section with Background */}
       <div 
-        className="relative px-4 pt-4 pb-8"
+        className="relative px-4 pb-8"
         style={{
           backgroundImage: `url(${currentBg})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center top',
+          paddingTop: 'max(env(safe-area-inset-top, 0px), 1rem)',
         }}
       >
         {/* Dark Overlay */}
