@@ -19,7 +19,8 @@ const config: CapacitorConfig = {
       }
     : {}),
   ios: {
-    contentInset: 'automatic',
+    // Let the webview extend under the iOS status bar; we handle safe areas in CSS per-page.
+    contentInset: 'never',
     preferredContentMode: 'mobile',
     scrollEnabled: true,
     allowsLinkPreview: true,
@@ -48,6 +49,7 @@ const config: CapacitorConfig = {
       resizeOnFullScreen: true
     },
     StatusBar: {
+      overlaysWebView: true,
       style: 'light',
       backgroundColor: '#ea580c'
     },
