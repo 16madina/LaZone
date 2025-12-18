@@ -130,50 +130,50 @@ const sectionTutorials: Record<TutorialSection, TutorialStep[]> = {
   map: [
     {
       id: 'map-intro',
-      title: 'Carte 🗺️',
-      description: 'Explorez les biens immobiliers sur la carte interactive.',
-      position: 'bottom'
+      title: 'Carte interactive 🗺️',
+      description: 'Explorez les biens immobiliers sur la carte.',
+      position: 'center'
     },
     {
       id: 'map-country',
-      title: 'Sélecteur de pays',
+      title: 'Sélecteur de pays 🌍',
       description: 'Choisissez un pays africain pour voir ses propriétés.',
       target: '[data-tutorial="map-country"]',
-      position: 'bottom'
+      position: 'right'
     },
     {
       id: 'map-search',
-      title: 'Barre de recherche',
-      description: 'Tapez une ville ou un quartier pour localiser rapidement.',
+      title: 'Recherche rapide 🔍',
+      description: 'Tapez une ville ou un quartier.',
       target: '[data-tutorial="map-search"]',
       position: 'bottom'
     },
     {
       id: 'map-filters',
-      title: 'Filtres rapides',
-      description: 'Filtrez par type : Vente, Location ou Terrain.',
+      title: 'Filtres',
+      description: 'Vente, Location ou Terrain.',
       target: '[data-tutorial="map-filters"]',
       position: 'bottom'
     },
     {
       id: 'map-markers',
-      title: 'Marqueurs 📍',
-      description: 'Chaque marqueur = une propriété. Cliquez dessus pour voir les détails et le prix.',
+      title: 'Les marqueurs 📍',
+      description: 'Cliquez sur un marqueur pour voir les détails du bien.',
       target: '[data-tutorial="map-view"]',
-      position: 'top'
+      position: 'center'
     },
     {
       id: 'map-zoom',
-      title: 'Contrôles de zoom',
-      description: 'Zoomez avec + et - ou pincez l\'écran.',
+      title: 'Zoom +/-',
+      description: 'Zoomez pour plus de détails.',
       target: '[data-tutorial="map-zoom"]',
       position: 'left'
     },
     {
       id: 'map-complete',
-      title: 'Prêt à explorer ! 🎉',
-      description: 'Trouvez votre prochain bien sur la carte !',
-      position: 'bottom'
+      title: 'Bonne exploration ! 🎉',
+      description: 'Trouvez votre prochain bien !',
+      position: 'center'
     }
   ],
   publish: [
