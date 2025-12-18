@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useTutorial } from '@/hooks/useTutorial';
 import { Button } from '@/components/ui/button';
-import { X, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Sparkles, ArrowDown, ArrowUp, ArrowLeft, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const TutorialOverlay = () => {
@@ -83,8 +83,6 @@ const TutorialOverlay = () => {
     const availableHeight = Math.max(0, vh - padding * 2);
     const effectiveHeight = Math.min(tooltipHeight || 240, availableHeight);
 
-    // IMPORTANT: don't use `transform` for centering here.
-    // Framer Motion animates transforms (scale/y), which would override our transform and break centering on mobile.
     const centered = {
       position: 'fixed' as const,
       top: padding,
@@ -111,7 +109,7 @@ const TutorialOverlay = () => {
       case 'top':
         return {
           position: 'fixed' as const,
-          top: Math.max(padding, targetRect.top - effectiveHeight - padding),
+          top: Math.max(padding, targetRect.top - effectiveHeight - padding - 30),
           left: Math.max(
             padding,
             Math.min(
@@ -124,7 +122,7 @@ const TutorialOverlay = () => {
       case 'bottom':
         return {
           position: 'fixed' as const,
-          top: Math.min(targetRect.bottom + padding, vh - effectiveHeight - padding),
+          top: Math.min(targetRect.bottom + padding + 30, vh - effectiveHeight - padding),
           left: Math.max(
             padding,
             Math.min(
@@ -144,7 +142,7 @@ const TutorialOverlay = () => {
               vh - effectiveHeight - padding
             )
           ),
-          left: Math.max(padding, targetRect.left - tooltipWidth - padding),
+          left: Math.max(padding, targetRect.left - tooltipWidth - padding - 30),
           ...base,
         };
       case 'right':
@@ -157,13 +155,63 @@ const TutorialOverlay = () => {
               vh - effectiveHeight - padding
             )
           ),
-          left: Math.min(targetRect.right + padding, vw - tooltipWidth - padding),
+          left: Math.min(targetRect.right + padding + 30, vw - tooltipWidth - padding),
           ...base,
         };
       default:
         return centered;
     }
   };
+
+  // Get arrow position and direction
+  const getArrowProps = () => {
+    if (!targetRect || step.position === 'center') return null;
+
+    const arrowSize = 24;
+    
+    switch (step.position) {
+      case 'top':
+        return {
+          Icon: ArrowDown,
+          style: {
+            position: 'fixed' as const,
+            top: targetRect.top - arrowSize - 8,
+            left: targetRect.left + targetRect.width / 2 - arrowSize / 2,
+          }
+        };
+      case 'bottom':
+        return {
+          Icon: ArrowUp,
+          style: {
+            position: 'fixed' as const,
+            top: targetRect.bottom + 8,
+            left: targetRect.left + targetRect.width / 2 - arrowSize / 2,
+          }
+        };
+      case 'left':
+        return {
+          Icon: ArrowRight,
+          style: {
+            position: 'fixed' as const,
+            top: targetRect.top + targetRect.height / 2 - arrowSize / 2,
+            left: targetRect.left - arrowSize - 8,
+          }
+        };
+      case 'right':
+        return {
+          Icon: ArrowLeft,
+          style: {
+            position: 'fixed' as const,
+            top: targetRect.top + targetRect.height / 2 - arrowSize / 2,
+            left: targetRect.right + 8,
+          }
+        };
+      default:
+        return null;
+    }
+  };
+
+  const arrowProps = getArrowProps();
 
   return (
     <AnimatePresence>
@@ -195,6 +243,31 @@ const TutorialOverlay = () => {
           />
         )}
 
+        {/* Animated Arrow pointing to target */}
+        {arrowProps && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ 
+              opacity: 1, 
+              scale: 1,
+              y: step.position === 'top' ? [0, 8, 0] : step.position === 'bottom' ? [0, -8, 0] : 0,
+              x: step.position === 'left' ? [0, 8, 0] : step.position === 'right' ? [0, -8, 0] : 0,
+            }}
+            transition={{ 
+              opacity: { duration: 0.3 },
+              scale: { duration: 0.3 },
+              y: { duration: 1, repeat: Infinity, ease: "easeInOut" },
+              x: { duration: 1, repeat: Infinity, ease: "easeInOut" },
+            }}
+            className="z-[101] pointer-events-none"
+            style={arrowProps.style}
+          >
+            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-lg">
+              <arrowProps.Icon className="w-6 h-6 text-primary-foreground" />
+            </div>
+          </motion.div>
+        )}
+
         {/* Tutorial Card */}
         <motion.div
           key={currentStep}
@@ -217,13 +290,13 @@ const TutorialOverlay = () => {
           </div>
 
           {/* Header */}
-          <div className="p-4 pb-2 flex items-start justify-between">
+          <div className="p-3 pb-1 flex items-start justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-primary" />
+              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                <Sparkles className="w-3.5 h-3.5 text-primary" />
               </div>
               <span className="text-xs text-muted-foreground">
-                Étape {currentStep + 1}/{steps.length}
+                {currentStep + 1}/{steps.length}
               </span>
             </div>
             <button
@@ -235,44 +308,44 @@ const TutorialOverlay = () => {
           </div>
 
           {/* Content */}
-          <div className="px-4 pb-4 flex-1 min-h-0 overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-2">{step.title}</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
+          <div className="px-3 pb-2 flex-1 min-h-0 overflow-y-auto">
+            <h3 className="text-base font-semibold mb-1">{step.title}</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
               {step.description}
             </p>
           </div>
 
           {/* Actions */}
-          <div className="px-4 pb-4 flex items-center justify-between">
+          <div className="px-3 pb-3 flex items-center justify-between">
             <Button
               variant="ghost"
               size="sm"
               onClick={prevStep}
               disabled={currentStep === 0}
-              className="gap-1"
+              className="gap-1 h-8 text-xs"
             >
-              <ChevronLeft className="w-4 h-4" />
-              Précédent
+              <ChevronLeft className="w-3 h-3" />
+              Préc.
             </Button>
             
             <Button
               size="sm"
               onClick={nextStep}
-              className="gap-1"
+              className="gap-1 h-8 text-xs"
             >
-              {currentStep === steps.length - 1 ? 'Terminer' : 'Suivant'}
-              {currentStep < steps.length - 1 && <ChevronRight className="w-4 h-4" />}
+              {currentStep === steps.length - 1 ? 'OK' : 'Suiv.'}
+              {currentStep < steps.length - 1 && <ChevronRight className="w-3 h-3" />}
             </Button>
           </div>
 
           {/* Skip link */}
           {currentStep < steps.length - 1 && (
-            <div className="px-4 pb-4 pt-0 text-center">
+            <div className="px-3 pb-2 pt-0 text-center">
               <button
                 onClick={skipTutorial}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
               >
-                Passer le tutoriel
+                Passer
               </button>
             </div>
           )}
