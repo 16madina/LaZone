@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, MessageCircle, Heart, Tag, Home, Mail, Volume2 } from 'lucide-react';
+import { ArrowLeft, Bell, MessageCircle, Heart, Tag, Home, Mail, Volume2, Smartphone, ChevronRight } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
 import { useSound } from '@/hooks/useSound';
+import { isNativePlatform } from '@/hooks/useNativePlugins';
 
 const NotificationSettingsPage = () => {
   const navigate = useNavigate();
@@ -83,8 +85,8 @@ const NotificationSettingsPage = () => {
               Notifications Push
             </h2>
           </div>
-          <div className="p-4">
-            <div className="flex items-center justify-between">
+          <div className="divide-y divide-border">
+            <div className="p-4 flex items-center justify-between">
               <div>
                 <p className="font-medium text-sm">Activer les notifications</p>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -96,6 +98,23 @@ const NotificationSettingsPage = () => {
                 onCheckedChange={() => handleToggle('push')} 
               />
             </div>
+            
+            {/* Test Push Notifications Link */}
+            <button
+              onClick={() => navigate('/settings/push-test')}
+              className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Smartphone className="w-5 h-5 text-primary" />
+                <div className="text-left">
+                  <p className="font-medium text-sm">Tester les notifications</p>
+                  <p className="text-xs text-muted-foreground">
+                    {isNativePlatform() ? 'Vérifier les notifications natives' : 'Page de diagnostic'}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
           </div>
         </div>
 
