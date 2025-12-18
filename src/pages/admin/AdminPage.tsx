@@ -1727,10 +1727,24 @@ const AdminPage = () => {
               <div className="space-y-3">
                 {properties.map((property) => (
                   <div key={property.id} className="bg-card rounded-xl p-4 shadow-sm">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      {/* Thumbnail */}
+                      <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-muted">
+                        {property.image_url ? (
+                          <img 
+                            src={property.image_url} 
+                            alt={property.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Home className="w-6 h-6 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium truncate">{property.title}</h3>
-                        <p className="text-sm text-muted-foreground">{property.city}</p>
+                        <p className="text-sm text-muted-foreground">{property.city} • {property.owner_name}</p>
                         {property.sponsored_until && (
                           <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
                             <Clock className="w-3 h-3" />

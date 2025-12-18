@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 export const useFavorites = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [favorites, setFavorites] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -32,17 +33,46 @@ export const useFavorites = () => {
     }
   }, [user]);
 
-  // Add favorite
+  // Add favorite with proper auth check
   const addFavorite = async (propertyId: string) => {
-    if (!user) {
-      toast({ title: 'Connectez-vous pour ajouter aux favoris', variant: 'destructive' });
+    // Wait for auth to be ready if still loading
+    if (authLoading) {
+      toast({ title: 'Chargement...', description: 'Veuillez patienter.' });
       return false;
+    }
+
+    // Check if user is authenticated
+    if (!user) {
+      toast({ 
+        title: 'Connexion requise', 
+        description: 'Connectez-vous pour ajouter aux favoris',
+        variant: 'destructive' 
+      });
+      return false;
+    }
+
+    // Check if already favorited
+    if (favorites.includes(propertyId)) {
+      return true;
     }
 
     // Optimistically update UI first
     setFavorites((prev) => [...prev, propertyId]);
 
     try {
+      // Double-check session before making request
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        setFavorites((prev) => prev.filter((id) => id !== propertyId));
+        toast({ 
+          title: 'Session expirée', 
+          description: 'Veuillez vous reconnecter.',
+          variant: 'destructive' 
+        });
+        return false;
+      }
+
       const { error } = await supabase
         .from('favorites')
         .insert({ user_id: user.id, property_id: propertyId });
@@ -51,7 +81,18 @@ export const useFavorites = () => {
         // Revert on error
         setFavorites((prev) => prev.filter((id) => id !== propertyId));
         console.error('Error adding favorite:', error);
-        toast({ title: 'Erreur', description: 'Impossible d\'ajouter aux favoris. Vérifiez votre connexion.', variant: 'destructive' });
+        
+        // Handle specific errors
+        if (error.code === '23505') {
+          // Duplicate key - already favorited, just return success
+          return true;
+        }
+        
+        toast({ 
+          title: 'Erreur', 
+          description: 'Impossible d\'ajouter aux favoris. Vérifiez votre connexion.', 
+          variant: 'destructive' 
+        });
         return false;
       }
 
@@ -60,7 +101,11 @@ export const useFavorites = () => {
       // Revert on error
       setFavorites((prev) => prev.filter((id) => id !== propertyId));
       console.error('Error adding favorite:', error);
-      toast({ title: 'Erreur', description: 'Impossible d\'ajouter aux favoris. Vérifiez votre connexion.', variant: 'destructive' });
+      toast({ 
+        title: 'Erreur', 
+        description: 'Impossible d\'ajouter aux favoris. Vérifiez votre connexion.', 
+        variant: 'destructive' 
+      });
       return false;
     }
   };
