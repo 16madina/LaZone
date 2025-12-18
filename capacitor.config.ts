@@ -1,13 +1,23 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
+// Production builds should NOT use a remote server URL.
+// If you want hot-reload during local native development, set:
+//   CAPACITOR_SERVER_URL="http://YOUR_IP:5173"
+// then run: npx cap sync android/ios
+const devServerUrl = process.env.CAPACITOR_SERVER_URL;
+
 const config: CapacitorConfig = {
   appId: 'com.lazone.app',
   appName: 'LaZone',
   webDir: 'dist',
-  server: {
-    url: 'https://8555b7d9-5bbc-422a-b78d-1f70f2b81296.lovableproject.com?forceHideBadge=true',
-    cleartext: true
-  },
+  ...(devServerUrl
+    ? {
+        server: {
+          url: devServerUrl,
+          cleartext: true,
+        },
+      }
+    : {}),
   ios: {
     contentInset: 'automatic',
     preferredContentMode: 'mobile',
