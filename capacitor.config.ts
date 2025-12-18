@@ -7,7 +7,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const devServerUrl = process.env.CAPACITOR_SERVER_URL;
 
 const config: CapacitorConfig = {
-  appId: 'com.lazone.app',
+  appId: 'com.lazone.afrique',
   appName: 'LaZone',
   webDir: 'dist',
   ...(devServerUrl
