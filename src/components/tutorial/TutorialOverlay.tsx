@@ -67,7 +67,7 @@ const TutorialOverlay = () => {
     const vw = vv?.width ?? window.innerWidth;
     const vh = vv?.height ?? window.innerHeight;
 
-    const tooltipWidth = Math.min(320, vw - padding * 2);
+    const tooltipWidth = Math.min(280, vw - padding * 2);
     const availableHeight = Math.max(0, vh - padding * 2);
     const effectiveHeight = Math.min(tooltipHeight || 240, availableHeight);
 
@@ -161,7 +161,7 @@ const TutorialOverlay = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/70"
+          className="absolute inset-0 bg-black/40"
         />
 
         {/* Spotlight on target element */}
@@ -175,7 +175,7 @@ const TutorialOverlay = () => {
               left: targetRect.left - 8,
               width: targetRect.width + 16,
               height: targetRect.height + 16,
-              boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.7)',
+              boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.4)',
               borderRadius: '12px',
               border: '2px solid hsl(var(--primary))',
               pointerEvents: 'none',

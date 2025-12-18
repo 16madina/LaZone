@@ -15,70 +15,70 @@ export type TutorialSection = 'full' | 'home' | 'map' | 'publish' | 'messages' |
 const fullTutorialSteps: TutorialStep[] = [
   {
     id: 'welcome',
-    title: 'Bienvenue sur LaZone ! 🏠',
-    description: 'Découvrez la première plateforme immobilière panafricaine. Ce tutoriel vous guidera à travers les principales fonctionnalités.',
+    title: 'Bienvenue ! 🏠',
+    description: 'Découvrez LaZone en quelques étapes.',
     position: 'center'
   },
   {
     id: 'search',
-    title: 'Recherchez votre bien idéal',
-    description: 'Utilisez la barre de recherche et les filtres pour trouver des propriétés. Filtrez par type (maison, appartement, terrain), prix et transaction (achat/location).',
+    title: 'Recherche',
+    description: 'Trouvez des propriétés par ville ou quartier.',
     target: '[data-tutorial="search"]',
     position: 'bottom',
     route: '/'
   },
   {
     id: 'country',
-    title: 'Changez de pays',
-    description: 'Cliquez sur le drapeau pour voir les propriétés d\'autres pays africains. Les prix s\'affichent automatiquement dans la devise locale.',
+    title: 'Pays',
+    description: 'Cliquez sur le drapeau pour changer de pays.',
     target: '[data-tutorial="country"]',
     position: 'bottom',
     route: '/'
   },
   {
     id: 'property-card',
-    title: 'Explorez les propriétés',
-    description: 'Faites glisser les images pour voir plus de photos. Cliquez sur le cœur pour sauvegarder en favoris. Appuyez sur la carte pour voir les détails.',
+    title: 'Propriétés',
+    description: 'Glissez pour voir les photos, cliquez pour détails.',
     target: '[data-tutorial="property-card"]',
     position: 'top',
     route: '/'
   },
   {
     id: 'map',
-    title: 'Vue carte interactive',
-    description: 'Visualisez toutes les propriétés sur la carte. Zoomez sur une zone et cliquez sur les marqueurs pour découvrir les biens disponibles.',
+    title: 'Carte',
+    description: 'Visualisez les propriétés sur la carte.',
     target: '[data-tutorial="nav-map"]',
     position: 'top',
     route: '/'
   },
   {
     id: 'publish',
-    title: 'Publiez votre annonce',
-    description: 'Vendez ou louez votre bien facilement. Ajoutez des photos, une description, et placez votre propriété sur la carte.',
+    title: 'Publier',
+    description: 'Vendez ou louez votre bien.',
     target: '[data-tutorial="nav-publish"]',
     position: 'top',
     route: '/'
   },
   {
     id: 'messages',
-    title: 'Messagerie intégrée',
-    description: 'Communiquez directement avec les vendeurs et acheteurs. Envoyez des messages, photos et prenez des rendez-vous.',
+    title: 'Messages',
+    description: 'Discutez avec vendeurs et acheteurs.',
     target: '[data-tutorial="nav-messages"]',
     position: 'top',
     route: '/'
   },
   {
     id: 'profile',
-    title: 'Votre profil',
-    description: 'Gérez vos annonces, rendez-vous, favoris et paramètres. Vérifiez votre email pour obtenir un badge de confiance.',
+    title: 'Profil',
+    description: 'Gérez vos annonces et paramètres.',
     target: '[data-tutorial="nav-profile"]',
     position: 'top',
     route: '/'
   },
   {
     id: 'complete',
-    title: 'Vous êtes prêt ! 🎉',
-    description: 'Explorez maintenant LaZone et trouvez votre prochain chez-vous. N\'hésitez pas à consulter la FAQ si vous avez des questions.',
+    title: 'Prêt ! 🎉',
+    description: 'Bonne exploration de LaZone !',
     position: 'center'
   }
 ];
@@ -88,196 +88,196 @@ const sectionTutorials: Record<TutorialSection, TutorialStep[]> = {
   home: [
     {
       id: 'home-intro',
-      title: 'Bienvenue sur l\'Accueil 🏠',
-      description: 'Découvrez toutes les propriétés disponibles dans votre zone. Voici comment naviguer efficacement.',
+      title: 'Accueil 🏠',
+      description: 'Parcourez les propriétés de votre zone.',
       position: 'center'
     },
     {
       id: 'home-search',
-      title: 'Barre de recherche',
-      description: 'Recherchez par ville, quartier ou type de bien. Utilisez les mots-clés pour affiner vos résultats.',
+      title: 'Recherche',
+      description: 'Tapez une ville ou un quartier.',
       target: '[data-tutorial="search"]',
       position: 'bottom'
     },
     {
       id: 'home-filters',
-      title: 'Filtres avancés',
-      description: 'Cliquez sur l\'icône filtre pour définir le prix, le nombre de chambres, le type de transaction et plus encore.',
+      title: 'Filtres',
+      description: 'Affinez par prix et type de bien.',
       target: '[data-tutorial="filters"]',
       position: 'bottom'
     },
     {
       id: 'home-country',
-      title: 'Sélection du pays',
-      description: 'Changez de pays en cliquant sur le drapeau. Les propriétés et devises s\'adaptent automatiquement.',
+      title: 'Pays',
+      description: 'Changez de pays via le drapeau.',
       target: '[data-tutorial="country"]',
       position: 'bottom'
     },
     {
       id: 'home-properties',
-      title: 'Cartes de propriétés',
-      description: 'Glissez pour voir les photos, cliquez sur le cœur pour sauvegarder, appuyez pour voir les détails.',
+      title: 'Propriétés',
+      description: 'Glissez les photos, cliquez pour détails.',
       target: '[data-tutorial="property-card"]',
       position: 'top'
     },
     {
       id: 'home-complete',
       title: 'C\'est parti ! ✨',
-      description: 'Vous maîtrisez maintenant l\'accueil. Explorez les propriétés et trouvez votre prochain chez-vous.',
+      description: 'Bonne exploration !',
       position: 'center'
     }
   ],
   map: [
     {
       id: 'map-intro',
-      title: 'Vue Carte 🗺️',
-      description: 'Visualisez toutes les propriétés sur une carte interactive pour mieux localiser les biens.',
+      title: 'Carte 🗺️',
+      description: 'Localisez les biens sur la carte.',
       position: 'center'
     },
     {
       id: 'map-markers',
-      title: 'Marqueurs de propriétés',
-      description: 'Chaque marqueur représente une propriété. Cliquez dessus pour voir un aperçu rapide.',
+      title: 'Marqueurs',
+      description: 'Cliquez sur un marqueur pour voir le bien.',
       target: '[data-tutorial="map-markers"]',
       position: 'top'
     },
     {
       id: 'map-zoom',
-      title: 'Navigation sur la carte',
-      description: 'Zoomez avec les boutons +/- ou pincez sur mobile. Déplacez-vous en faisant glisser la carte.',
+      title: 'Navigation',
+      description: 'Zoomez avec +/- ou pincez sur mobile.',
       target: '[data-tutorial="map-controls"]',
       position: 'left'
     },
     {
       id: 'map-filter',
-      title: 'Filtrer par pays',
-      description: 'Utilisez le bouton filtre pour voir les propriétés d\'un pays spécifique.',
+      title: 'Pays',
+      description: 'Filtrez par pays avec le bouton.',
       target: '[data-tutorial="map-filter"]',
       position: 'bottom'
     },
     {
       id: 'map-complete',
       title: 'Explorez ! 📍',
-      description: 'La carte est votre meilleur outil pour découvrir des propriétés par emplacement. Bonne exploration !',
+      description: 'Bonne exploration !',
       position: 'center'
     }
   ],
   publish: [
     {
       id: 'publish-intro',
-      title: 'Publier une annonce 📝',
-      description: 'Vendez ou louez votre bien en quelques étapes simples. Voici comment créer une annonce attractive.',
+      title: 'Publier 📝',
+      description: 'Créez votre annonce en quelques étapes.',
       position: 'center'
     },
     {
       id: 'publish-photos',
-      title: 'Ajoutez des photos',
-      description: 'Les annonces avec photos attirent 10x plus de visiteurs. Ajoutez jusqu\'à 10 photos de qualité.',
+      title: 'Photos',
+      description: 'Ajoutez jusqu\'à 10 photos.',
       target: '[data-tutorial="publish-photos"]',
       position: 'bottom'
     },
     {
       id: 'publish-details',
-      title: 'Détails du bien',
-      description: 'Renseignez le titre, la description, le prix et les caractéristiques. Soyez précis pour attirer les bons acheteurs.',
+      title: 'Détails',
+      description: 'Renseignez titre, prix et description.',
       target: '[data-tutorial="publish-details"]',
       position: 'bottom'
     },
     {
       id: 'publish-location',
-      title: 'Localisation sur la carte',
-      description: 'Placez le marqueur sur la carte pour indiquer l\'emplacement exact. Cela aide les acheteurs à vous trouver.',
+      title: 'Localisation',
+      description: 'Placez le marqueur sur la carte.',
       target: '[data-tutorial="publish-location"]',
       position: 'top'
     },
     {
       id: 'publish-complete',
-      title: 'Prêt à publier ! 🎉',
-      description: 'Vérifiez les informations et publiez. Votre annonce sera visible immédiatement par tous les utilisateurs.',
+      title: 'Publié ! 🎉',
+      description: 'Votre annonce est visible.',
       position: 'center'
     }
   ],
   messages: [
     {
       id: 'messages-intro',
-      title: 'Messagerie 💬',
-      description: 'Communiquez directement avec les vendeurs et acheteurs. Voici comment utiliser la messagerie.',
+      title: 'Messages 💬',
+      description: 'Discutez avec vendeurs et acheteurs.',
       position: 'center'
     },
     {
       id: 'messages-conversations',
-      title: 'Vos conversations',
-      description: 'Retrouvez toutes vos discussions ici. Chaque conversation est liée à une propriété spécifique.',
+      title: 'Conversations',
+      description: 'Vos discussions par propriété.',
       target: '[data-tutorial="messages-list"]',
       position: 'bottom'
     },
     {
       id: 'messages-send',
-      title: 'Envoyer un message',
-      description: 'Tapez votre message et appuyez sur envoyer. Vous pouvez aussi joindre des photos et documents.',
+      title: 'Envoyer',
+      description: 'Tapez et envoyez messages et photos.',
       target: '[data-tutorial="messages-input"]',
       position: 'top'
     },
     {
       id: 'messages-appointment',
-      title: 'Prendre rendez-vous',
-      description: 'Utilisez le menu (3 points) pour proposer un rendez-vous directement depuis la conversation.',
+      title: 'Rendez-vous',
+      description: 'Proposez un RDV via le menu (3 points).',
       target: '[data-tutorial="messages-menu"]',
       position: 'bottom'
     },
     {
       id: 'messages-complete',
-      title: 'Restez connecté ! 📱',
-      description: 'Les notifications vous alertent des nouveaux messages. Répondez rapidement pour conclure vos affaires.',
+      title: 'Connecté ! 📱',
+      description: 'Répondez vite pour conclure.',
       position: 'center'
     }
   ],
   profile: [
     {
       id: 'profile-intro',
-      title: 'Votre Profil 👤',
-      description: 'Gérez votre compte, vos annonces et vos paramètres. Voici un tour rapide de votre espace.',
+      title: 'Profil 👤',
+      description: 'Gérez compte et annonces.',
       position: 'center'
     },
     {
       id: 'profile-info',
-      title: 'Informations personnelles',
-      description: 'Cliquez sur l\'icône profil pour voir et modifier vos informations. Un profil complet inspire confiance.',
+      title: 'Infos',
+      description: 'Modifiez vos informations.',
       target: '[data-tutorial="profile-info"]',
       position: 'bottom'
     },
     {
       id: 'profile-listings',
-      title: 'Mes annonces',
-      description: 'Retrouvez toutes vos propriétés publiées. Modifiez, activez ou supprimez vos annonces ici.',
+      title: 'Annonces',
+      description: 'Vos propriétés publiées.',
       target: '[data-tutorial="profile-listings"]',
       position: 'bottom'
     },
     {
       id: 'profile-appointments',
-      title: 'Mes rendez-vous',
-      description: 'Gérez les demandes de visite. Acceptez, refusez ou reprogrammez les rendez-vous.',
+      title: 'RDV',
+      description: 'Gérez vos rendez-vous.',
       target: '[data-tutorial="profile-appointments"]',
       position: 'bottom'
     },
     {
       id: 'profile-favorites',
-      title: 'Mes favoris',
-      description: 'Retrouvez toutes les propriétés que vous avez sauvegardées d\'un simple clic.',
+      title: 'Favoris',
+      description: 'Vos propriétés sauvegardées.',
       target: '[data-tutorial="profile-favorites"]',
       position: 'bottom'
     },
     {
       id: 'profile-settings',
       title: 'Paramètres',
-      description: 'Personnalisez votre expérience : notifications, langue, sécurité et plus encore.',
+      description: 'Personnalisez l\'app.',
       target: '[data-tutorial="profile-settings"]',
       position: 'bottom'
     },
     {
       id: 'profile-complete',
       title: 'Votre espace ! 🌟',
-      description: 'Votre profil est votre vitrine. Gardez-le à jour pour maximiser vos chances de succès.',
+      description: 'Profil à jour = plus de succès.',
       position: 'center'
     }
   ]
