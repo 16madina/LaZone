@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, MapPin, Bed, Bath, Maximize, Search, Loader2, Navigation, Check, Globe } from 'lucide-react';
+import { Filter, X, MapPin, Bed, Bath, Maximize, Search, Loader2, Navigation, Check, Globe, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useProperties, Property } from '@/hooks/useProperties';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,12 +13,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { africanCountries, Country } from '@/data/africanCountries';
 import SectionTutorialButton from '@/components/tutorial/SectionTutorialButton';
@@ -91,7 +90,6 @@ const MapPage = () => {
   const [countryFilter, setCountryFilter] = useState<Country | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locatingUser, setLocatingUser] = useState(false);
-  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [initialCountrySet, setInitialCountrySet] = useState(false);
 
   // Default center (Africa)
@@ -207,7 +205,7 @@ const MapPage = () => {
 
   const loadLeaflet = () => {
     if (mapContainerRef.current && !mapRef.current) {
-      const map = L.map(mapContainerRef.current).setView([defaultCenter.lat, defaultCenter.lng], 13);
+      const map = L.map(mapContainerRef.current, { zoomControl: false }).setView([defaultCenter.lat, defaultCenter.lng], 13);
       
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
@@ -265,7 +263,6 @@ const MapPage = () => {
 
   const handleCountrySelect = (country: Country | null) => {
     setCountryFilter(country);
-    setFilterSheetOpen(false);
     
     if (country && mapRef.current) {
       const coords = countryCoordinates[country.code];
@@ -440,9 +437,9 @@ const MapPage = () => {
         style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
       >
         <div className="flex gap-2">
-          <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
-            <SheetTrigger asChild>
-              <button className={`p-3 rounded-xl shadow-md border ${countryFilter ? 'bg-primary text-primary-foreground' : 'bg-card'}`}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className={`p-3 rounded-xl shadow-md border flex items-center gap-1 ${countryFilter ? 'bg-primary text-primary-foreground' : 'bg-card'}`}>
                 {countryFilter ? (
                   <img 
                     src={`https://flagcdn.com/w40/${countryFilter.code.toLowerCase()}.png`}
@@ -452,48 +449,40 @@ const MapPage = () => {
                 ) : (
                   <Globe className="w-5 h-5" />
                 )}
+                <ChevronDown className="w-3 h-3" />
               </button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-80 p-0">
-              <SheetHeader className="p-4 border-b" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}>
-                <SheetTitle>Sélectionner un pays</SheetTitle>
-              </SheetHeader>
-              <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - env(safe-area-inset-top, 0px) - 120px)' }}>
-                {/* All countries option */}
-                <button
-                  onClick={() => handleCountrySelect(null)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left ${
-                    !countryFilter ? 'bg-primary/10' : ''
-                  }`}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64 max-h-80 overflow-y-auto bg-card border shadow-lg z-[1001]">
+              {/* All countries option */}
+              <DropdownMenuItem
+                onClick={() => handleCountrySelect(null)}
+                className={`flex items-center gap-3 cursor-pointer ${!countryFilter ? 'bg-primary/10' : ''}`}
+              >
+                <Globe className="w-5 h-5 text-muted-foreground" />
+                <span className="flex-1 text-sm font-medium">Tous les pays</span>
+                {!countryFilter && <Check className="w-4 h-4 text-primary" />}
+              </DropdownMenuItem>
+              
+              {/* Country list */}
+              {africanCountries.map((country) => (
+                <DropdownMenuItem
+                  key={country.code}
+                  onClick={() => handleCountrySelect(country)}
+                  className={`flex items-center gap-3 cursor-pointer ${countryFilter?.code === country.code ? 'bg-primary/10' : ''}`}
                 >
-                  <Globe className="w-6 h-6 text-muted-foreground" />
-                  <span className="flex-1 text-sm font-medium">Tous les pays</span>
-                  {!countryFilter && <Check className="w-4 h-4 text-primary" />}
-                </button>
-                
-                {/* Country list */}
-                {africanCountries.map((country) => (
-                  <button
-                    key={country.code}
-                    onClick={() => handleCountrySelect(country)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left ${
-                      countryFilter?.code === country.code ? 'bg-primary/10' : ''
-                    }`}
-                  >
-                    <img
-                      src={`https://flagcdn.com/w40/${country.code.toLowerCase()}.png`}
-                      alt={country.name}
-                      className="w-6 h-4 rounded-sm object-cover"
-                    />
-                    <span className="flex-1 text-sm">{country.name}</span>
-                    {countryFilter?.code === country.code && (
-                      <Check className="w-4 h-4 text-primary" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </SheetContent>
-          </Sheet>
+                  <img
+                    src={`https://flagcdn.com/w40/${country.code.toLowerCase()}.png`}
+                    alt={country.name}
+                    className="w-5 h-4 rounded-sm object-cover"
+                  />
+                  <span className="flex-1 text-sm">{country.name}</span>
+                  {countryFilter?.code === country.code && (
+                    <Check className="w-4 h-4 text-primary" />
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
