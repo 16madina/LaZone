@@ -142,12 +142,12 @@ const PushNotificationTestPage = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b pt-safe">
         <div className="flex items-center gap-3 p-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-lg font-semibold">Test Notifications Push</h1>
+          <h1 className="text-lg font-semibold truncate">Test Notifications Push</h1>
         </div>
       </div>
 
