@@ -643,7 +643,7 @@ const ConversationView = ({ participantId, propertyId, onBack }: ConversationVie
   return (
     <div className="flex flex-col h-[calc(100vh-80px)]">
       {/* Header */}
-      <div className="bg-card border-b border-border">
+      <div className="bg-card border-b border-border pt-[env(safe-area-inset-top)]">
         <div className="p-4 flex items-center gap-3">
           <button onClick={onBack} className="p-2 hover:bg-muted rounded-full">
             <ArrowLeft className="w-5 h-5" />
