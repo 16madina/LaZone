@@ -5,7 +5,7 @@ export interface TutorialStep {
   title: string;
   description: string;
   target?: string;
-  position?: 'top' | 'bottom' | 'left' | 'right' | 'center';
+  position?: 'top' | 'bottom' | 'left' | 'right' | 'center' | 'map-center';
   action?: string;
   route?: string;
 }
@@ -129,39 +129,10 @@ const sectionTutorials: Record<TutorialSection, TutorialStep[]> = {
   ],
   map: [
     {
-      id: 'map-country',
-      title: 'Sélecteur de pays 🌍',
-      description: 'Choisissez un pays africain pour voir ses propriétés.',
-      target: '[data-tutorial="map-country"]',
-      position: 'right'
-    },
-    {
-      id: 'map-search',
-      title: 'Recherche rapide 🔍',
-      description: 'Tapez une ville ou un quartier.',
-      target: '[data-tutorial="map-search"]',
-      position: 'bottom'
-    },
-    {
-      id: 'map-filters',
-      title: 'Filtres',
-      description: 'Vente, Location ou Terrain.',
-      target: '[data-tutorial="map-filters"]',
-      position: 'bottom'
-    },
-    {
       id: 'map-markers',
       title: 'Les marqueurs 📍',
-      description: 'Cliquez sur un marqueur pour voir les détails du bien.',
-      target: '[data-tutorial="map-view"]',
-      position: 'bottom'
-    },
-    {
-      id: 'map-zoom',
-      title: 'Zoom +/-',
-      description: 'Zoomez pour plus de détails.',
-      target: '[data-tutorial="map-zoom"]',
-      position: 'left'
+      description: 'Les marqueurs orange groupent plusieurs biens. Cliquez sur un marqueur pour voir les détails et le prix.',
+      position: 'map-center'
     }
   ],
   publish: [

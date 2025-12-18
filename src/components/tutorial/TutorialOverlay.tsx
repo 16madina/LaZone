@@ -98,11 +98,26 @@ const TutorialOverlay = () => {
       maxHeight: `${availableHeight}px`,
     };
 
+    // Special position for map page - centered at 55% of screen height
+    const mapCentered = {
+      position: 'fixed' as const,
+      top: vh * 0.55,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      width: 'auto',
+      maxWidth: `${tooltipWidth}px`,
+      maxHeight: `${availableHeight}px`,
+    };
+
     const base = {
       maxWidth: `calc(100vw - ${padding * 2}px)`,
       width: `${tooltipWidth}px`,
       maxHeight: `${availableHeight}px`,
     };
+
+    if (step.position === 'map-center') {
+      return mapCentered;
+    }
 
     if (!targetRect || step.position === 'center') {
       return centered;
