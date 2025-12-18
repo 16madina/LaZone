@@ -39,18 +39,28 @@ export const useFavorites = () => {
       return false;
     }
 
+    // Optimistically update UI first
+    setFavorites((prev) => [...prev, propertyId]);
+
     try {
       const { error } = await supabase
         .from('favorites')
         .insert({ user_id: user.id, property_id: propertyId });
 
-      if (error) throw error;
+      if (error) {
+        // Revert on error
+        setFavorites((prev) => prev.filter((id) => id !== propertyId));
+        console.error('Error adding favorite:', error);
+        toast({ title: 'Erreur', description: 'Impossible d\'ajouter aux favoris. Vérifiez votre connexion.', variant: 'destructive' });
+        return false;
+      }
 
-      setFavorites((prev) => [...prev, propertyId]);
       return true;
     } catch (error) {
+      // Revert on error
+      setFavorites((prev) => prev.filter((id) => id !== propertyId));
       console.error('Error adding favorite:', error);
-      toast({ title: 'Erreur', description: 'Impossible d\'ajouter aux favoris', variant: 'destructive' });
+      toast({ title: 'Erreur', description: 'Impossible d\'ajouter aux favoris. Vérifiez votre connexion.', variant: 'destructive' });
       return false;
     }
   };
@@ -59,6 +69,10 @@ export const useFavorites = () => {
   const removeFavorite = async (propertyId: string) => {
     if (!user) return false;
 
+    // Optimistically update UI first
+    const previousFavorites = [...favorites];
+    setFavorites((prev) => prev.filter((id) => id !== propertyId));
+
     try {
       const { error } = await supabase
         .from('favorites')
@@ -66,11 +80,18 @@ export const useFavorites = () => {
         .eq('user_id', user.id)
         .eq('property_id', propertyId);
 
-      if (error) throw error;
+      if (error) {
+        // Revert on error
+        setFavorites(previousFavorites);
+        console.error('Error removing favorite:', error);
+        toast({ title: 'Erreur', description: 'Impossible de retirer des favoris', variant: 'destructive' });
+        return false;
+      }
 
-      setFavorites((prev) => prev.filter((id) => id !== propertyId));
       return true;
     } catch (error) {
+      // Revert on error
+      setFavorites(previousFavorites);
       console.error('Error removing favorite:', error);
       toast({ title: 'Erreur', description: 'Impossible de retirer des favoris', variant: 'destructive' });
       return false;
