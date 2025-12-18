@@ -1502,7 +1502,21 @@ const AdminPage = () => {
 
                 {filteredProperties.map((property) => (
                   <div key={property.id} className="bg-card rounded-xl p-4 shadow-sm">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      {/* Thumbnail */}
+                      <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-muted">
+                        {property.image_url ? (
+                          <img 
+                            src={property.image_url} 
+                            alt={property.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Home className="w-6 h-6 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <h3 className="font-medium truncate">{property.title}</h3>
