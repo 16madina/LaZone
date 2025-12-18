@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { africanCountries } from '@/data/africanCountries';
 import { Property } from '@/hooks/useProperties';
 import { toast } from '@/hooks/use-toast';
+import { VendorBadge, BadgeLevel } from '@/components/VendorBadge';
 
 interface UserProfile {
   id: string;
@@ -54,6 +55,7 @@ const PublicProfilePage = () => {
   const [followersCount, setFollowersCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [userBadge, setUserBadge] = useState<BadgeLevel>('none');
 
   useEffect(() => {
     if (userId) {
@@ -61,6 +63,7 @@ const PublicProfilePage = () => {
       fetchUserProperties();
       fetchReviews();
       fetchFollowersCount();
+      fetchUserBadge();
     }
   }, [userId]);
 
@@ -192,6 +195,19 @@ const PublicProfilePage = () => {
       setFollowersCount(count || 0);
     } catch (error) {
       console.error('Error fetching followers count:', error);
+    }
+  };
+
+  const fetchUserBadge = async () => {
+    try {
+      const { data } = await supabase
+        .from('user_badges')
+        .select('badge_level')
+        .eq('user_id', userId)
+        .maybeSingle();
+      setUserBadge((data?.badge_level as BadgeLevel) || 'none');
+    } catch (error) {
+      console.error('Error fetching user badge:', error);
     }
   };
 
@@ -353,10 +369,13 @@ const PublicProfilePage = () => {
 
             {/* Info */}
             <div className="flex-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="font-display font-bold text-xl">
                   {profile.full_name || 'Utilisateur'}
                 </h2>
+                {userBadge !== 'none' && (
+                  <VendorBadge level={userBadge} size="md" />
+                )}
                 {profile.email_verified && (
                   <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
                     <BadgeCheck className="w-3 h-3" />

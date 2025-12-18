@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export type BadgeLevel = 'none' | 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
+
 export interface Property {
   id: string;
   title: string;
@@ -20,6 +22,7 @@ export interface Property {
   lng: number | null;
   createdAt: string;
   userId: string;
+  vendorBadge?: BadgeLevel;
 }
 
 export const useProperties = () => {
@@ -52,6 +55,17 @@ export const useProperties = () => {
 
       if (propertiesError) throw propertiesError;
 
+      // Fetch all badges for the property owners
+      const userIds = [...new Set((propertiesData || []).map(p => p.user_id))];
+      const { data: badgesData } = await supabase
+        .from('user_badges')
+        .select('user_id, badge_level')
+        .in('user_id', userIds);
+
+      const badgeMap = new Map(
+        (badgesData || []).map(b => [b.user_id, b.badge_level as BadgeLevel])
+      );
+
       const formattedProperties: Property[] = (propertiesData || []).map((p) => {
         // Sort images: primary first, then by display_order
         const sortedImages = (p.property_images || [])
@@ -81,6 +95,7 @@ export const useProperties = () => {
           lng: p.lng ? Number(p.lng) : null,
           createdAt: p.created_at,
           userId: p.user_id,
+          vendorBadge: badgeMap.get(p.user_id) || 'none',
         };
       });
 

@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { formatPriceWithCurrency } from '@/data/currencies';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination } from 'swiper/modules';
+import { VendorBadge } from '@/components/VendorBadge';
 import 'swiper/css';
 import 'swiper/css/pagination';
 
@@ -112,9 +113,14 @@ export const PropertyCard = ({ property, userCountry, isFirst = false }: Propert
       <Link to={`/property/${property.id}`}>
         <div className="p-4">
           <div className="flex items-start justify-between mb-2">
-            <h3 className="font-display font-semibold text-lg leading-tight line-clamp-1">
-              {property.title}
-            </h3>
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <h3 className="font-display font-semibold text-lg leading-tight line-clamp-1">
+                {property.title}
+              </h3>
+              {property.vendorBadge && property.vendorBadge !== 'none' && (
+                <VendorBadge level={property.vendorBadge} size="sm" />
+              )}
+            </div>
           </div>
 
           <p className="gradient-text font-display font-bold text-xl mb-2">

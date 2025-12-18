@@ -620,6 +620,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_badges: {
+        Row: {
+          average_rating: number | null
+          badge_level: string
+          created_at: string
+          id: string
+          listings_count: number
+          reviews_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          average_rating?: number | null
+          badge_level?: string
+          created_at?: string
+          id?: string
+          listings_count?: number
+          reviews_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          average_rating?: number | null
+          badge_level?: string
+          created_at?: string
+          id?: string
+          listings_count?: number
+          reviews_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_bans: {
         Row: {
           admin_id: string
@@ -793,6 +826,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_badge_level: {
+        Args: {
+          p_average_rating: number
+          p_listings_count: number
+          p_reviews_count: number
+        }
+        Returns: string
+      }
       get_user_email_by_phone: {
         Args: { phone_number: string }
         Returns: string
