@@ -322,7 +322,8 @@ const PropertyDetailPage = () => {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute top-4 left-4 right-4 flex justify-between z-10"
+          className="absolute left-4 right-4 flex justify-between z-10"
+          style={{ top: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
         >
           <motion.button
             whileTap={{ scale: 0.9 }}
