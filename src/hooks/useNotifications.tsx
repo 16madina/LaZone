@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { getSoundInstance } from './useSound';
+import { isNativePlatform } from './useNativePlugins';
 
 interface Notification {
   id: string;
@@ -20,16 +21,29 @@ interface Notification {
 // Track if we've already logged the notification warning
 let hasLoggedNotificationWarning = false;
 
-// Check if browser notifications are supported
+// Check if browser notifications are supported (only relevant for web)
 const isBrowserNotificationSupported = (): boolean => {
+  // On native platforms, we use Capacitor Push Notifications instead
+  if (isNativePlatform()) {
+    return false;
+  }
   return typeof window !== 'undefined' && 'Notification' in window;
 };
 
-// Request browser notification permission
+// Request browser notification permission (web only)
 const requestNotificationPermission = async (): Promise<boolean> => {
+  // On native platforms, permissions are handled by Capacitor
+  if (isNativePlatform()) {
+    if (!hasLoggedNotificationWarning) {
+      console.log('Using native push notifications via Capacitor');
+      hasLoggedNotificationWarning = true;
+    }
+    return true; // Native notifications are handled separately
+  }
+
   if (!isBrowserNotificationSupported()) {
     if (!hasLoggedNotificationWarning) {
-      console.log('Browser notifications not supported (using native push instead)');
+      console.log('Browser notifications not supported');
       hasLoggedNotificationWarning = true;
     }
     return false;
@@ -47,9 +61,14 @@ const requestNotificationPermission = async (): Promise<boolean> => {
   return false;
 };
 
-// Show browser notification
+// Show browser notification (web only)
 const showBrowserNotification = (title: string, body: string, icon?: string) => {
-  if (Notification.permission === 'granted') {
+  // Skip on native platforms - they use Capacitor push notifications
+  if (isNativePlatform()) {
+    return;
+  }
+  
+  if (isBrowserNotificationSupported() && Notification.permission === 'granted') {
     const notification = new Notification(title, {
       body,
       icon: icon || '/favicon.ico',
@@ -64,6 +83,31 @@ const showBrowserNotification = (title: string, body: string, icon?: string) => 
 
     // Auto close after 5 seconds
     setTimeout(() => notification.close(), 5000);
+  }
+};
+
+// Send native push notification via edge function
+export const sendPushNotification = async (
+  userId: string,
+  title: string,
+  body: string,
+  data?: Record<string, string>
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase.functions.invoke('send-push-notification', {
+      body: { userId, title, body, data }
+    });
+
+    if (error) {
+      console.error('Error sending push notification:', error);
+      return false;
+    }
+    
+    console.log('Push notification sent successfully');
+    return true;
+  } catch (error) {
+    console.error('Failed to send push notification:', error);
+    return false;
   }
 };
 
