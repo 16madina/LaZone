@@ -335,6 +335,7 @@ const MessagesPage = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
         className="search-bar mb-4"
+        data-tutorial="messages-search"
       >
         <Search className="w-5 h-5 text-muted-foreground" />
         <input
@@ -352,6 +353,7 @@ const MessagesPage = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
         className="grid grid-cols-4 gap-2 mb-4"
+        data-tutorial="messages-tabs"
       >
         <button
           onClick={() => setActiveTab('all')}
@@ -421,7 +423,7 @@ const MessagesPage = () => {
           </p>
         </motion.div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3" data-tutorial="messages-list">
           {filteredConversations.map((conversation, index) => (
             <SwipeableConversation
               key={conversation.id}
@@ -677,7 +679,7 @@ const ConversationView = ({ participantId, propertyId, onBack }: ConversationVie
           {/* 3-dot Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="p-2 hover:bg-muted rounded-full">
+              <button className="p-2 hover:bg-muted rounded-full" data-tutorial="messages-menu">
                 <MoreVertical className="w-5 h-5 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
@@ -902,7 +904,7 @@ const ConversationView = ({ participantId, propertyId, onBack }: ConversationVie
       )}
 
       {/* Input */}
-      <div className="p-4 bg-card border-t border-border">
+      <div className="p-4 bg-card border-t border-border" data-tutorial="messages-input">
         <div className="flex items-center gap-2">
           <input
             type="file"

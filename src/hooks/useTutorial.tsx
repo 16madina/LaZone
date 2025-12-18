@@ -135,11 +135,18 @@ const sectionTutorials: Record<TutorialSection, TutorialStep[]> = {
       position: 'center'
     },
     {
+      id: 'map-view',
+      title: 'Carte interactive',
+      description: 'Cliquez sur un marqueur pour voir le bien.',
+      target: '[data-tutorial="map-view"]',
+      position: 'center'
+    },
+    {
       id: 'map-country',
       title: 'Pays',
       description: 'Sélectionnez un pays africain.',
       target: '[data-tutorial="map-country"]',
-      position: 'bottom'
+      position: 'right'
     },
     {
       id: 'map-search',
@@ -154,13 +161,6 @@ const sectionTutorials: Record<TutorialSection, TutorialStep[]> = {
       description: 'Filtrez par type (vente/location).',
       target: '[data-tutorial="map-filters"]',
       position: 'bottom'
-    },
-    {
-      id: 'map-view',
-      title: 'Carte',
-      description: 'Cliquez sur un marqueur pour voir le bien.',
-      target: '[data-tutorial="map-view"]',
-      position: 'top'
     },
     {
       id: 'map-zoom',
@@ -186,16 +186,16 @@ const sectionTutorials: Record<TutorialSection, TutorialStep[]> = {
     {
       id: 'publish-photos',
       title: 'Photos',
-      description: 'Ajoutez jusqu\'à 10 photos.',
+      description: 'Ajoutez jusqu\'à 6 photos de qualité.',
       target: '[data-tutorial="publish-photos"]',
-      position: 'bottom'
+      position: 'center'
     },
     {
       id: 'publish-details',
-      title: 'Détails',
-      description: 'Renseignez titre, prix et description.',
+      title: 'Type de bien',
+      description: 'Choisissez maison, appartement, terrain...',
       target: '[data-tutorial="publish-details"]',
-      position: 'bottom'
+      position: 'center'
     },
     {
       id: 'publish-location',
@@ -207,7 +207,7 @@ const sectionTutorials: Record<TutorialSection, TutorialStep[]> = {
     {
       id: 'publish-complete',
       title: 'Publié ! 🎉',
-      description: 'Votre annonce est visible.',
+      description: 'Votre annonce sera visible.',
       position: 'center'
     }
   ],
@@ -219,25 +219,25 @@ const sectionTutorials: Record<TutorialSection, TutorialStep[]> = {
       position: 'center'
     },
     {
-      id: 'messages-conversations',
+      id: 'messages-search',
+      title: 'Recherche',
+      description: 'Recherchez une conversation.',
+      target: '[data-tutorial="messages-search"]',
+      position: 'bottom'
+    },
+    {
+      id: 'messages-tabs',
+      title: 'Filtres',
+      description: 'Triez : Tous, Reçus, Envoyés, Archivés.',
+      target: '[data-tutorial="messages-tabs"]',
+      position: 'bottom'
+    },
+    {
+      id: 'messages-list',
       title: 'Conversations',
-      description: 'Vos discussions par propriété.',
+      description: 'Cliquez pour ouvrir une discussion.',
       target: '[data-tutorial="messages-list"]',
-      position: 'bottom'
-    },
-    {
-      id: 'messages-send',
-      title: 'Envoyer',
-      description: 'Tapez et envoyez messages et photos.',
-      target: '[data-tutorial="messages-input"]',
       position: 'top'
-    },
-    {
-      id: 'messages-appointment',
-      title: 'Rendez-vous',
-      description: 'Proposez un RDV via le menu (3 points).',
-      target: '[data-tutorial="messages-menu"]',
-      position: 'bottom'
     },
     {
       id: 'messages-complete',
