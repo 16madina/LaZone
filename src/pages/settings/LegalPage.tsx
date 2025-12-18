@@ -37,7 +37,7 @@ const LegalPage = () => {
       <div className="bg-gradient-to-r from-primary via-primary to-primary/80 text-primary-foreground pt-[env(safe-area-inset-top)]">
         <div className="flex items-center gap-4 px-4 py-4">
           <button 
-            onClick={() => navigate('/profile')}
+            onClick={() => navigate(-1)}
             className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />

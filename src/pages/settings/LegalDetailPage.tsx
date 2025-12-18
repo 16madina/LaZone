@@ -153,7 +153,7 @@ const LegalDetailPage = () => {
         <div className="flex items-center justify-between px-4 py-4">
           <div className="flex items-center gap-4">
             <button 
-              onClick={() => navigate('/settings/legal')}
+              onClick={() => navigate(-1)}
               className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
