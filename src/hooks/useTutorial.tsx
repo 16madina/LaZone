@@ -179,36 +179,36 @@ const sectionTutorials: Record<TutorialSection, TutorialStep[]> = {
   publish: [
     {
       id: 'publish-intro',
-      title: 'Publier 📝',
-      description: 'Créez votre annonce en quelques étapes.',
-      position: 'center'
+      title: 'Publier une annonce 📝',
+      description: 'Créez votre annonce immobilière en quelques étapes simples.',
+      position: 'bottom'
     },
     {
       id: 'publish-photos',
-      title: 'Photos',
-      description: 'Ajoutez jusqu\'à 6 photos de qualité.',
+      title: 'Ajoutez vos photos 📷',
+      description: 'Jusqu\'à 6 photos de qualité pour attirer les acheteurs.',
       target: '[data-tutorial="publish-photos"]',
-      position: 'center'
+      position: 'bottom'
     },
     {
       id: 'publish-details',
-      title: 'Type de bien',
-      description: 'Choisissez maison, appartement, terrain...',
+      title: 'Détails du bien',
+      description: 'Type, prix, surface, chambres... Soyez précis !',
       target: '[data-tutorial="publish-details"]',
-      position: 'center'
+      position: 'bottom'
     },
     {
       id: 'publish-location',
-      title: 'Localisation',
-      description: 'Placez le marqueur sur la carte.',
+      title: 'Localisation exacte 📍',
+      description: 'Glissez le marqueur pour indiquer l\'emplacement précis.',
       target: '[data-tutorial="publish-location"]',
       position: 'top'
     },
     {
       id: 'publish-complete',
-      title: 'Publié ! 🎉',
-      description: 'Votre annonce sera visible.',
-      position: 'center'
+      title: 'Prêt à publier ! 🎉',
+      description: 'Votre annonce sera visible par tous les utilisateurs.',
+      position: 'bottom'
     }
   ],
   messages: [
