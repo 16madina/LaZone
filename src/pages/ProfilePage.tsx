@@ -530,7 +530,6 @@ const ProfilePage = () => {
   const tabs = [
     { id: 'annonces' as TabType, label: 'Annonces', icon: Home },
     { id: 'rdv' as TabType, label: 'Mes RDV', icon: CalendarDays },
-    { id: 'favoris' as TabType, label: 'Favoris', icon: Heart },
     { id: 'parametres' as TabType, label: 'Paramètres', icon: Settings },
   ];
 
@@ -769,10 +768,10 @@ const ProfilePage = () => {
                     {/* Logout Button */}
                     <button
                       onClick={handleSignOut}
-                      className="flex-shrink-0 px-3 py-1.5 text-primary border border-primary rounded-lg text-sm font-medium flex items-center gap-1.5 hover:bg-primary/10 transition-colors"
+                      className="flex-shrink-0 p-2 text-primary border border-primary rounded-lg hover:bg-primary/10 transition-colors"
+                      title="Déconnexion"
                     >
                       <LogOut className="w-4 h-4" />
-                      Déconnexion
                     </button>
                   </div>
                 </div>
@@ -935,13 +934,16 @@ const ProfilePage = () => {
                         className="bg-muted/30 rounded-xl overflow-hidden"
                       >
                         <div className="flex">
-                          <div className="w-24 h-24 flex-shrink-0">
+                          <button 
+                            onClick={() => navigate(`/property/${property.id}`)}
+                            className="w-24 h-24 flex-shrink-0"
+                          >
                             <img
                               src={getPrimaryImage(property.property_images)}
                               alt={property.title}
                               className="w-full h-full object-cover"
                             />
-                          </div>
+                          </button>
                           <div className="flex-1 p-2">
                             <div className="flex items-start justify-between gap-1">
                               <div className="flex-1 min-w-0">
@@ -1029,13 +1031,16 @@ const ProfilePage = () => {
                         className="bg-muted/30 rounded-xl overflow-hidden"
                       >
                         <div className="flex">
-                          <div className="w-24 h-24 flex-shrink-0">
+                          <button 
+                            onClick={() => navigate(`/property/${property.id}`)}
+                            className="w-24 h-24 flex-shrink-0"
+                          >
                             <img
                               src={getPrimaryImage(property.property_images)}
                               alt={property.title}
                               className="w-full h-full object-cover"
                             />
-                          </div>
+                          </button>
                           <div className="flex-1 p-2">
                             <div className="flex items-start justify-between gap-1">
                               <div className="flex-1 min-w-0">
