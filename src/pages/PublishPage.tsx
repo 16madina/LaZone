@@ -631,6 +631,7 @@ const PublishPage = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-card rounded-2xl p-4 shadow-sm"
+          data-tutorial="publish-photos"
         >
           <h3 className="font-semibold mb-3 flex items-center gap-2">
             <Camera className="w-5 h-5 text-primary" />
@@ -714,6 +715,7 @@ const PublishPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="bg-card rounded-2xl p-4 shadow-sm"
+          data-tutorial="publish-details"
         >
           <h3 className="font-semibold mb-3 flex items-center gap-2">
             <Home className="w-5 h-5 text-primary" />
@@ -857,6 +859,7 @@ const PublishPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
           className="bg-card rounded-2xl p-4 shadow-sm"
+          data-tutorial="publish-location"
         >
           <h3 className="font-semibold mb-3 flex items-center gap-2">
             <MapPin className="w-5 h-5 text-primary" />
