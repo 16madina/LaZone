@@ -163,19 +163,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen pb-32">
-      {/* Geolocation Alert */}
-      {showGeoAlert && !user && (
-        <Alert className="mx-4 mt-4 bg-primary/10 border-primary/20">
-          <Info className="h-4 w-4 text-primary" />
-          <AlertDescription className="text-sm">
-            Localisation non disponible. Les annonces de tous les pays africains sont affichées. 
-            <Link to="/auth" className="text-primary font-medium ml-1 underline">
-              Inscrivez-vous
-            </Link> pour choisir votre pays.
-          </AlertDescription>
-        </Alert>
-      )}
-
       {/* Hero Section with Background */}
       <div 
         className="relative px-4 pb-8"
