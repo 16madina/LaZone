@@ -7,7 +7,7 @@ import { toast } from '@/hooks/use-toast';
 import { africanCountries, Country } from '@/data/africanCountries';
 import { diasporaCountries, DiasporaCountry, getRegionLabel } from '@/data/diasporaCountries';
 import { useTheme } from '@/hooks/useTheme';
-import logoLazone from '@/assets/logo-lazone.png';
+import { AppLogo } from '@/components/AppLogo';
 import heroBg from '@/assets/hero-bg.jpg';
 import {
   Dialog,
@@ -413,7 +413,7 @@ const AuthPage = () => {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <img src={logoLazone} alt="LaZone" className="h-12" />
+          <AppLogo className="h-12" />
         </motion.div>
         
         <motion.button

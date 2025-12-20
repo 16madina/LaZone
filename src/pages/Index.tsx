@@ -10,6 +10,7 @@ import { NotificationDropdown } from '@/components/NotificationDropdown';
 import { ProfileDropdown } from '@/components/ProfileDropdown';
 import { AdBanner } from '@/components/home/AdBanner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AppLogo } from '@/components/AppLogo';
 import SectionTutorialButton from '@/components/tutorial/SectionTutorialButton';
 import { useAppStore } from '@/stores/appStore';
 import { useProperties } from '@/hooks/useProperties';
@@ -17,7 +18,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useGeoCountry } from '@/hooks/useGeoCountry';
 import { supabase } from '@/integrations/supabase/client';
 import { africanCountries, Country } from '@/data/africanCountries';
-import logoLazone from '@/assets/logo-lazone.png';
 import heroBg1 from '@/assets/hero-bg.jpg';
 import heroBg2 from '@/assets/hero-bg-2.jpg';
 import heroBg3 from '@/assets/hero-bg-3.jpg';
@@ -180,7 +180,7 @@ const Index = () => {
         <div className="relative z-10">
           {/* Header */}
           <header className="flex items-center justify-between mb-8">
-            <img src={logoLazone} alt="LaZone" className="h-10" />
+            <AppLogo className="h-10" />
             <div className="flex items-center gap-3">
               <CountrySelector 
                 selectedCountry={selectedCountry} 
@@ -194,7 +194,7 @@ const Index = () => {
 
           {/* Hero Content with Logo */}
           <div className="text-center mb-8">
-            <img src={logoLazone} alt="LaZone" className="h-24 mx-auto mb-4" />
+            <AppLogo className="h-24 mx-auto mb-4" />
             <h1 className="font-display text-2xl font-bold text-white mb-2">
               Trouvez votre chez vous
               <br />
