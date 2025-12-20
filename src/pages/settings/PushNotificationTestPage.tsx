@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Bell, BellRing, CheckCircle, XCircle, Smartphone, Globe, Send, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -133,11 +133,12 @@ const PushNotificationTestPage = () => {
   };
 
   // Fetch tokens on mount
-  useState(() => {
+  useEffect(() => {
     if (user) {
       fetchUserTokens();
     }
-  });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   return (
     <div className="min-h-screen bg-background">
