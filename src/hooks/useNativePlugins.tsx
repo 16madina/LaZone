@@ -160,13 +160,22 @@ export const usePushNotifications = () => {
 
   // Save FCM token to database
   const saveTokenToDatabase = useCallback(async (fcmToken: string) => {
-    if (!userId) {
+    // NOTE: registration can happen before our auth listener updates `userId`.
+    // Always fetch the current user as a fallback so we don't lose the token.
+    let uid = userId;
+
+    if (!uid) {
+      const { data } = await supabase.auth.getUser();
+      uid = data.user?.id ?? null;
+    }
+
+    if (!uid) {
       console.log('No user logged in, cannot save FCM token');
       return;
     }
 
     const platform = getPlatform() as 'ios' | 'android' | 'web';
-    
+
     try {
       // Check if token already exists
       const { data: existing } = await supabase
@@ -177,25 +186,29 @@ export const usePushNotifications = () => {
 
       if (existing) {
         // Update existing token
-        await supabase
+        const { error } = await supabase
           .from('fcm_tokens')
-          .update({ 
-            user_id: userId,
+          .update({
+            user_id: uid,
             platform,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
           .eq('token', fcmToken);
+
+        if (error) throw error;
         console.log('FCM token updated in database');
       } else {
         // Insert new token
-        await supabase
+        const { error } = await supabase
           .from('fcm_tokens')
           .insert({
-            user_id: userId,
+            user_id: uid,
             token: fcmToken,
             platform,
-            device_info: navigator.userAgent
+            device_info: navigator.userAgent,
           });
+
+        if (error) throw error;
         console.log('FCM token saved to database');
       }
     } catch (error) {
