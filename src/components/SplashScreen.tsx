@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getSoundInstance } from '@/hooks/useSound';
+import logoLazone from '@/assets/logo-lazone.png';
 import heroBg1 from '@/assets/hero-bg.jpg';
 import heroBg2 from '@/assets/hero-bg-2.jpg';
 import heroBg3 from '@/assets/hero-bg-3.jpg';
@@ -138,7 +139,7 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
             
             {/* Logo - Extra Large with pulse */}
             <motion.img
-              src="/images/logo-lazone.png"
+              src={logoLazone}
               alt="LaZone"
               className="w-80 h-80 object-contain relative z-10 drop-shadow-2xl"
               initial={{ filter: 'brightness(0) invert(1)', scale: 0.9 }}
