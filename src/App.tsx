@@ -43,6 +43,7 @@ import InstallPage from "./pages/InstallPage";
 import DashboardPage from "./pages/DashboardPage";
 import NetworkStatusPage from "./pages/settings/NetworkStatusPage";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { PushNotificationBanner } from "@/components/PushNotificationBanner";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,7 @@ const App = () => {
                 <SplashScreen onComplete={handleSplashComplete} />
               ) : (
                 <BrowserRouter>
+                  <PushNotificationBanner />
                   <div className="min-h-screen bg-background">
                     <Routes>
                       <Route path="/" element={<Index />} />
