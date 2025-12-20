@@ -41,6 +41,8 @@ import NotificationsPage from "./pages/NotificationsPage";
 import FollowersPage from "./pages/FollowersPage";
 import InstallPage from "./pages/InstallPage";
 import DashboardPage from "./pages/DashboardPage";
+import NetworkStatusPage from "./pages/settings/NetworkStatusPage";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +61,7 @@ const App = () => {
             <TooltipProvider>
               <Toaster />
               <Sonner />
+              <OfflineIndicator />
               {showSplash ? (
                 <SplashScreen onComplete={handleSplashComplete} />
               ) : (
@@ -95,6 +98,7 @@ const App = () => {
                       <Route path="/settings/faq" element={<FaqPage />} />
                       <Route path="/settings/badges" element={<VendorBadgesPage />} />
                       <Route path="/settings/push-test" element={<PushNotificationTestPage />} />
+                      <Route path="/settings/network" element={<NetworkStatusPage />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                     <BottomNavigation />
