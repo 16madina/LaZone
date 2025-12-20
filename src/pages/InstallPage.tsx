@@ -4,7 +4,7 @@ import { Download, Smartphone, Share, MoreVertical, Check, ArrowLeft } from 'luc
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
-import logoLazone from '@/assets/logo-lazone.png';
+import { AppLogo } from '@/components/AppLogo';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -92,7 +92,7 @@ const InstallPage = () => {
           className="text-center py-8"
         >
           <div className="w-24 h-24 mx-auto mb-4 rounded-3xl overflow-hidden shadow-xl bg-primary/10 p-2">
-            <img src={logoLazone} alt="LaZone" className="w-full h-full object-contain" />
+            <AppLogo className="w-full h-full object-contain" />
           </div>
           <h2 className="text-2xl font-bold mb-2">LaZone</h2>
           <p className="text-muted-foreground">L'immobilier africain dans votre poche</p>

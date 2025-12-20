@@ -31,7 +31,8 @@ const backgroundImages = [
 
 export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   const [phase, setPhase] = useState<'logo' | 'text' | 'exit'>('logo');
-  
+  const [logoSrc, setLogoSrc] = useState<string>(logoLazone);
+
   // Random background image selected once per mount
   const backgroundImage = useMemo(() => {
     const randomIndex = Math.floor(Math.random() * backgroundImages.length);
@@ -139,17 +140,18 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
             
             {/* Logo - Extra Large with pulse */}
             <motion.img
-              src={logoLazone}
+              src={logoSrc}
               alt="LaZone"
               className="w-80 h-80 object-contain relative z-10 drop-shadow-2xl"
+              onError={() => setLogoSrc('/images/logo-lazone.png')}
               initial={{ filter: 'brightness(0) invert(1)', scale: 0.9 }}
-              animate={{ 
+              animate={{
                 filter: 'brightness(1) invert(0)',
                 scale: [1, 1.05, 1],
               }}
-              transition={{ 
+              transition={{
                 filter: { duration: 0.5, delay: 0.3 },
-                scale: { duration: 2, ease: 'easeInOut', repeat: Infinity, delay: 0.5 }
+                scale: { duration: 2, ease: 'easeInOut', repeat: Infinity, delay: 0.5 },
               }}
             />
           </motion.div>
