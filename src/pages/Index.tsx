@@ -11,11 +11,14 @@ import { ProfileDropdown } from '@/components/ProfileDropdown';
 import { AdBanner } from '@/components/home/AdBanner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AppLogo } from '@/components/AppLogo';
+import { AppModeSwitch } from '@/components/home/AppModeSwitch';
+import { ModeSwitchSplash } from '@/components/ModeSwitchSplash';
 import SectionTutorialButton from '@/components/tutorial/SectionTutorialButton';
-import { useAppStore } from '@/stores/appStore';
+import { useAppStore, AppMode } from '@/stores/appStore';
 import { useProperties } from '@/hooks/useProperties';
 import { useAuth } from '@/hooks/useAuth';
 import { useGeoCountry } from '@/hooks/useGeoCountry';
+import { useAppMode } from '@/hooks/useAppMode';
 import { supabase } from '@/integrations/supabase/client';
 import { africanCountries, Country } from '@/data/africanCountries';
 import heroBg1 from '@/assets/hero-bg.jpg';
@@ -37,10 +40,22 @@ const Index = () => {
   const { properties, loading } = useProperties();
   const { profile, user } = useAuth();
   const { detectedCountry, permissionDenied, showAllCountries } = useGeoCountry();
+  const { appMode, isResidence, isModeSwitching, switchMode, completeModeSwitch } = useAppMode();
+  const [pendingMode, setPendingMode] = useState<AppMode | null>(null);
   const [currentBg, setCurrentBg] = useState(heroBg1);
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [showGeoAlert, setShowGeoAlert] = useState(false);
   const [adBanners, setAdBanners] = useState<AdBannerData[]>([]);
+
+  const handleModeSwitch = (newMode: AppMode) => {
+    setPendingMode(newMode);
+    switchMode(newMode);
+  };
+
+  const handleSwitchComplete = () => {
+    setPendingMode(null);
+    completeModeSwitch();
+  };
 
   // Fetch ad banners
   useEffect(() => {
@@ -163,6 +178,14 @@ const Index = () => {
 
   return (
     <div className="min-h-screen pb-32">
+      {/* Mode Switch Splash */}
+      {isModeSwitching && pendingMode && (
+        <ModeSwitchSplash 
+          targetMode={pendingMode} 
+          onComplete={handleSwitchComplete} 
+        />
+      )}
+
       {/* Hero Section with Background */}
       <div 
         className="relative px-4 pb-8"
@@ -173,15 +196,22 @@ const Index = () => {
           paddingTop: 'max(env(safe-area-inset-top, 0px), 1rem)',
         }}
       >
-        {/* Dark Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/80" />
+        {/* Dark Overlay - changes color based on mode */}
+        <div 
+          className={`absolute inset-0 transition-colors duration-500 ${
+            isResidence 
+              ? 'bg-gradient-to-b from-emerald-900/70 via-emerald-900/60 to-emerald-950/90'
+              : 'bg-gradient-to-b from-black/60 via-black/50 to-black/80'
+          }`} 
+        />
 
         {/* Content */}
         <div className="relative z-10">
           {/* Header */}
           <header className="flex items-center justify-between mb-8">
             <AppLogo className="h-10" />
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <AppModeSwitch onSwitch={handleModeSwitch} />
               <CountrySelector 
                 selectedCountry={selectedCountry} 
                 onCountryChange={setSelectedCountry}
@@ -196,14 +226,29 @@ const Index = () => {
           <div className="text-center mb-8">
             <AppLogo className="h-24 mx-auto mb-4" />
             <h1 className="font-display text-2xl font-bold text-white mb-2">
-              Trouvez votre chez vous
-              <br />
-              <span className="text-white/90">dans votre Zone</span>
+              {isResidence ? (
+                <>
+                  Séjours uniques
+                  <br />
+                  <span className="text-white/90">dans votre Zone</span>
+                </>
+              ) : (
+                <>
+                  Trouvez votre chez vous
+                  <br />
+                  <span className="text-white/90">dans votre Zone</span>
+                </>
+              )}
             </h1>
             <p className="text-white/70 text-sm">
-              {selectedCountry 
-                ? `Propriétés disponibles en ${selectedCountry.name}` 
-                : 'Des milliers de propriétés disponibles en Afrique'}
+              {isResidence 
+                ? (selectedCountry 
+                    ? `Courts séjours disponibles en ${selectedCountry.name}` 
+                    : 'Courts séjours et locations vacances en Afrique')
+                : (selectedCountry 
+                    ? `Propriétés disponibles en ${selectedCountry.name}` 
+                    : 'Des milliers de propriétés disponibles en Afrique')
+              }
             </p>
           </div>
 

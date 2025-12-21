@@ -42,7 +42,7 @@
     --glass-shadow: 24 50% 30% / 0.1;
     --glass-blur: 20px;
     
-    /* Gradients - Orange theme */
+    /* Gradients - Orange theme (LaZone) */
     --gradient-primary: linear-gradient(135deg, hsl(24 95% 53%), hsl(32 98% 50%), hsl(20 90% 48%));
     --gradient-secondary: linear-gradient(135deg, hsl(24 95% 53% / 0.1), hsl(32 98% 50% / 0.1));
     --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.95), hsl(30 30% 98% / 0.8));
@@ -56,6 +56,32 @@
     --sidebar-accent-foreground: 20 20% 10%;
     --sidebar-border: 30 20% 91%;
     --sidebar-ring: 24 95% 53%;
+  }
+
+  /* LaZone Residence Theme - Emerald */
+  :root.residence {
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 158 64% 52%;
+    --secondary-foreground: 0 0% 100%;
+
+    --accent: 162 73% 46%;
+    --accent-foreground: 0 0% 100%;
+
+    --ring: 160 84% 39%;
+
+    /* Glassmorphism tokens - Emerald */
+    --glass-border: 160 84% 39% / 0.2;
+    --glass-shadow: 160 50% 30% / 0.1;
+    
+    /* Gradients - Emerald theme (Residence) */
+    --gradient-primary: linear-gradient(135deg, hsl(160 84% 39%), hsl(158 64% 52%), hsl(162 73% 46%));
+    --gradient-secondary: linear-gradient(135deg, hsl(160 84% 39% / 0.1), hsl(158 64% 52% / 0.1));
+    --gradient-hero: linear-gradient(135deg, hsl(160 84% 39%), hsl(158 64% 52%), hsl(155 70% 55%));
+
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-ring: 160 84% 39%;
   }
 
   .dark {
@@ -93,7 +119,7 @@
     --glass-shadow: 20 30% 5% / 0.4;
     --glass-blur: 20px;
     
-    /* Dark gradients - Orange theme */
+    /* Dark gradients - Orange theme (LaZone) */
     --gradient-primary: linear-gradient(135deg, hsl(24 95% 55%), hsl(32 90% 55%), hsl(20 85% 50%));
     --gradient-secondary: linear-gradient(135deg, hsl(24 95% 55% / 0.15), hsl(32 90% 55% / 0.15));
     --gradient-glass: linear-gradient(135deg, hsl(20 15% 18% / 0.9), hsl(20 15% 12% / 0.7));
@@ -107,6 +133,32 @@
     --sidebar-accent-foreground: 30 20% 95%;
     --sidebar-border: 20 15% 18%;
     --sidebar-ring: 24 95% 55%;
+  }
+
+  /* Dark mode + Residence theme */
+  .dark.residence {
+    --primary: 160 84% 45%;
+    --primary-foreground: 20 15% 8%;
+
+    --secondary: 158 64% 55%;
+    --secondary-foreground: 20 15% 8%;
+
+    --accent: 162 73% 50%;
+    --accent-foreground: 20 15% 8%;
+
+    --ring: 160 84% 45%;
+
+    /* Dark glassmorphism tokens - Emerald */
+    --glass-border: 160 84% 45% / 0.2;
+    --glass-shadow: 160 30% 10% / 0.4;
+    
+    /* Dark gradients - Emerald theme */
+    --gradient-primary: linear-gradient(135deg, hsl(160 84% 45%), hsl(158 64% 55%), hsl(162 73% 50%));
+    --gradient-secondary: linear-gradient(135deg, hsl(160 84% 45% / 0.15), hsl(158 64% 55% / 0.15));
+    --gradient-hero: linear-gradient(135deg, hsl(160 84% 35%), hsl(158 64% 40%), hsl(162 73% 35%));
+
+    --sidebar-primary: 160 84% 45%;
+    --sidebar-ring: 160 84% 45%;
   }
 }
 

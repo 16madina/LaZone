@@ -451,9 +451,12 @@ export type Database = {
           is_active: boolean | null
           is_sponsored: boolean | null
           lat: number | null
+          listing_type: string
           lng: number | null
+          minimum_stay: number | null
           postal_code: string | null
           price: number
+          price_per_night: number | null
           property_type: string
           sponsored_by: string | null
           sponsored_until: string | null
@@ -477,9 +480,12 @@ export type Database = {
           is_active?: boolean | null
           is_sponsored?: boolean | null
           lat?: number | null
+          listing_type?: string
           lng?: number | null
+          minimum_stay?: number | null
           postal_code?: string | null
           price: number
+          price_per_night?: number | null
           property_type: string
           sponsored_by?: string | null
           sponsored_until?: string | null
@@ -503,9 +509,12 @@ export type Database = {
           is_active?: boolean | null
           is_sponsored?: boolean | null
           lat?: number | null
+          listing_type?: string
           lng?: number | null
+          minimum_stay?: number | null
           postal_code?: string | null
           price?: number
+          price_per_night?: number | null
           property_type?: string
           sponsored_by?: string | null
           sponsored_until?: string | null

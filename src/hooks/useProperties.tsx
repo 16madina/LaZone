@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAppStore } from '@/stores/appStore';
 
 export type BadgeLevel = 'none' | 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
+export type ListingType = 'long_term' | 'short_term';
 
 export interface Property {
   id: string;
   title: string;
   price: number;
+  pricePerNight?: number | null;
+  minimumStay?: number | null;
   type: 'sale' | 'rent';
   propertyType: 'house' | 'apartment' | 'land' | 'commercial';
+  listingType: ListingType;
   address: string;
   city: string;
   country: string | null;
@@ -29,17 +34,21 @@ export const useProperties = () => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const appMode = useAppStore((state) => state.appMode);
 
   useEffect(() => {
     fetchProperties();
-  }, []);
+  }, [appMode]); // Re-fetch when app mode changes
 
   const fetchProperties = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Fetch properties with their images
+      // Determine listing type based on app mode
+      const listingType = appMode === 'residence' ? 'short_term' : 'long_term';
+
+      // Fetch properties with their images, filtered by listing type
       const { data: propertiesData, error: propertiesError } = await supabase
         .from('properties')
         .select(`
@@ -51,6 +60,7 @@ export const useProperties = () => {
           )
         `)
         .eq('is_active', true)
+        .eq('listing_type', listingType)
         .order('created_at', { ascending: false });
 
       if (propertiesError) throw propertiesError;
@@ -80,8 +90,11 @@ export const useProperties = () => {
           id: p.id,
           title: p.title,
           price: Number(p.price),
+          pricePerNight: p.price_per_night ? Number(p.price_per_night) : null,
+          minimumStay: p.minimum_stay || null,
           type: p.type as 'sale' | 'rent',
           propertyType: p.property_type as 'house' | 'apartment' | 'land' | 'commercial',
+          listingType: (p.listing_type || 'long_term') as ListingType,
           address: p.address,
           city: p.city,
           country: p.country || null,
