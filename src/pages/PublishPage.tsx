@@ -449,6 +449,14 @@ const PublishPage = () => {
     setLoading(true);
     try {
       // Create property with coordinates and country code
+      // In Residence mode, use pricePerNight as the main price if price is not set
+      const finalPrice = isResidence && !price && pricePerNight 
+        ? parseFloat(pricePerNight) 
+        : parseFloat(price) || 0;
+      
+      // In Residence mode, area is optional
+      const finalArea = isResidence ? (parseFloat(area) || 0) : parseFloat(area);
+
       const { data: property, error: propertyError } = await supabase
         .from('properties')
         .insert({
@@ -458,8 +466,8 @@ const PublishPage = () => {
           address: address.trim(),
           city: city.trim(),
           postal_code: postalCode.trim(),
-          price: parseFloat(price),
-          area: parseFloat(area),
+          price: finalPrice,
+          area: finalArea,
           property_type: propertyType,
           type: transactionType,
           listing_type: isResidence ? 'short_term' : 'long_term',
