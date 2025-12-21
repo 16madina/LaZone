@@ -1,15 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useAppMode } from '@/hooks/useAppMode';
 import { toast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
 
 export const useFavorites = () => {
   const { user, loading: authLoading } = useAuth();
+  const { appMode } = useAppMode();
   const [favorites, setFavorites] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Determine listing type based on app mode
+  const listingType = appMode === 'residence' ? 'short_term' : 'long_term';
 
-  // Load favorites from database
+  // Load favorites from database - filtered by listing_type
   const loadFavorites = useCallback(async () => {
     if (!user) {
       setFavorites([]);
@@ -18,10 +22,18 @@ export const useFavorites = () => {
     }
 
     try {
+      // Join with properties to filter by listing_type
       const { data, error } = await supabase
         .from('favorites')
-        .select('property_id')
-        .eq('user_id', user.id);
+        .select(`
+          property_id,
+          properties!inner (
+            id,
+            listing_type
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('properties.listing_type', listingType);
 
       if (error) throw error;
 
@@ -31,7 +43,7 @@ export const useFavorites = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, listingType]);
 
   // Add favorite with proper auth check
   const addFavorite = async (propertyId: string) => {

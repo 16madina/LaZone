@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useAppMode } from './useAppMode';
 import { toast } from './use-toast';
 import { getSoundInstance } from './useSound';
 import { filterContent, getContentViolationMessage } from '@/lib/contentFilter';
@@ -45,11 +46,15 @@ interface Conversation {
 
 export const useMessages = () => {
   const { user } = useAuth();
+  const { appMode } = useAppMode();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [archivedConvList, setArchivedConvList] = useState<Conversation[]>([]);
   const [archivedConversations, setArchivedConversations] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [totalUnread, setTotalUnread] = useState(0);
+  
+  // Determine listing type based on app mode
+  const listingType = appMode === 'residence' ? 'short_term' : 'long_term';
 
   const fetchConversations = useCallback(async () => {
     if (!user) return;
@@ -144,16 +149,18 @@ export const useMessages = () => {
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
-      // Fetch property info
+      // Fetch property info - filter by listing_type based on app mode
       const { data: properties } = await supabase
         .from('properties')
         .select(`
           id, 
           title,
           user_id,
+          listing_type,
           property_images (url, is_primary)
         `)
-        .in('id', Array.from(propertyIds));
+        .in('id', Array.from(propertyIds))
+        .eq('listing_type', listingType);
       
       const propertyMap = new Map(properties?.map(p => [
         p.id, 
@@ -219,7 +226,7 @@ export const useMessages = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, listingType]);
 
   useEffect(() => {
     if (user) {

@@ -10,6 +10,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
 import { useMessages, useConversation } from '@/hooks/useMessages';
+import { useAppMode } from '@/hooks/useAppMode';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,6 +46,7 @@ const MessagesPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isEmailVerified } = useAuth();
+  const { appMode, isResidence } = useAppMode();
   const { 
     conversations, 
     archivedConversations,
@@ -323,9 +325,13 @@ const MessagesPage = () => {
         animate={{ opacity: 1, y: 0 }}
         className="mb-6"
       >
-        <h1 className="font-display text-2xl font-bold">Messages</h1>
+        <h1 className="font-display text-2xl font-bold">
+          Messages {isResidence ? 'Residence' : ''}
+        </h1>
         <p className="text-muted-foreground text-sm mt-1">
-          {totalUnread > 0 ? `${totalUnread} non lu${totalUnread > 1 ? 's' : ''}` : 'Vos conversations'}
+          {totalUnread > 0 
+            ? `${totalUnread} non lu${totalUnread > 1 ? 's' : ''}` 
+            : isResidence ? 'Vos conversations courts séjours' : 'Vos conversations'}
         </p>
       </motion.header>
 

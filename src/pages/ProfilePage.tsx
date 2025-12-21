@@ -52,6 +52,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useAppMode } from '@/hooks/useAppMode';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -258,6 +259,7 @@ const ProfilePage = () => {
   const { favorites, toggleFavorite, loading: loadingFavoritesHook } = useFavorites();
   const { user, profile, signOut, loading, isEmailVerified, resendVerificationEmail, refreshVerificationStatus } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { appMode, isResidence } = useAppMode();
   const { unreadCount: notificationCount } = useNotifications();
   const { resetTutorial, startTutorial } = useTutorial();
   const [sendingEmail, setSendingEmail] = useState(false);
@@ -1061,7 +1063,9 @@ const ProfilePage = () => {
                     <Heart className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
                     <h3 className="font-semibold mb-1">Aucun favori</h3>
                     <p className="text-sm text-muted-foreground">
-                      Vous n'avez pas encore de propriétés favorites.
+                      {isResidence 
+                        ? 'Vous n\'avez pas encore de séjours favoris.' 
+                        : 'Vous n\'avez pas encore de propriétés favorites.'}
                     </p>
                   </div>
                 ) : (
