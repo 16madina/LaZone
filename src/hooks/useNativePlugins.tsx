@@ -171,7 +171,7 @@ export const usePushNotifications = () => {
     };
   }, []);
 
-  // Save FCM/APNs token to database
+  // Save push token directly to profiles table (like AYOKA)
   const saveTokenToDatabase = useCallback(async (pushToken: string) => {
     // NOTE: registration can happen before our auth listener updates `userId`.
     // Always fetch the current user as a fallback so we don't lose the token.
@@ -187,54 +187,41 @@ export const usePushNotifications = () => {
       return;
     }
 
-    const platform = getPlatform() as 'ios' | 'android' | 'web';
-
     try {
-      const { data: existing } = await supabase
-        .from('fcm_tokens')
-        .select('id')
-        .eq('token', pushToken)
-        .maybeSingle();
+      const { error } = await supabase
+        .from('profiles')
+        .update({ push_token: pushToken })
+        .eq('user_id', uid);
 
-      if (existing) {
-        const { error } = await supabase
-          .from('fcm_tokens')
-          .update({
-            user_id: uid,
-            platform,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('token', pushToken);
-
-        if (error) throw error;
-        console.log('[push] token updated in database');
-      } else {
-        const { error } = await supabase
-          .from('fcm_tokens')
-          .insert({
-            user_id: uid,
-            token: pushToken,
-            platform,
-            device_info: navigator.userAgent,
-          });
-
-        if (error) throw error;
-        console.log('[push] token saved to database');
-      }
+      if (error) throw error;
+      console.log('[push] token saved to profiles.push_token');
     } catch (error) {
       console.error('[push] Error saving token:', error);
     }
   }, []);
 
-  // Remove token from database
-  const removeTokenFromDatabase = useCallback(async (pushToken: string) => {
+  // Remove token from database (set push_token to null)
+  const removeTokenFromDatabase = useCallback(async (_pushToken: string) => {
+    let uid = userIdRef.current;
+
+    if (!uid) {
+      const { data } = await supabase.auth.getUser();
+      uid = data.user?.id ?? null;
+    }
+
+    if (!uid) {
+      console.log('[push] No user logged in, cannot remove token');
+      return;
+    }
+
     try {
       const { error } = await supabase
-        .from('fcm_tokens')
-        .delete()
-        .eq('token', pushToken);
+        .from('profiles')
+        .update({ push_token: null })
+        .eq('user_id', uid);
+
       if (error) throw error;
-      console.log('[push] token removed from database');
+      console.log('[push] token removed from profiles');
     } catch (error) {
       console.error('[push] Error removing token:', error);
     }

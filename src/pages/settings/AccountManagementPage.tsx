@@ -54,10 +54,7 @@ const AccountManagementPage = () => {
       // 5. Delete favorites
       await supabase.from('favorites').delete().eq('user_id', userId);
       
-      // 6. Delete FCM tokens
-      await supabase.from('fcm_tokens').delete().eq('user_id', userId);
-      
-      // 7. Delete notifications
+      // 6. Delete notifications (FCM tokens are now in profiles.push_token, deleted with profile)
       await supabase.from('notifications').delete().eq('user_id', userId);
       await supabase.from('notifications').delete().eq('actor_id', userId);
       
