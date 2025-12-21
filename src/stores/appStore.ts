@@ -25,6 +25,8 @@ export interface Property {
   };
 }
 
+export type AppMode = 'lazone' | 'residence';
+
 interface AppState {
   properties: Property[];
   favorites: string[];
@@ -33,12 +35,16 @@ interface AppState {
   priceRange: [number, number];
   bedroomsFilter: number | null;
   bathroomsFilter: number | null;
+  appMode: AppMode;
+  isModeSwitching: boolean;
   toggleFavorite: (id: string) => void;
   setSearchQuery: (query: string) => void;
   setActiveFilter: (filter: string) => void;
   setPriceRange: (range: [number, number]) => void;
   setBedroomsFilter: (value: number | null) => void;
   setBathroomsFilter: (value: number | null) => void;
+  setAppMode: (mode: AppMode) => void;
+  setIsModeSwitching: (switching: boolean) => void;
 }
 
 const mockProperties: Property[] = [
@@ -212,6 +218,8 @@ export const useAppStore = create<AppState>((set) => ({
   priceRange: [0, 1000000000],
   bedroomsFilter: null,
   bathroomsFilter: null,
+  appMode: 'lazone',
+  isModeSwitching: false,
   toggleFavorite: (id) =>
     set((state) => ({
       favorites: state.favorites.includes(id)
@@ -223,4 +231,6 @@ export const useAppStore = create<AppState>((set) => ({
   setPriceRange: (range) => set({ priceRange: range }),
   setBedroomsFilter: (value) => set({ bedroomsFilter: value }),
   setBathroomsFilter: (value) => set({ bathroomsFilter: value }),
+  setAppMode: (mode) => set({ appMode: mode }),
+  setIsModeSwitching: (switching) => set({ isModeSwitching: switching }),
 }));
