@@ -106,8 +106,12 @@ const Index = () => {
       return false;
     }
 
-    // Filter by price range
-    if (property.price < priceRange[0] || property.price > priceRange[1]) {
+    // Mode Residence: filter by price per night, Mode LaZone: by price
+    const priceToCheck = isResidence && property.pricePerNight 
+      ? property.pricePerNight 
+      : property.price;
+    
+    if (priceToCheck < priceRange[0] || priceToCheck > priceRange[1]) {
       return false;
     }
 
@@ -132,6 +136,19 @@ const Index = () => {
       }
     }
 
+    // Mode Residence: specific filters for short-term
+    if (isResidence) {
+      if (activeFilter === 'all') return true;
+      if (activeFilter === 'house') return property.propertyType === 'house';
+      if (activeFilter === 'apartment') return property.propertyType === 'apartment';
+      if (activeFilter === 'entire') return property.propertyType === 'house' || property.propertyType === 'apartment';
+      if (activeFilter === 'pool') return property.features?.some(f => f.toLowerCase().includes('piscine'));
+      if (activeFilter === 'wifi') return property.features?.some(f => f.toLowerCase().includes('wifi'));
+      if (activeFilter === 'parking') return property.features?.some(f => f.toLowerCase().includes('parking'));
+      return true;
+    }
+
+    // Mode LaZone: classic filters
     if (activeFilter === 'all') return true;
     if (activeFilter === 'sale') return property.type === 'sale';
     if (activeFilter === 'rent') return property.type === 'rent';
@@ -273,9 +290,14 @@ const Index = () => {
         <section>
           <div className="flex items-center justify-between mb-4">
             <h3 className="section-title">
-              {selectedCountry 
-                ? `Propriétés en ${selectedCountry.name}` 
-                : 'Toutes les propriétés'}
+              {isResidence 
+                ? (selectedCountry 
+                    ? `Séjours en ${selectedCountry.name}` 
+                    : 'Tous les séjours')
+                : (selectedCountry 
+                    ? `Propriétés en ${selectedCountry.name}` 
+                    : 'Toutes les propriétés')
+              }
             </h3>
             <button 
               onClick={() => {
@@ -306,9 +328,14 @@ const Index = () => {
             <div className="glass-card p-8 text-center">
               <p className="text-4xl mb-2">🔍</p>
               <p className="text-muted-foreground">
-                {selectedCountry 
-                  ? `Aucune propriété trouvée en ${selectedCountry.name}` 
-                  : 'Aucune propriété trouvée'}
+                {isResidence
+                  ? (selectedCountry 
+                      ? `Aucun séjour trouvé en ${selectedCountry.name}` 
+                      : 'Aucun séjour trouvé')
+                  : (selectedCountry 
+                      ? `Aucune propriété trouvée en ${selectedCountry.name}` 
+                      : 'Aucune propriété trouvée')
+                }
               </p>
             </div>
           )}

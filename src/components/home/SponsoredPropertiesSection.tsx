@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Star, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { countryCurrencyMap } from '@/data/currencies';
+import { useAppStore } from '@/stores/appStore';
 
 interface SponsoredProperty {
   id: string;
@@ -10,6 +11,7 @@ interface SponsoredProperty {
   city: string;
   country: string | null;
   price: number;
+  pricePerNight: number | null;
   imageUrl: string;
 }
 
@@ -20,6 +22,8 @@ interface SponsoredPropertiesSectionProps {
 export const SponsoredPropertiesSection = ({ userCountry }: SponsoredPropertiesSectionProps) => {
   const [properties, setProperties] = useState<SponsoredProperty[]>([]);
   const [loading, setLoading] = useState(true);
+  const appMode = useAppStore((state) => state.appMode);
+  const isResidence = appMode === 'residence';
 
   useEffect(() => {
     let cancelled = false;
@@ -34,10 +38,13 @@ export const SponsoredPropertiesSection = ({ userCountry }: SponsoredPropertiesS
             city,
             country,
             price,
+            price_per_night,
+            listing_type,
             property_images (url, is_primary)
           `)
           .eq('is_sponsored', true)
           .eq('is_active', true)
+          .eq('listing_type', isResidence ? 'short_term' : 'long_term')
           .gte('sponsored_until', new Date().toISOString())
           .order('sponsored_until', { ascending: false })
           .limit(6);
@@ -57,6 +64,7 @@ export const SponsoredPropertiesSection = ({ userCountry }: SponsoredPropertiesS
           city: p.city,
           country: p.country,
           price: p.price,
+          pricePerNight: p.price_per_night,
           imageUrl:
             p.property_images?.find((img: any) => img.is_primary)?.url ||
             p.property_images?.[0]?.url ||
@@ -79,18 +87,22 @@ export const SponsoredPropertiesSection = ({ userCountry }: SponsoredPropertiesS
     return () => {
       cancelled = true;
     };
-  }, [userCountry]);
+  }, [userCountry, isResidence]);
 
-  const formatPrice = (price: number, countryCode: string | null) => {
+  const formatPrice = (price: number, pricePerNight: number | null, countryCode: string | null) => {
     const currency = countryCode ? countryCurrencyMap[countryCode] : null;
     const symbol = currency?.symbol || 'FCFA';
     
-    if (price >= 1000000) {
-      return `${(price / 1000000).toFixed(0)}M ${symbol}`;
-    } else if (price >= 1000) {
-      return `${(price / 1000).toFixed(0)}K ${symbol}`;
+    // Mode Residence: show price per night
+    const displayPrice = isResidence && pricePerNight ? pricePerNight : price;
+    const suffix = isResidence ? '/nuit' : '';
+    
+    if (displayPrice >= 1000000) {
+      return `${(displayPrice / 1000000).toFixed(0)}M ${symbol}${suffix}`;
+    } else if (displayPrice >= 1000) {
+      return `${(displayPrice / 1000).toFixed(0)}K ${symbol}${suffix}`;
     }
-    return `${price.toLocaleString()} ${symbol}`;
+    return `${displayPrice.toLocaleString()} ${symbol}${suffix}`;
   };
 
   if (loading || properties.length === 0) {
@@ -146,7 +158,7 @@ export const SponsoredPropertiesSection = ({ userCountry }: SponsoredPropertiesS
                   <span className="text-xs truncate">{property.city}</span>
                 </div>
                 <p className="text-primary font-bold text-sm mt-1.5">
-                  {formatPrice(property.price, property.country)}
+                  {formatPrice(property.price, property.pricePerNight, property.country)}
                 </p>
               </div>
             </div>
