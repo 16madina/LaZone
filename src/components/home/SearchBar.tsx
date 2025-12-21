@@ -25,10 +25,27 @@ const propertyTypes = [
   { value: 'commercial', label: '🏪 Commercial' },
 ];
 
+// Property types for Residence mode (no land/commercial for short stays)
+const residencePropertyTypes = [
+  { value: 'all', label: 'Tous' },
+  { value: 'house', label: '🏠 Maison' },
+  { value: 'apartment', label: '🏢 Appartement' },
+];
+
 const transactionTypes = [
   { value: 'all', label: 'Tous' },
   { value: 'sale', label: 'À vendre' },
   { value: 'rent', label: 'À louer' },
+];
+
+// Minimum stay options for Residence mode
+const minimumStayOptions = [
+  { value: null, label: 'Tous' },
+  { value: 1, label: '1 nuit' },
+  { value: 2, label: '2+ nuits' },
+  { value: 3, label: '3+ nuits' },
+  { value: 7, label: '7+ nuits' },
+  { value: 14, label: '14+ nuits' },
 ];
 
 const bedroomOptions = [
@@ -48,12 +65,14 @@ const bathroomOptions = [
 ];
 
 const MAX_PRICE = 1000000000; // 1 milliard
+const MAX_PRICE_PER_NIGHT = 500000; // 500K per night for Residence
 
-const formatPriceLabel = (value: number, currencySymbol: string) => {
-  if (value >= 1000000000) return `1B+ ${currencySymbol}`;
-  if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M ${currencySymbol}`;
-  if (value >= 1000) return `${(value / 1000).toFixed(0)}K ${currencySymbol}`;
-  return `${value} ${currencySymbol}`;
+const formatPriceLabel = (value: number, currencySymbol: string, isPerNight = false) => {
+  const suffix = isPerNight ? '/nuit' : '';
+  if (value >= 1000000000) return `1B+ ${currencySymbol}${suffix}`;
+  if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M ${currencySymbol}${suffix}`;
+  if (value >= 1000) return `${(value / 1000).toFixed(0)}K ${currencySymbol}${suffix}`;
+  return `${value} ${currencySymbol}${suffix}`;
 };
 
 export const SearchBar = ({ variant = 'default', selectedCountry }: SearchBarProps) => {
@@ -62,7 +81,9 @@ export const SearchBar = ({ variant = 'default', selectedCountry }: SearchBarPro
     activeFilter, setActiveFilter, 
     priceRange, setPriceRange,
     bedroomsFilter, setBedroomsFilter,
-    bathroomsFilter, setBathroomsFilter
+    bathroomsFilter, setBathroomsFilter,
+    minimumStayFilter, setMinimumStayFilter,
+    appMode
   } = useAppStore();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedType, setSelectedType] = useState('all');
@@ -70,34 +91,55 @@ export const SearchBar = ({ variant = 'default', selectedCountry }: SearchBarPro
   const [localPriceRange, setLocalPriceRange] = useState<[number, number]>(priceRange);
   const [localBedrooms, setLocalBedrooms] = useState<number | null>(bedroomsFilter);
   const [localBathrooms, setLocalBathrooms] = useState<number | null>(bathroomsFilter);
+  const [localMinimumStay, setLocalMinimumStay] = useState<number | null>(minimumStayFilter ?? null);
 
   const isHero = variant === 'hero';
+  const isResidence = appMode === 'residence';
   const currency = getCurrencyByCountry(selectedCountry ?? null);
   const currencySymbol = currency?.symbol || 'FCFA';
+  const maxPrice = isResidence ? MAX_PRICE_PER_NIGHT : MAX_PRICE;
+  const priceStep = isResidence ? 5000 : 1000000;
 
   // Sync local state with store
   useEffect(() => {
     setLocalPriceRange(priceRange);
     setLocalBedrooms(bedroomsFilter);
     setLocalBathrooms(bathroomsFilter);
-  }, [priceRange, bedroomsFilter, bathroomsFilter]);
+    setLocalMinimumStay(minimumStayFilter);
+  }, [priceRange, bedroomsFilter, bathroomsFilter, minimumStayFilter]);
+
+  // Reset price range when switching modes
+  useEffect(() => {
+    setLocalPriceRange([0, maxPrice]);
+  }, [appMode, maxPrice]);
 
   // Calculate number of active filters
   const activeFiltersCount = [
     activeFilter !== 'all',
-    priceRange[0] > 0 || priceRange[1] < MAX_PRICE,
+    priceRange[0] > 0 || priceRange[1] < maxPrice,
     bedroomsFilter !== null,
     bathroomsFilter !== null,
+    isResidence && minimumStayFilter !== null,
   ].filter(Boolean).length;
 
   const applyFilters = () => {
-    // Combine filters - prioritize transaction type, then property type
-    if (selectedTransaction !== 'all') {
-      setActiveFilter(selectedTransaction);
-    } else if (selectedType !== 'all') {
-      setActiveFilter(selectedType);
+    // In Residence mode, only use property type filter
+    if (isResidence) {
+      if (selectedType !== 'all') {
+        setActiveFilter(selectedType);
+      } else {
+        setActiveFilter('all');
+      }
+      setMinimumStayFilter(localMinimumStay);
     } else {
-      setActiveFilter('all');
+      // Combine filters - prioritize transaction type, then property type
+      if (selectedTransaction !== 'all') {
+        setActiveFilter(selectedTransaction);
+      } else if (selectedType !== 'all') {
+        setActiveFilter(selectedType);
+      } else {
+        setActiveFilter('all');
+      }
     }
     setPriceRange(localPriceRange);
     setBedroomsFilter(localBedrooms);
@@ -108,13 +150,15 @@ export const SearchBar = ({ variant = 'default', selectedCountry }: SearchBarPro
   const resetFilters = () => {
     setSelectedType('all');
     setSelectedTransaction('all');
-    setLocalPriceRange([0, MAX_PRICE]);
+    setLocalPriceRange([0, maxPrice]);
     setLocalBedrooms(null);
     setLocalBathrooms(null);
+    setLocalMinimumStay(null);
     setActiveFilter('all');
-    setPriceRange([0, MAX_PRICE]);
+    setPriceRange([0, maxPrice]);
     setBedroomsFilter(null);
     setBathroomsFilter(null);
+    setMinimumStayFilter(null);
     setSearchQuery('');
   };
 
@@ -160,32 +204,56 @@ export const SearchBar = ({ variant = 'default', selectedCountry }: SearchBarPro
             <SheetTitle>Filtres</SheetTitle>
           </SheetHeader>
           
-          <div className="py-6 space-y-6">
-            {/* Transaction Type */}
-            <div>
-              <h4 className="font-medium mb-3">Type de transaction</h4>
-              <div className="flex flex-wrap gap-2">
-                {transactionTypes.map((type) => (
-                  <button
-                    key={type.value}
-                    onClick={() => setSelectedTransaction(type.value)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                      selectedTransaction === type.value
-                        ? 'gradient-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground'
-                    }`}
-                  >
-                    {type.label}
-                  </button>
-                ))}
+          <div className="py-6 space-y-6 max-h-[70vh] overflow-y-auto">
+            {/* Transaction Type - Only show in LaZone mode */}
+            {!isResidence && (
+              <div>
+                <h4 className="font-medium mb-3">Type de transaction</h4>
+                <div className="flex flex-wrap gap-2">
+                  {transactionTypes.map((type) => (
+                    <button
+                      key={type.value}
+                      onClick={() => setSelectedTransaction(type.value)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        selectedTransaction === type.value
+                          ? 'gradient-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      {type.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Minimum Stay - Only show in Residence mode */}
+            {isResidence && (
+              <div>
+                <h4 className="font-medium mb-3">🌙 Séjour minimum</h4>
+                <div className="flex flex-wrap gap-2">
+                  {minimumStayOptions.map((option) => (
+                    <button
+                      key={option.value ?? 'all'}
+                      onClick={() => setLocalMinimumStay(option.value)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        localMinimumStay === option.value
+                          ? 'gradient-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Property Type */}
             <div>
               <h4 className="font-medium mb-3">Type de bien</h4>
               <div className="flex flex-wrap gap-2">
-                {propertyTypes.map((type) => (
+                {(isResidence ? residencePropertyTypes : propertyTypes).map((type) => (
                   <button
                     key={type.value}
                     onClick={() => setSelectedType(type.value)}
@@ -203,22 +271,24 @@ export const SearchBar = ({ variant = 'default', selectedCountry }: SearchBarPro
 
             {/* Price Range */}
             <div>
-              <h4 className="font-medium mb-3">Fourchette de prix</h4>
+              <h4 className="font-medium mb-3">
+                {isResidence ? '💰 Prix par nuit' : 'Fourchette de prix'}
+              </h4>
               <div className="px-2">
                 <Slider
                   value={[localPriceRange[0], localPriceRange[1]]}
                   onValueChange={(value) => setLocalPriceRange([value[0], value[1]])}
-                  max={MAX_PRICE}
+                  max={maxPrice}
                   min={0}
-                  step={1000000}
+                  step={priceStep}
                   className="mb-4"
                 />
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span className="font-medium text-foreground">
-                    {formatPriceLabel(localPriceRange[0], currencySymbol)}
+                    {formatPriceLabel(localPriceRange[0], currencySymbol, isResidence)}
                   </span>
                   <span className="font-medium text-foreground">
-                    {formatPriceLabel(localPriceRange[1], currencySymbol)}
+                    {formatPriceLabel(localPriceRange[1], currencySymbol, isResidence)}
                   </span>
                 </div>
               </div>
@@ -226,7 +296,7 @@ export const SearchBar = ({ variant = 'default', selectedCountry }: SearchBarPro
 
             {/* Bedrooms */}
             <div>
-              <h4 className="font-medium mb-3">Chambres</h4>
+              <h4 className="font-medium mb-3">🛏️ Chambres</h4>
               <div className="flex flex-wrap gap-2">
                 {bedroomOptions.map((option) => (
                   <button
@@ -246,7 +316,7 @@ export const SearchBar = ({ variant = 'default', selectedCountry }: SearchBarPro
 
             {/* Bathrooms */}
             <div>
-              <h4 className="font-medium mb-3">Salles de bain</h4>
+              <h4 className="font-medium mb-3">🚿 Salles de bain</h4>
               <div className="flex flex-wrap gap-2">
                 {bathroomOptions.map((option) => (
                   <button
