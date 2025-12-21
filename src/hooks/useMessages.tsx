@@ -180,6 +180,10 @@ export const useMessages = () => {
           const [propertyId, participantId] = conversationKey.split('_');
           const profile = profileMap.get(participantId);
           const propertyInfo = propertyMap.get(propertyId);
+          
+          // Skip conversations where property doesn't match current listing_type
+          if (!propertyInfo) return;
+          
           const lastMsg = msgs[0];
           const msgUnreadCount = msgs.filter(m => m.receiver_id === user.id && !m.is_read).length;
           if (countUnread) unreadCount += msgUnreadCount;
@@ -198,9 +202,9 @@ export const useMessages = () => {
             lastMessageTime: lastMsg.created_at,
             unreadCount: msgUnreadCount,
             propertyId,
-            propertyTitle: propertyInfo?.title || 'Annonce supprimée',
-            propertyImage: propertyInfo?.image,
-            propertyOwnerId: propertyInfo?.ownerId
+            propertyTitle: propertyInfo.title,
+            propertyImage: propertyInfo.image,
+            propertyOwnerId: propertyInfo.ownerId
           });
         });
 
