@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   Camera, MapPin, Home, DollarSign, Upload, Plus, X, 
-  Bed, Bath, Maximize, Clock, Check,
+  Bed, Bath, Maximize, FileText, Clock, Wallet, Check,
   Loader2, AlertCircle, ChevronDown, Map, Image
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -41,7 +41,8 @@ import SectionTutorialButton from '@/components/tutorial/SectionTutorialButton';
 import EmailVerificationRequired from '@/components/EmailVerificationRequired';
 import heroBg3 from '@/assets/hero-bg-3.jpg';
 
-type PropertyType = 'house' | 'apartment';
+type PropertyType = 'house' | 'apartment' | 'land' | 'commercial';
+type TransactionType = 'sale' | 'rent';
 
 interface FormErrors {
   images?: string;
@@ -55,27 +56,33 @@ interface FormErrors {
   bathrooms?: string;
 }
 
-// Commodités pour courts séjours (style Airbnb)
 const AMENITIES = [
-  'WiFi', 'Climatisation', 'Piscine', 'Parking gratuit', 'Cuisine équipée',
-  'Machine à laver', 'Sèche-linge', 'TV', 'Eau chaude', 'Groupe électrogène',
-  'Espace de travail', 'Fer à repasser', 'Sèche-cheveux', 'Coffre-fort',
-  'Jardin', 'Terrasse', 'Balcon', 'Vue sur mer', 'Barbecue', 'Jacuzzi'
+  'Piscine', 'Jardin', 'Garage', 'Terrasse', 'Balcon', 'Cave',
+  'Climatisation', 'Chauffage', 'Ascenseur', 'Gardien', 'Parking',
+  'Cuisine équipée', 'Meublé', 'Internet', 'Eau chaude', 'Groupe électrogène'
 ];
 
-// Options de séjour minimum
-const MINIMUM_STAY_OPTIONS = [
-  { value: '1', label: '1 nuit' },
-  { value: '2', label: '2 nuits' },
-  { value: '3', label: '3 nuits' },
-  { value: '5', label: '5 nuits' },
-  { value: '7', label: '1 semaine' },
-  { value: '14', label: '2 semaines' },
-  { value: '30', label: '1 mois' },
+const DOCUMENTS = [
+  { id: 'acd', label: 'ACD (Attestation de Cession de Droits)' },
+  { id: 'titre_foncier', label: 'Titre Foncier' },
+  { id: 'permis_construire', label: 'Permis de construire' },
+  { id: 'certificat_urbanisme', label: 'Certificat d\'urbanisme' },
+  { id: 'plan_cadastral', label: 'Plan cadastral' },
+  { id: 'attestation_propriete', label: 'Attestation de propriété' },
+];
+
+const LEASE_DURATIONS = [
+  { value: '1', label: '1 mois' },
+  { value: '3', label: '3 mois' },
+  { value: '6', label: '6 mois' },
+  { value: '12', label: '1 an' },
+  { value: '24', label: '2 ans' },
+  { value: '36', label: '3 ans' },
+  { value: 'indefini', label: 'Indéfini' },
 ];
 
 // Validation schema
-const createValidationSchema = (propertyType: PropertyType) => {
+const createValidationSchema = (propertyType: PropertyType, transactionType: TransactionType) => {
   const baseSchema = z.object({
     title: z.string().min(5, 'Le titre doit contenir au moins 5 caractères').max(100, 'Le titre ne peut pas dépasser 100 caractères'),
     address: z.string().min(3, 'L\'adresse doit contenir au moins 3 caractères'),
@@ -100,6 +107,7 @@ const PublishPage = () => {
   
   // Form state
   const [propertyType, setPropertyType] = useState<PropertyType>('house');
+  const [transactionType, setTransactionType] = useState<TransactionType>('sale');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [address, setAddress] = useState('');
@@ -121,14 +129,19 @@ const PublishPage = () => {
   const [bathrooms, setBathrooms] = useState('');
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   
-  // Short-term rental specific
-  const [minimumStay, setMinimumStay] = useState('1');
+  // Documents (for land and sale)
+  const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
+  
+  // Rent specific
+  const [leaseDuration, setLeaseDuration] = useState('12');
+  const [depositMonths, setDepositMonths] = useState('2');
 
   // Contact options
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
 
   // Popover states
   const [amenitiesOpen, setAmenitiesOpen] = useState(false);
+  const [documentsOpen, setDocumentsOpen] = useState(false);
 
   // Pre-fill country from user profile
   useEffect(() => {
@@ -167,9 +180,10 @@ const PublishPage = () => {
     }
   }, [selectedCountry]);
 
-  // Always show these for short-term rentals
-  const showBedroomsBathrooms = true;
-  const showAmenities = true;
+  const showBedroomsBathrooms = propertyType === 'house' || propertyType === 'apartment';
+  const showAmenities = propertyType !== 'land';
+  const showDocuments = propertyType === 'land' || transactionType === 'sale';
+  const showRentDetails = transactionType === 'rent' && propertyType !== 'land';
 
   const validateField = (field: string, value: string) => {
     const newErrors = { ...errors };
@@ -302,6 +316,14 @@ const PublishPage = () => {
     );
   };
 
+  const toggleDocument = (docId: string) => {
+    setSelectedDocuments(prev => 
+      prev.includes(docId) 
+        ? prev.filter(d => d !== docId)
+        : [...prev, docId]
+    );
+  };
+
   const handleMarkerPositionChange = (lat: number, lng: number) => {
     setMarkerPosition({ lat, lng });
   };
@@ -389,18 +411,15 @@ const PublishPage = () => {
           address: address.trim(),
           city: city.trim(),
           postal_code: postalCode.trim(),
-          price: 0, // Not used for short-term
-          price_per_night: parseFloat(price),
-          minimum_stay: parseInt(minimumStay) || 1,
+          price: parseFloat(price),
           area: parseFloat(area),
           property_type: propertyType,
-          type: 'rent', // Always rent for short-term
-          listing_type: 'short_term',
-          bedrooms: parseInt(bedrooms) || 0,
-          bathrooms: parseInt(bathrooms) || 0,
-          features: selectedAmenities,
+          type: transactionType,
+          bedrooms: showBedroomsBathrooms ? parseInt(bedrooms) || 0 : null,
+          bathrooms: showBedroomsBathrooms ? parseInt(bathrooms) || 0 : null,
+          features: [...selectedAmenities, ...selectedDocuments.map(d => DOCUMENTS.find(doc => doc.id === d)?.label || d)],
           whatsapp_enabled: whatsappEnabled,
-          country: selectedCountry,
+          country: selectedCountry, // Use country code for filtering consistency
           lat: markerPosition.lat,
           lng: markerPosition.lng,
         })
@@ -600,9 +619,9 @@ const PublishPage = () => {
         className="bg-gradient-to-r from-primary via-primary to-primary/80 text-primary-foreground px-4 pb-6"
         style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.5rem)' }}
       >
-        <h1 className="font-display text-2xl font-bold">Publier un logement</h1>
+        <h1 className="font-display text-2xl font-bold">Publier une annonce</h1>
         <p className="text-primary-foreground/80 text-sm mt-1">
-          Proposez votre logement pour des courts séjours
+          Vendez ou louez votre propriété
         </p>
       </div>
 
@@ -700,12 +719,14 @@ const PublishPage = () => {
         >
           <h3 className="font-semibold mb-3 flex items-center gap-2">
             <Home className="w-5 h-5 text-primary" />
-            Type de logement
+            Type de propriété
           </h3>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { value: 'house', icon: '🏡', label: 'Villa / Maison' },
+              { value: 'house', icon: '🏠', label: 'Maison' },
               { value: 'apartment', icon: '🏢', label: 'Appartement' },
+              { value: 'land', icon: '🌳', label: 'Terrain' },
+              { value: 'commercial', icon: '🏪', label: 'Commercial' },
             ].map((type) => (
               <button
                 key={type.value}
@@ -723,7 +744,7 @@ const PublishPage = () => {
           </div>
         </motion.div>
 
-        {/* Minimum Stay */}
+        {/* Transaction Type */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -731,21 +752,31 @@ const PublishPage = () => {
           className="bg-card rounded-2xl p-4 shadow-sm"
         >
           <h3 className="font-semibold mb-3 flex items-center gap-2">
-            <Clock className="w-5 h-5 text-primary" />
-            Séjour minimum
+            <DollarSign className="w-5 h-5 text-primary" />
+            Type de transaction
           </h3>
-          <Select value={minimumStay} onValueChange={setMinimumStay}>
-            <SelectTrigger className="mt-1">
-              <SelectValue placeholder="Sélectionner" />
-            </SelectTrigger>
-            <SelectContent className="bg-card border shadow-lg z-50">
-              {MINIMUM_STAY_OPTIONS.map(option => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setTransactionType('sale')}
+              className={`p-3 rounded-xl font-medium transition-all ${
+                transactionType === 'sale'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted hover:bg-muted/80'
+              }`}
+            >
+              À vendre
+            </button>
+            <button
+              onClick={() => setTransactionType('rent')}
+              className={`p-3 rounded-xl font-medium transition-all ${
+                transactionType === 'rent'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted hover:bg-muted/80'
+              }`}
+            >
+              À louer
+            </button>
+          </div>
         </motion.div>
 
         {/* Title and Description */}
@@ -785,7 +816,7 @@ const PublishPage = () => {
           </div>
         </motion.div>
 
-        {/* Price per night */}
+        {/* Price - Moved up */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -793,7 +824,7 @@ const PublishPage = () => {
         >
           <h3 className="font-semibold mb-3 flex items-center gap-2">
             <DollarSign className="w-5 h-5 text-primary" />
-            Prix par nuit <span className="text-destructive">*</span>
+            Prix {transactionType === 'rent' ? 'du loyer mensuel' : ''} <span className="text-destructive">*</span>
           </h3>
           <div className="relative">
             <Input
@@ -815,9 +846,11 @@ const PublishPage = () => {
             </span>
           </div>
           {touched.price && <ErrorMessage message={errors.price} />}
-          <p className="text-xs text-muted-foreground mt-2">
-            💡 Prix pour une nuit de séjour
-          </p>
+          {transactionType === 'rent' && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Prix par mois
+            </p>
+          )}
         </motion.div>
 
         {/* Location with Country and City Selection */}
@@ -1069,6 +1102,114 @@ const PublishPage = () => {
                 ))}
               </div>
             )}
+          </motion.div>
+        )}
+
+        {/* Documents Dropdown - For land or sale */}
+        {showDocuments && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card rounded-2xl p-4 shadow-sm"
+          >
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              Documents disponibles
+            </h3>
+            <Popover open={documentsOpen} onOpenChange={setDocumentsOpen}>
+              <PopoverTrigger asChild>
+                <button className="w-full flex items-center justify-between p-3 rounded-xl border bg-background hover:bg-muted/50 transition-colors">
+                  <span className={selectedDocuments.length > 0 ? 'text-foreground' : 'text-muted-foreground'}>
+                    {selectedDocuments.length > 0 
+                      ? `${selectedDocuments.length} document(s) sélectionné(s)`
+                      : 'Sélectionner les documents'}
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${documentsOpen ? 'rotate-180' : ''}`} />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[calc(100vw-2rem)] max-w-md p-0 bg-card border shadow-lg z-50" align="start">
+                <div className="max-h-64 overflow-y-auto p-2">
+                  {DOCUMENTS.map(doc => (
+                    <label
+                      key={doc.id}
+                      className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-muted transition-colors"
+                    >
+                      <Checkbox
+                        checked={selectedDocuments.includes(doc.id)}
+                        onCheckedChange={() => toggleDocument(doc.id)}
+                      />
+                      <span className="text-sm">{doc.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+            {selectedDocuments.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {selectedDocuments.map(docId => {
+                  const doc = DOCUMENTS.find(d => d.id === docId);
+                  return (
+                    <span
+                      key={docId}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-full text-xs"
+                    >
+                      {doc?.label.split(' ')[0]}
+                      <button onClick={() => toggleDocument(docId)}>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Rent Details - Only for rent (excluding land) */}
+        {showRentDetails && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card rounded-2xl p-4 shadow-sm space-y-4"
+          >
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-primary" />
+              Détails de la location
+            </h3>
+            
+            <div>
+              <Label>Durée du bail</Label>
+              <Select value={leaseDuration} onValueChange={setLeaseDuration}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Sélectionner" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border shadow-lg z-50">
+                  {LEASE_DURATIONS.map(duration => (
+                    <SelectItem key={duration.value} value={duration.value}>
+                      {duration.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="flex items-center gap-2">
+                <Wallet className="w-4 h-4" /> Caution (nombre de mois)
+              </Label>
+              <Select value={depositMonths} onValueChange={setDepositMonths}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Sélectionner" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border shadow-lg z-50">
+                  {[1, 2, 3, 4, 5, 6].map(n => (
+                    <SelectItem key={n} value={n.toString()}>
+                      {n} mois de loyer
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </motion.div>
         )}
 
