@@ -92,19 +92,28 @@ async function generateAccessToken(serviceAccount: ServiceAccount): Promise<stri
   const jwt = `${unsignedToken}.${signatureB64}`;
 
   // Exchange JWT for access token
+  console.log("Exchanging JWT for access token...");
+  console.log("Token URI:", serviceAccount.token_uri);
+  console.log("Client email:", serviceAccount.client_email);
+  
   const tokenResponse = await fetch(serviceAccount.token_uri, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
   });
 
+  const responseText = await tokenResponse.text();
+  console.log("Token exchange status:", tokenResponse.status);
+  console.log("Token exchange response:", responseText.substring(0, 500));
+
   if (!tokenResponse.ok) {
-    const errorText = await tokenResponse.text();
-    console.error("Token exchange failed:", errorText);
-    throw new Error(`Failed to get access token: ${errorText}`);
+    console.error("Token exchange failed:", responseText);
+    throw new Error(`Failed to get access token: ${responseText}`);
   }
 
-  const tokenData = await tokenResponse.json();
+  const tokenData = JSON.parse(responseText);
+  console.log("Got access token, length:", tokenData.access_token?.length);
+  console.log("Token type:", tokenData.token_type);
   return tokenData.access_token;
 }
 
