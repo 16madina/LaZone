@@ -25,6 +25,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProperties } from '@/hooks/useProperties';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useMessages } from '@/hooks/useMessages';
+import { useAppMode } from '@/hooks/useAppMode';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -86,6 +87,7 @@ const DashboardPage = () => {
   const { properties } = useProperties();
   const { favorites } = useFavorites();
   const { conversations, totalUnread } = useMessages();
+  const { appMode, isResidence } = useAppMode();
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -321,7 +323,7 @@ const DashboardPage = () => {
       icon: Heart,
       label: 'Favoris',
       value: stats?.totalFavorites || 0,
-      subValue: 'propriétés sauvegardées',
+      subValue: isResidence ? 'séjours sauvegardés' : 'propriétés sauvegardées',
       color: 'bg-red-500',
       link: '/profile'
     },
@@ -370,7 +372,9 @@ const DashboardPage = () => {
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-lg font-semibold">Tableau de bord</h1>
+          <h1 className="text-lg font-semibold">
+            Tableau de bord {isResidence ? 'Residence' : 'LaZone'}
+          </h1>
         </div>
       </header>
 
