@@ -178,6 +178,8 @@ interface Property {
   id: string;
   title: string;
   price: number;
+  price_per_night?: number | null;
+  listing_type?: string;
   address: string;
   city: string;
   bedrooms: number | null;
@@ -556,12 +558,24 @@ const ProfilePage = () => {
     return primary?.url || images?.[0]?.url || '/placeholder.svg';
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('fr-FR', {
+  const formatPrice = (property: Property) => {
+    const isShortTerm = property.listing_type
+      ? property.listing_type === 'short_term'
+      : isResidence;
+
+    const rawPrice = isShortTerm
+      ? (property.price_per_night ?? property.price)
+      : property.price;
+
+    const safePrice = typeof rawPrice === 'string' ? Number(rawPrice) : rawPrice;
+
+    const formatted = new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'XOF',
       maximumFractionDigits: 0,
-    }).format(price);
+    }).format(Number.isFinite(safePrice as number) ? (safePrice as number) : 0);
+
+    return isShortTerm ? `${formatted}/nuit` : formatted;
   };
 
   const memberSince = user?.created_at 
@@ -995,7 +1009,7 @@ const ProfilePage = () => {
                             <div className="flex items-start justify-between gap-1">
                               <div className="flex-1 min-w-0">
                                 <h3 className="font-medium text-sm truncate">{property.title}</h3>
-                                <p className="text-primary font-bold text-sm">{formatPrice(property.price)}</p>
+                                <p className="text-primary font-bold text-sm">{formatPrice(property)}</p>
                               </div>
                               <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
                                 property.is_active 
@@ -1094,7 +1108,7 @@ const ProfilePage = () => {
                             <div className="flex items-start justify-between gap-1">
                               <div className="flex-1 min-w-0">
                                 <h3 className="font-medium text-sm truncate">{property.title}</h3>
-                                <p className="text-primary font-bold text-sm">{formatPrice(property.price)}</p>
+                                <p className="text-primary font-bold text-sm">{formatPrice(property)}</p>
                               </div>
                             </div>
                             <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
