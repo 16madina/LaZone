@@ -7,7 +7,7 @@ import { formatPriceWithCurrency } from '@/data/currencies';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination } from 'swiper/modules';
 import { VendorBadge } from '@/components/VendorBadge';
-import { useAppStore } from '@/stores/appStore';
+
 import 'swiper/css';
 import 'swiper/css/pagination';
 
@@ -22,21 +22,18 @@ export const PropertyCard = ({ property, userCountry, isFirst = false }: Propert
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorite = isFavorite(property.id);
   const [swiperActive, setSwiperActive] = useState(false);
-  const appMode = useAppStore((state) => state.appMode);
-  const isResidence = appMode === 'residence';
 
   const formatPrice = () => {
     const countryCode = property.country || userCountry;
     
-    // Mode Residence: afficher prix par nuit
-    if (isResidence) {
-      // Utiliser pricePerNight si disponible, sinon utiliser price comme fallback
+    // Pour les annonces short_term (Residence), toujours afficher prix par nuit
+    if (property.listingType === 'short_term') {
       const nightlyPrice = property.pricePerNight || property.price;
       const formattedPrice = formatPriceWithCurrency(nightlyPrice, countryCode);
       return `${formattedPrice}/nuit`;
     }
     
-    // Mode LaZone: afficher prix classique
+    // Pour les annonces long_term (LaZone), afficher prix classique
     const formattedPrice = formatPriceWithCurrency(property.price, countryCode);
     if (property.type === 'rent') {
       return `${formattedPrice}/mois`;
@@ -85,9 +82,9 @@ export const PropertyCard = ({ property, userCountry, isFirst = false }: Propert
         
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent pointer-events-none" />
         
-        {/* Type Badge - Different for Residence mode */}
+        {/* Type Badge - Different for short_term (Residence) listings */}
         <div className="absolute top-3 left-3 z-10">
-          {isResidence ? (
+          {property.listingType === 'short_term' ? (
             <div className="flex items-center gap-1.5">
               {property.minimumStay && property.minimumStay > 1 && (
                 <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-background/90 backdrop-blur-sm text-foreground flex items-center gap-1">
@@ -151,8 +148,8 @@ export const PropertyCard = ({ property, userCountry, isFirst = false }: Propert
             <p className="gradient-text font-display font-bold text-xl">
               {formatPrice()}
             </p>
-            {/* Airbnb-style rating placeholder for Residence mode */}
-            {isResidence && (
+            {/* Airbnb-style rating for short_term listings */}
+            {property.listingType === 'short_term' && (
               <div className="flex items-center gap-1 text-muted-foreground text-sm">
                 <Star className="w-3.5 h-3.5 fill-primary text-primary" />
                 <span className="font-medium">Nouveau</span>
