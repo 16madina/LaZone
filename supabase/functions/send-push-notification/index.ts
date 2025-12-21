@@ -102,6 +102,7 @@ async function generateAccessToken(serviceAccount: ServiceAccount): Promise<stri
 
   const responseText = await tokenResponse.text();
   console.log("Token exchange status:", tokenResponse.status);
+  console.log("Token response preview:", responseText.substring(0, 200));
 
   if (!tokenResponse.ok) {
     console.error("Token exchange failed:", responseText);
@@ -110,6 +111,9 @@ async function generateAccessToken(serviceAccount: ServiceAccount): Promise<stri
 
   const tokenData = JSON.parse(responseText);
   console.log("Got access token, length:", tokenData.access_token?.length);
+  console.log("Token type:", tokenData.token_type);
+  console.log("Expires in:", tokenData.expires_in);
+  console.log("Access token prefix:", tokenData.access_token?.substring(0, 50));
   return tokenData.access_token;
 }
 
@@ -185,7 +189,11 @@ serve(async (req) => {
     console.log(`Found push_token for user, token prefix: ${token.substring(0, 20)}...`);
 
     // Get OAuth 2.0 access token
+    console.log("Starting OAuth token generation...");
+    console.log("Private key exists:", !!serviceAccount.private_key);
+    console.log("Private key starts with:", serviceAccount.private_key?.substring(0, 30));
     const accessToken = await generateAccessToken(serviceAccount);
+    console.log("Access token obtained, length:", accessToken?.length);
     const fcmUrl = `https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`;
 
     // Build FCM message
