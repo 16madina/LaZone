@@ -72,6 +72,32 @@ export interface ContentFilterResult {
   cleanedText?: string;
 }
 
+// Phrases autorisées (contexte légitime, comme les restrictions d'hébergement)
+const allowedPhrases = [
+  'pas de drogue',
+  'pas d\'alcool',
+  'non fumeur',
+  'pas de fête',
+  'pas de violence',
+  'interdit drogue',
+  'drogue interdite',
+  'alcool interdit',
+  'sans drogue',
+  'sans alcool',
+];
+
+/**
+ * Remove allowed phrases from text before filtering
+ */
+function removeAllowedPhrases(text: string): string {
+  let cleanedText = text.toLowerCase();
+  for (const phrase of allowedPhrases) {
+    const regex = new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    cleanedText = cleanedText.replace(regex, '');
+  }
+  return cleanedText;
+}
+
 /**
  * Check if text contains inappropriate content
  */
@@ -80,7 +106,9 @@ export function filterContent(text: string): ContentFilterResult {
     return { isClean: true, flaggedWords: [], originalText: text };
   }
 
-  const normalizedText = normalizeText(text);
+  // Remove allowed phrases before checking for inappropriate content
+  const textWithoutAllowedPhrases = removeAllowedPhrases(text);
+  const normalizedText = normalizeText(textWithoutAllowedPhrases);
   const flaggedWords: string[] = [];
 
   for (const word of inappropriateWords) {
