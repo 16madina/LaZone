@@ -93,8 +93,6 @@ async function generateAccessToken(serviceAccount: ServiceAccount): Promise<stri
 
   // Exchange JWT for access token
   console.log("Exchanging JWT for access token...");
-  console.log("Token URI:", serviceAccount.token_uri);
-  console.log("Client email:", serviceAccount.client_email);
   
   const tokenResponse = await fetch(serviceAccount.token_uri, {
     method: "POST",
@@ -104,7 +102,6 @@ async function generateAccessToken(serviceAccount: ServiceAccount): Promise<stri
 
   const responseText = await tokenResponse.text();
   console.log("Token exchange status:", tokenResponse.status);
-  console.log("Token exchange response:", responseText.substring(0, 500));
 
   if (!tokenResponse.ok) {
     console.error("Token exchange failed:", responseText);
@@ -113,9 +110,6 @@ async function generateAccessToken(serviceAccount: ServiceAccount): Promise<stri
 
   const tokenData = JSON.parse(responseText);
   console.log("Got access token, length:", tokenData.access_token?.length);
-  console.log("Token type:", tokenData.token_type);
-  console.log("Scope received:", tokenData.scope);
-  console.log("FCM URL will be:", `https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`);
   return tokenData.access_token;
 }
 
@@ -162,112 +156,120 @@ serve(async (req) => {
 
     console.log(`Sending push notification to user: ${userId}`);
 
-    // Get all FCM tokens for the user
-    const { data: tokens, error: tokensError } = await supabaseClient
-      .from("fcm_tokens")
-      .select("token, platform")
-      .eq("user_id", userId);
+    // Get push_token directly from profiles table (like AYOKA)
+    const { data: profile, error: profileError } = await supabaseClient
+      .from("profiles")
+      .select("push_token")
+      .eq("user_id", userId)
+      .maybeSingle();
 
-    if (tokensError) {
-      console.error("Error fetching tokens:", tokensError);
+    if (profileError) {
+      console.error("Error fetching profile:", profileError);
       return new Response(
-        JSON.stringify({ error: "Failed to fetch user tokens" }),
+        JSON.stringify({ error: "Failed to fetch user profile" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (!tokens || tokens.length === 0) {
-      console.log("No FCM tokens found for user");
+    if (!profile?.push_token) {
+      console.log("No push_token found for user");
       return new Response(
-        JSON.stringify({ message: "No tokens registered for user", sent: 0 }),
+        JSON.stringify({ message: "No push token registered for user", sent: 0 }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Found ${tokens.length} tokens for user`);
+    const token = profile.push_token;
+    console.log(`Found push_token for user, token prefix: ${token.substring(0, 20)}...`);
 
     // Get OAuth 2.0 access token
     const accessToken = await generateAccessToken(serviceAccount);
     const fcmUrl = `https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`;
 
-    // Send notifications to all registered tokens
-    const sendPromises = tokens.map(async ({ token, platform }) => {
-      const message: Record<string, any> = {
-        message: {
-          token,
+    // Build FCM message
+    const message: Record<string, any> = {
+      message: {
+        token,
+        notification: {
+          title,
+          body,
+        },
+        data: data || {},
+        android: {
+          priority: "high",
           notification: {
-            title,
-            body,
-          },
-          data: data || {},
-          android: {
-            priority: "high",
-            notification: {
-              sound: "default",
-              channel_id: "lazone_notifications",
-              ...(imageUrl && { image: imageUrl }),
-            },
-          },
-          apns: {
-            payload: {
-              aps: {
-                sound: "default",
-                badge: 1,
-                "mutable-content": 1,
-              },
-            },
-            fcm_options: {
-              ...(imageUrl && { image: imageUrl }),
-            },
+            sound: "default",
+            channel_id: "lazone_notifications",
+            ...(imageUrl && { image: imageUrl }),
           },
         },
-      };
-
-      try {
-        const response = await fetch(fcmUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
+        apns: {
+          payload: {
+            aps: {
+              sound: "default",
+              badge: 1,
+              "mutable-content": 1,
+            },
           },
-          body: JSON.stringify(message),
-        });
+          fcm_options: {
+            ...(imageUrl && { image: imageUrl }),
+          },
+        },
+      },
+    };
 
-        const result = await response.json();
-        console.log(`FCM v1 response for token ${token.substring(0, 20)}...:`, result);
+    try {
+      const response = await fetch(fcmUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(message),
+      });
 
-        // If token is invalid, remove it from database
-        if (!response.ok && result.error?.details?.some((d: any) => 
-          d.errorCode === "UNREGISTERED" || d.errorCode === "INVALID_ARGUMENT"
-        )) {
-          console.log("Removing invalid token from database");
-          await supabaseClient
-            .from("fcm_tokens")
-            .delete()
-            .eq("token", token);
-        }
+      const result = await response.json();
+      console.log(`FCM v1 response:`, JSON.stringify(result));
 
-        return { token, success: response.ok, result };
-      } catch (error) {
-        console.error(`Error sending to token ${token.substring(0, 20)}...:`, error);
-        return { token, success: false, error };
+      // If token is invalid, clear it from profiles
+      if (!response.ok && result.error?.details?.some((d: any) => 
+        d.errorCode === "UNREGISTERED" || d.errorCode === "INVALID_ARGUMENT"
+      )) {
+        console.log("Removing invalid token from profiles");
+        await supabaseClient
+          .from("profiles")
+          .update({ push_token: null })
+          .eq("user_id", userId);
       }
-    });
 
-    const results = await Promise.all(sendPromises);
-    const successCount = results.filter((r) => r.success).length;
-
-    console.log(`Sent ${successCount}/${tokens.length} notifications successfully`);
-
-    return new Response(
-      JSON.stringify({
-        message: "Push notifications sent",
-        sent: successCount,
-        total: tokens.length,
-        results,
-      }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+      if (response.ok) {
+        console.log("Push notification sent successfully");
+        return new Response(
+          JSON.stringify({
+            message: "Push notification sent",
+            sent: 1,
+            result,
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      } else {
+        console.error("FCM error:", result);
+        return new Response(
+          JSON.stringify({
+            error: "FCM request failed",
+            details: result,
+            sent: 0,
+          }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } catch (error) {
+      console.error(`Error sending push notification:`, error);
+      return new Response(
+        JSON.stringify({ error: "Failed to send notification", sent: 0 }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
   } catch (error: unknown) {
     console.error("Error in send-push-notification:", error);
     const message = error instanceof Error ? error.message : "Unknown error";

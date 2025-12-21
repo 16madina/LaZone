@@ -398,6 +398,7 @@ export type Database = {
           id: string
           last_seen_at: string | null
           phone: string | null
+          push_token: string | null
           updated_at: string
           user_id: string
           verification_token: string | null
@@ -412,6 +413,7 @@ export type Database = {
           id?: string
           last_seen_at?: string | null
           phone?: string | null
+          push_token?: string | null
           updated_at?: string
           user_id: string
           verification_token?: string | null
@@ -426,6 +428,7 @@ export type Database = {
           id?: string
           last_seen_at?: string | null
           phone?: string | null
+          push_token?: string | null
           updated_at?: string
           user_id?: string
           verification_token?: string | null
