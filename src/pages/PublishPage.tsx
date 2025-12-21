@@ -4,9 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Camera, MapPin, Home, DollarSign, Upload, Plus, X, 
   Bed, Bath, Maximize, FileText, Clock, Wallet, Check,
-  Loader2, AlertCircle, ChevronDown, Map, Image
+  Loader2, AlertCircle, ChevronDown, Map, Image, Moon
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useAppMode } from '@/hooks/useAppMode';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { filterMultipleFields, getContentViolationMessage } from '@/lib/contentFilter';
@@ -97,6 +98,7 @@ const createValidationSchema = (propertyType: PropertyType, transactionType: Tra
 const PublishPage = () => {
   const navigate = useNavigate();
   const { user, profile, isEmailVerified } = useAuth();
+  const { isResidence } = useAppMode();
   const { takePicture, pickMultiple, loading: cameraLoading } = useCamera();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
@@ -135,6 +137,10 @@ const PublishPage = () => {
   // Rent specific
   const [leaseDuration, setLeaseDuration] = useState('12');
   const [depositMonths, setDepositMonths] = useState('2');
+
+  // Short-term specific (Residence mode)
+  const [pricePerNight, setPricePerNight] = useState('');
+  const [minimumStay, setMinimumStay] = useState('1');
 
   // Contact options
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
@@ -183,7 +189,8 @@ const PublishPage = () => {
   const showBedroomsBathrooms = propertyType === 'house' || propertyType === 'apartment';
   const showAmenities = propertyType !== 'land';
   const showDocuments = propertyType === 'land' || transactionType === 'sale';
-  const showRentDetails = transactionType === 'rent' && propertyType !== 'land';
+  const showRentDetails = transactionType === 'rent' && propertyType !== 'land' && !isResidence;
+  const showShortTermDetails = isResidence && propertyType !== 'land';
 
   const validateField = (field: string, value: string) => {
     const newErrors = { ...errors };
@@ -415,13 +422,17 @@ const PublishPage = () => {
           area: parseFloat(area),
           property_type: propertyType,
           type: transactionType,
+          listing_type: isResidence ? 'short_term' : 'long_term',
           bedrooms: showBedroomsBathrooms ? parseInt(bedrooms) || 0 : null,
           bathrooms: showBedroomsBathrooms ? parseInt(bathrooms) || 0 : null,
           features: [...selectedAmenities, ...selectedDocuments.map(d => DOCUMENTS.find(doc => doc.id === d)?.label || d)],
           whatsapp_enabled: whatsappEnabled,
-          country: selectedCountry, // Use country code for filtering consistency
+          country: selectedCountry,
           lat: markerPosition.lat,
           lng: markerPosition.lng,
+          // Short-term specific fields
+          price_per_night: isResidence ? parseFloat(pricePerNight) || null : null,
+          minimum_stay: isResidence ? parseInt(minimumStay) || 1 : null,
         })
         .select()
         .single();
@@ -619,9 +630,13 @@ const PublishPage = () => {
         className="bg-gradient-to-r from-primary via-primary to-primary/80 text-primary-foreground px-4 pb-6"
         style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.5rem)' }}
       >
-        <h1 className="font-display text-2xl font-bold">Publier une annonce</h1>
+        <h1 className="font-display text-2xl font-bold">
+          {isResidence ? 'Publier un hébergement' : 'Publier une annonce'}
+        </h1>
         <p className="text-primary-foreground/80 text-sm mt-1">
-          Vendez ou louez votre propriété
+          {isResidence 
+            ? 'Proposez votre logement en location courte durée' 
+            : 'Vendez ou louez votre propriété'}
         </p>
       </div>
 
@@ -744,40 +759,42 @@ const PublishPage = () => {
           </div>
         </motion.div>
 
-        {/* Transaction Type */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="bg-card rounded-2xl p-4 shadow-sm"
-        >
-          <h3 className="font-semibold mb-3 flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-primary" />
-            Type de transaction
-          </h3>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => setTransactionType('sale')}
-              className={`p-3 rounded-xl font-medium transition-all ${
-                transactionType === 'sale'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted hover:bg-muted/80'
-              }`}
-            >
-              À vendre
-            </button>
-            <button
-              onClick={() => setTransactionType('rent')}
-              className={`p-3 rounded-xl font-medium transition-all ${
-                transactionType === 'rent'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted hover:bg-muted/80'
-              }`}
-            >
-              À louer
-            </button>
-          </div>
-        </motion.div>
+        {/* Transaction Type - Hidden in Residence mode */}
+        {!isResidence && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="bg-card rounded-2xl p-4 shadow-sm"
+          >
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-primary" />
+              Type de transaction
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setTransactionType('sale')}
+                className={`p-3 rounded-xl font-medium transition-all ${
+                  transactionType === 'sale'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted hover:bg-muted/80'
+                }`}
+              >
+                À vendre
+              </button>
+              <button
+                onClick={() => setTransactionType('rent')}
+                className={`p-3 rounded-xl font-medium transition-all ${
+                  transactionType === 'rent'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted hover:bg-muted/80'
+                }`}
+              >
+                À louer
+              </button>
+            </div>
+          </motion.div>
+        )}
 
         {/* Title and Description */}
         <motion.div
@@ -816,7 +833,7 @@ const PublishPage = () => {
           </div>
         </motion.div>
 
-        {/* Price - Moved up */}
+        {/* Price - Different for Residence mode */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -824,34 +841,85 @@ const PublishPage = () => {
         >
           <h3 className="font-semibold mb-3 flex items-center gap-2">
             <DollarSign className="w-5 h-5 text-primary" />
-            Prix {transactionType === 'rent' ? 'du loyer mensuel' : ''} <span className="text-destructive">*</span>
+            {isResidence ? 'Prix par nuit' : `Prix ${transactionType === 'rent' ? 'du loyer mensuel' : ''}`} <span className="text-destructive">*</span>
           </h3>
-          <div className="relative">
-            <Input
-              type="number"
-              value={price}
-              onChange={(e) => {
-                setPrice(e.target.value);
-                if (touched.price) validateField('price', e.target.value);
-              }}
-              onBlur={() => {
-                handleBlur('price');
-                validateField('price', price);
-              }}
-              placeholder="0"
-              className={`pr-16 text-lg font-bold ${errors.price && touched.price ? 'border-destructive' : ''}`}
-            />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-              FCFA
-            </span>
-          </div>
-          {touched.price && <ErrorMessage message={errors.price} />}
-          {transactionType === 'rent' && (
-            <p className="text-xs text-muted-foreground mt-2">
-              Prix par mois
-            </p>
+          {isResidence ? (
+            <>
+              <div className="relative">
+                <Input
+                  type="number"
+                  value={pricePerNight}
+                  onChange={(e) => setPricePerNight(e.target.value)}
+                  placeholder="0"
+                  className="pr-16 text-lg font-bold"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  FCFA
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                <Moon className="w-3 h-3" /> Prix pour une nuit
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="relative">
+                <Input
+                  type="number"
+                  value={price}
+                  onChange={(e) => {
+                    setPrice(e.target.value);
+                    if (touched.price) validateField('price', e.target.value);
+                  }}
+                  onBlur={() => {
+                    handleBlur('price');
+                    validateField('price', price);
+                  }}
+                  placeholder="0"
+                  className={`pr-16 text-lg font-bold ${errors.price && touched.price ? 'border-destructive' : ''}`}
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  FCFA
+                </span>
+              </div>
+              {touched.price && <ErrorMessage message={errors.price} />}
+              {transactionType === 'rent' && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Prix par mois
+                </p>
+              )}
+            </>
           )}
         </motion.div>
+
+        {/* Minimum Stay - Only for Residence mode */}
+        {showShortTermDetails && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card rounded-2xl p-4 shadow-sm"
+          >
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-primary" />
+              Séjour minimum
+            </h3>
+            <Select value={minimumStay} onValueChange={setMinimumStay}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner" />
+              </SelectTrigger>
+              <SelectContent className="bg-card border shadow-lg z-50">
+                {[1, 2, 3, 5, 7, 14, 30].map(n => (
+                  <SelectItem key={n} value={n.toString()}>
+                    {n} {n === 1 ? 'nuit' : 'nuits'}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-2">
+              Durée minimum de réservation
+            </p>
+          </motion.div>
+        )}
 
         {/* Location with Country and City Selection */}
         <motion.div
