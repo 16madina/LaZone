@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, MapPin, Bed, Bath, Maximize, Search, Loader2, Navigation, Check, Globe, ChevronDown } from 'lucide-react';
+import { Filter, X, MapPin, Bed, Bath, Maximize, Search, Loader2, Navigation, Check, Globe, ChevronDown, Calendar, Star } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useProperties, Property } from '@/hooks/useProperties';
 import { useAuth } from '@/hooks/useAuth';
+import { useAppStore } from '@/stores/appStore';
 import {
   Select,
   SelectContent,
@@ -57,20 +58,21 @@ const countryCoordinates: Record<string, { lat: number; lng: number; zoom: numbe
   'SC': { lat: -4.68, lng: 55.49, zoom: 10 },
 };
 
-const formatPriceShort = (price: number) => {
+const formatPriceShort = (price: number, isResidence: boolean = false) => {
   if (price >= 1000000) {
-    return `${(price / 1000000).toFixed(1)}M`;
+    return `${(price / 1000000).toFixed(1)}M${isResidence ? '/n' : ''}`;
   } else if (price >= 1000) {
-    return `${Math.round(price / 1000)}K`;
+    return `${Math.round(price / 1000)}K${isResidence ? '/n' : ''}`;
   }
-  return price.toString();
+  return price.toString() + (isResidence ? '/n' : '');
 };
 
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('fr-FR', {
+const formatPrice = (price: number, isResidence: boolean = false) => {
+  const formatted = new Intl.NumberFormat('fr-FR', {
     style: 'decimal',
     maximumFractionDigits: 0,
   }).format(price) + ' FCFA';
+  return isResidence ? `${formatted}/nuit` : formatted;
 };
 
 const MapPage = () => {
@@ -81,6 +83,8 @@ const MapPage = () => {
   const userMarkerRef = useRef<L.Marker | null>(null);
   const { properties, loading: propertiesLoading } = useProperties();
   const { profile } = useAuth();
+  const appMode = useAppStore((state) => state.appMode);
+  const isResidence = appMode === 'residence';
   const [loading, setLoading] = useState(true);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -306,8 +310,12 @@ const MapPage = () => {
     // Add new markers to cluster group
     filteredProperties.forEach((property) => {
       if (property.lat && property.lng) {
-        const bgColor = property.type === 'sale' ? '#ea580c' : '#16a34a';
-        const priceText = formatPriceShort(property.price);
+        // In Residence mode, use price per night; otherwise use regular price
+        const displayPrice = isResidence 
+          ? (property.pricePerNight || property.price)
+          : property.price;
+        const bgColor = isResidence ? '#8b5cf6' : (property.type === 'sale' ? '#ea580c' : '#16a34a');
+        const priceText = formatPriceShort(displayPrice, isResidence);
         
         const icon = L.divIcon({
           className: 'custom-price-marker',
@@ -327,8 +335,8 @@ const MapPage = () => {
               ${priceText}
             </div>
           `,
-          iconSize: L.point(60, 30),
-          iconAnchor: L.point(30, 15),
+          iconSize: L.point(70, 30),
+          iconAnchor: L.point(35, 15),
         });
         
         const marker = L.marker([property.lat, property.lng], { icon })
@@ -351,17 +359,19 @@ const MapPage = () => {
         mapRef.current?.fitBounds(bounds, { padding: [50, 50] });
       }
     }
-  }, [filteredProperties, mapLoaded]); // Removed selectedProperty from dependencies
+  }, [filteredProperties, mapLoaded, isResidence]); // Added isResidence to dependencies
 
   // Update selected marker style without rebuilding cluster
   useEffect(() => {
     if (!selectedProperty) return;
     
+    const displayPrice = isResidence 
+      ? (selectedProperty.pricePerNight || selectedProperty.price)
+      : selectedProperty.price;
+    const priceText = formatPriceShort(displayPrice, isResidence);
+    
     const marker = markersRef.current.get(selectedProperty.id);
     if (marker) {
-      const bgColor = selectedProperty.type === 'sale' ? '#ea580c' : '#16a34a';
-      const priceText = formatPriceShort(selectedProperty.price);
-      
       const selectedIcon = L.divIcon({
         className: 'custom-price-marker',
         html: `
@@ -382,8 +392,8 @@ const MapPage = () => {
             ${priceText}
           </div>
         `,
-        iconSize: L.point(60, 30),
-        iconAnchor: L.point(30, 15),
+        iconSize: L.point(70, 30),
+        iconAnchor: L.point(35, 15),
       });
       
       marker.setIcon(selectedIcon);
@@ -394,8 +404,8 @@ const MapPage = () => {
       if (selectedProperty) {
         const prevMarker = markersRef.current.get(selectedProperty.id);
         if (prevMarker) {
-          const bgColor = selectedProperty.type === 'sale' ? '#ea580c' : '#16a34a';
-          const priceText = formatPriceShort(selectedProperty.price);
+          const bgColor = isResidence ? '#8b5cf6' : (selectedProperty.type === 'sale' ? '#ea580c' : '#16a34a');
+          const prevPriceText = formatPriceShort(displayPrice, isResidence);
           
           const normalIcon = L.divIcon({
             className: 'custom-price-marker',
@@ -412,18 +422,18 @@ const MapPage = () => {
                 cursor: pointer;
                 display: inline-block;
               ">
-                ${priceText}
+                ${prevPriceText}
               </div>
             `,
-            iconSize: L.point(60, 30),
-            iconAnchor: L.point(30, 15),
+            iconSize: L.point(70, 30),
+            iconAnchor: L.point(35, 15),
           });
           
           prevMarker.setIcon(normalIcon);
         }
       }
     };
-  }, [selectedProperty]);
+  }, [selectedProperty, isResidence]);
 
   const getPrimaryImage = (images: string[]) => {
     return images?.[0] || '/placeholder.svg';
@@ -654,13 +664,28 @@ const MapPage = () => {
                 <div className="flex-1 min-w-0">
                   {/* Badges */}
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      selectedProperty.type === 'sale' 
-                        ? 'bg-primary/10 text-primary' 
-                        : 'bg-green-100 text-green-700'
-                    }`}>
-                      {selectedProperty.type === 'sale' ? 'Vente' : 'Location'}
-                    </span>
+                    {isResidence ? (
+                      <>
+                        {selectedProperty.minimumStay && selectedProperty.minimumStay > 1 && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            Min {selectedProperty.minimumStay} nuits
+                          </span>
+                        )}
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Star className="w-3 h-3 fill-primary text-primary" />
+                          Nouveau
+                        </span>
+                      </>
+                    ) : (
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        selectedProperty.type === 'sale' 
+                          ? 'bg-primary/10 text-primary' 
+                          : 'bg-green-100 text-green-700'
+                      }`}>
+                        {selectedProperty.type === 'sale' ? 'Vente' : 'Location'}
+                      </span>
+                    )}
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <MapPin className="w-3 h-3" />
                       {selectedProperty.city}
@@ -680,8 +705,15 @@ const MapPage = () => {
 
                   {/* Price */}
                   <p className="text-primary font-bold">
-                    {formatPrice(selectedProperty.price)}
-                    {selectedProperty.type === 'rent' && <span className="text-xs font-normal">/mois</span>}
+                    {isResidence 
+                      ? formatPrice(selectedProperty.pricePerNight || selectedProperty.price, true)
+                      : (
+                        <>
+                          {formatPrice(selectedProperty.price)}
+                          {selectedProperty.type === 'rent' && <span className="text-xs font-normal">/mois</span>}
+                        </>
+                      )
+                    }
                   </p>
 
                   {/* Features */}
@@ -699,10 +731,12 @@ const MapPage = () => {
                           {selectedProperty.bathrooms}
                         </span>
                       )}
-                      <span className="flex items-center gap-1">
-                        <Maximize className="w-3 h-3" />
-                        {selectedProperty.area}m²
-                      </span>
+                      {selectedProperty.area > 0 && (
+                        <span className="flex items-center gap-1">
+                          <Maximize className="w-3 h-3" />
+                          {selectedProperty.area}m²
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
