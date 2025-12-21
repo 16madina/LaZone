@@ -114,6 +114,8 @@ async function generateAccessToken(serviceAccount: ServiceAccount): Promise<stri
   const tokenData = JSON.parse(responseText);
   console.log("Got access token, length:", tokenData.access_token?.length);
   console.log("Token type:", tokenData.token_type);
+  console.log("Scope received:", tokenData.scope);
+  console.log("FCM URL will be:", `https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`);
   return tokenData.access_token;
 }
 
