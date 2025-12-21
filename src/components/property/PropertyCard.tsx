@@ -29,8 +29,10 @@ export const PropertyCard = ({ property, userCountry, isFirst = false }: Propert
     const countryCode = property.country || userCountry;
     
     // Mode Residence: afficher prix par nuit
-    if (isResidence && property.pricePerNight) {
-      const formattedPrice = formatPriceWithCurrency(property.pricePerNight, countryCode);
+    if (isResidence) {
+      // Utiliser pricePerNight si disponible, sinon utiliser price comme fallback
+      const nightlyPrice = property.pricePerNight || property.price;
+      const formattedPrice = formatPriceWithCurrency(nightlyPrice, countryCode);
       return `${formattedPrice}/nuit`;
     }
     
