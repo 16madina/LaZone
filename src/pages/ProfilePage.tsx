@@ -289,13 +289,13 @@ const ProfilePage = () => {
       fetchReviews();
       fetchFollowCounts();
     }
-  }, [user]);
+  }, [user, appMode]);
 
   useEffect(() => {
     if (user && activeTab === 'annonces') {
       fetchProperties();
     }
-  }, [user, activeTab]);
+  }, [user, activeTab, appMode]);
 
   useEffect(() => {
     if (activeTab === 'favoris') {
@@ -303,12 +303,15 @@ const ProfilePage = () => {
     }
   }, [activeTab, favorites]);
 
+  const listingType = isResidence ? 'short_term' : 'long_term';
+
   const fetchPropertiesCount = async () => {
     if (!user) return;
     const { count } = await supabase
       .from('properties')
       .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .eq('listing_type', listingType);
     setPropertiesCount(count || 0);
   };
 
@@ -323,6 +326,7 @@ const ProfilePage = () => {
           property_images (url, is_primary)
         `)
         .eq('user_id', user.id)
+        .eq('listing_type', listingType)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -565,7 +569,7 @@ const ProfilePage = () => {
     : 'décembre 2025';
 
   const tabs = [
-    { id: 'annonces' as TabType, label: 'Annonces', icon: Home, tutorial: 'profile-listings' },
+    { id: 'annonces' as TabType, label: isResidence ? 'Séjours' : 'Annonces', icon: Home, tutorial: 'profile-listings' },
     { id: 'rdv' as TabType, label: 'Mes RDV', icon: CalendarDays, tutorial: 'profile-appointments' },
     { id: 'parametres' as TabType, label: 'Paramètres', icon: Settings, tutorial: 'profile-settings' },
   ];
@@ -882,7 +886,7 @@ const ProfilePage = () => {
                 <Home className="w-4 h-4 text-muted-foreground" />
                 <span>{propertiesCount}</span>
               </div>
-              <p className="text-[10px] text-muted-foreground">Annonces</p>
+              <p className="text-[10px] text-muted-foreground">{isResidence ? 'Séjours' : 'Annonces'}</p>
             </button>
             <button 
               onClick={() => setActiveTab('favoris')}

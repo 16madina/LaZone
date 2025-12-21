@@ -15,6 +15,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useAppMode } from '@/hooks/useAppMode';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -24,6 +25,7 @@ interface Property {
   id: string;
   title: string;
   price: number;
+  price_per_night: number | null;
   address: string;
   city: string;
   bedrooms: number | null;
@@ -33,14 +35,18 @@ interface Property {
   type: string;
   is_active: boolean;
   created_at: string;
+  listing_type: string;
   property_images: { url: string; is_primary: boolean }[];
 }
 
 const MyListingsPage = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { appMode, isResidence } = useAppMode();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const listingType = isResidence ? 'short_term' : 'long_term';
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -51,7 +57,7 @@ const MyListingsPage = () => {
     if (user) {
       fetchProperties();
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, listingType]);
 
   const fetchProperties = async () => {
     if (!user) return;
@@ -64,6 +70,7 @@ const MyListingsPage = () => {
           property_images (url, is_primary)
         `)
         .eq('user_id', user.id)
+        .eq('listing_type', listingType)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -145,13 +152,25 @@ const MyListingsPage = () => {
     return primary?.url || images?.[0]?.url || '/placeholder.svg';
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('fr-FR', {
+  const formatPrice = (property: Property) => {
+    const price = isResidence && property.price_per_night 
+      ? property.price_per_night 
+      : property.price;
+    const formatted = new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'XOF',
       maximumFractionDigits: 0,
     }).format(price);
+    return isResidence ? `${formatted}/nuit` : formatted;
   };
+
+  const pageTitle = isResidence ? 'Mes Séjours' : 'Mes Annonces';
+  const emptyTitle = isResidence ? 'Aucun séjour' : 'Aucune annonce';
+  const emptyDescription = isResidence 
+    ? 'Vous n\'avez pas encore publié de séjour court terme.'
+    : 'Vous n\'avez pas encore publié d\'annonce.';
+  const publishLabel = isResidence ? 'Publier un séjour' : 'Publier une annonce';
+  const countLabel = isResidence ? 'séjour' : 'annonce';
 
   if (authLoading || loading) {
     return (
@@ -172,7 +191,7 @@ const MyListingsPage = () => {
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-xl font-bold">Mes Annonces</h1>
+          <h1 className="text-xl font-bold">{pageTitle}</h1>
         </div>
       </div>
 
@@ -183,16 +202,16 @@ const MyListingsPage = () => {
             <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
               <Home className="w-10 h-10 text-muted-foreground" />
             </div>
-            <h2 className="text-lg font-semibold mb-2">Aucune annonce</h2>
+            <h2 className="text-lg font-semibold mb-2">{emptyTitle}</h2>
             <p className="text-muted-foreground mb-6">
-              Vous n'avez pas encore publié d'annonce.
+              {emptyDescription}
             </p>
             <button
               onClick={() => navigate('/publish')}
               className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-medium"
             >
               <Plus className="w-5 h-5" />
-              Publier une annonce
+              {publishLabel}
             </button>
           </div>
         ) : (
@@ -200,14 +219,14 @@ const MyListingsPage = () => {
             {/* Summary */}
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm text-muted-foreground">
-                {properties.length} annonce{properties.length > 1 ? 's' : ''}
+                {properties.length} {countLabel}{properties.length > 1 ? 's' : ''}
               </p>
               <button
                 onClick={() => navigate('/publish')}
                 className="inline-flex items-center gap-1 text-sm text-primary font-medium"
               >
                 <Plus className="w-4 h-4" />
-                Nouvelle annonce
+                {isResidence ? 'Nouveau séjour' : 'Nouvelle annonce'}
               </button>
             </div>
 
@@ -235,7 +254,7 @@ const MyListingsPage = () => {
                           {property.title}
                         </h3>
                         <p className="text-primary font-bold text-sm mt-0.5">
-                          {formatPrice(property.price)}
+                          {formatPrice(property)}
                         </p>
                       </div>
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${

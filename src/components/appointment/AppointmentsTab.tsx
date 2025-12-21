@@ -19,6 +19,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useAppMode } from '@/hooks/useAppMode';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -47,6 +48,7 @@ interface Appointment {
     title: string;
     address: string;
     city: string;
+    listing_type: string;
   };
   requester?: {
     full_name: string | null;
@@ -60,6 +62,7 @@ interface Appointment {
 
 export const AppointmentsTab = () => {
   const { user } = useAuth();
+  const { appMode, isResidence } = useAppMode();
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,12 +77,14 @@ export const AppointmentsTab = () => {
   } | null>(null);
   const [responseMessage, setResponseMessage] = useState('');
 
+  const listingType = isResidence ? 'short_term' : 'long_term';
+
   useEffect(() => {
     if (user) {
       fetchAppointments();
       subscribeToAppointments();
     }
-  }, [user]);
+  }, [user, listingType]);
 
   const fetchAppointments = async () => {
     if (!user) return;
@@ -102,20 +107,23 @@ export const AppointmentsTab = () => {
       ])];
 
       const [propertiesRes, profilesRes] = await Promise.all([
-        supabase.from('properties').select('id, title, address, city').in('id', propertyIds),
+        supabase.from('properties').select('id, title, address, city, listing_type').in('id', propertyIds),
         supabase.from('profiles').select('user_id, full_name, avatar_url').in('user_id', userIds)
       ]);
 
       const propertiesMap = new Map(propertiesRes.data?.map(p => [p.id, p]));
       const profilesMap = new Map(profilesRes.data?.map(p => [p.user_id, p]));
 
-      const enrichedAppointments: Appointment[] = (data || []).map(a => ({
-        ...a,
-        status: a.status as 'pending' | 'approved' | 'rejected',
-        property: propertiesMap.get(a.property_id),
-        requester: profilesMap.get(a.requester_id),
-        owner: profilesMap.get(a.owner_id),
-      }));
+      // Filter appointments by listing_type of the associated property
+      const enrichedAppointments: Appointment[] = (data || [])
+        .map(a => ({
+          ...a,
+          status: a.status as 'pending' | 'approved' | 'rejected',
+          property: propertiesMap.get(a.property_id),
+          requester: profilesMap.get(a.requester_id),
+          owner: profilesMap.get(a.owner_id),
+        }))
+        .filter(a => a.property?.listing_type === listingType);
 
       setAppointments(enrichedAppointments);
     } catch (error) {
