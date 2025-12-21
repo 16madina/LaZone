@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, MapPin, Bed, Bath, Maximize, Search, Loader2, Navigation, Check, Globe, ChevronDown, Calendar, Star } from 'lucide-react';
+import { Filter, X, MapPin, Bed, Bath, Maximize, Search, Loader2, Navigation, Check, Globe, ChevronDown, Calendar, Star, List } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { MapPropertyList } from '@/components/map/MapPropertyList';
 import { useProperties, Property } from '@/hooks/useProperties';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppStore } from '@/stores/appStore';
@@ -96,6 +97,7 @@ const MapPage = () => {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locatingUser, setLocatingUser] = useState(false);
   const [initialCountrySet, setInitialCountrySet] = useState(false);
+  const [showList, setShowList] = useState(false);
 
   // Default center (Africa)
   const defaultCenter = { lat: 5.3600, lng: -4.0083 };
@@ -586,11 +588,39 @@ const MapPage = () => {
             </SelectContent>
           </Select>
 
+          <button
+            onClick={() => setShowList(!showList)}
+            className={`px-3 py-1.5 rounded-lg shadow-md border text-sm whitespace-nowrap flex items-center gap-1.5 transition-colors ${
+              showList ? 'bg-primary text-primary-foreground' : 'bg-card'
+            }`}
+          >
+            <List className="w-4 h-4" />
+            Liste
+          </button>
+
           <div className="px-3 py-1.5 bg-card rounded-lg shadow-md border text-sm whitespace-nowrap flex items-center">
             {filteredProperties.length} annonce{filteredProperties.length > 1 ? 's' : ''}
           </div>
         </div>
       </div>
+
+      {/* Property List Panel */}
+      <MapPropertyList
+        properties={filteredProperties}
+        selectedProperty={selectedProperty}
+        onSelectProperty={(property) => {
+          setSelectedProperty(property);
+          // Center map on selected property
+          if (mapRef.current && property.lat && property.lng) {
+            mapRef.current.flyTo([property.lat, property.lng], 15, {
+              duration: 1,
+              easeLinearity: 0.25
+            });
+          }
+        }}
+        onClose={() => setShowList(false)}
+        isOpen={showList}
+      />
 
       {/* Map Container */}
       <div 
