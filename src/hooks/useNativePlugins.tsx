@@ -141,28 +141,34 @@ export const useCamera = () => {
 
 // ==================== PUSH NOTIFICATIONS HOOK ====================
 export const usePushNotifications = () => {
+  // All hooks must be called unconditionally and in the same order
+  const userIdRef = useRef<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isRegistered, setIsRegistered] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
-  // Keep latest userId without forcing re-binding listeners
-  const userIdRef = useRef<string | null>(null);
-
-  // Get current user
+  // Get current user (must be first effect)
   useEffect(() => {
+    let mounted = true;
+    
     supabase.auth.getUser().then(({ data }) => {
+      if (!mounted) return;
       const uid = data.user?.id || null;
       userIdRef.current = uid;
       setUserId(uid);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
       const uid = session?.user?.id || null;
       userIdRef.current = uid;
       setUserId(uid);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Save FCM/APNs token to database
