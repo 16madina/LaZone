@@ -92,19 +92,26 @@ async function generateAccessToken(serviceAccount: ServiceAccount): Promise<stri
   const jwt = `${unsignedToken}.${signatureB64}`;
 
   // Exchange JWT for access token
+  console.log("Exchanging JWT for access token...");
+  console.log("Token URI:", serviceAccount.token_uri);
+  
   const tokenResponse = await fetch(serviceAccount.token_uri, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
   });
 
+  const responseText = await tokenResponse.text();
+  console.log("Token exchange response status:", tokenResponse.status);
+  console.log("Token exchange response:", responseText);
+
   if (!tokenResponse.ok) {
-    const errorText = await tokenResponse.text();
-    console.error("Token exchange failed:", errorText);
-    throw new Error(`Failed to get access token: ${errorText}`);
+    console.error("Token exchange failed:", responseText);
+    throw new Error(`Failed to get access token: ${responseText}`);
   }
 
-  const tokenData = await tokenResponse.json();
+  const tokenData = JSON.parse(responseText);
+  console.log("Got access token, length:", tokenData.access_token?.length);
   return tokenData.access_token;
 }
 
@@ -124,11 +131,18 @@ serve(async (req) => {
       );
     }
 
+    console.log("Service account JSON length:", serviceAccountJson.length);
+    console.log("Service account JSON first 100 chars:", serviceAccountJson.substring(0, 100));
+
     let serviceAccount: ServiceAccount;
     try {
       serviceAccount = JSON.parse(serviceAccountJson);
+      console.log("Parsed service account - project_id:", serviceAccount.project_id);
+      console.log("Parsed service account - client_email:", serviceAccount.client_email);
+      console.log("Parsed service account - private_key starts with:", serviceAccount.private_key?.substring(0, 30));
     } catch (e) {
       console.error("Invalid service account JSON:", e);
+      console.error("Raw JSON that failed to parse:", serviceAccountJson);
       return new Response(
         JSON.stringify({ error: "Invalid service account JSON format" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
