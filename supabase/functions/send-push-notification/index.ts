@@ -132,6 +132,8 @@ serve(async (req) => {
     let serviceAccount: ServiceAccount;
     try {
       serviceAccount = JSON.parse(serviceAccountJson);
+      console.log("Service account project_id:", serviceAccount.project_id);
+      console.log("Service account client_email:", serviceAccount.client_email);
     } catch (e) {
       console.error("Invalid service account JSON:", e);
       return new Response(
