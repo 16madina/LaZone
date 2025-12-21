@@ -229,16 +229,25 @@ serve(async (req) => {
     };
 
     try {
+      console.log("FCM URL:", fcmUrl);
+      console.log("Authorization header length:", `Bearer ${accessToken}`.length);
+      console.log("Access token used (first 60 chars):", accessToken?.substring(0, 60));
+      console.log("Message payload:", JSON.stringify(message));
+      
+      const headers = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`,
+      };
+      console.log("Request headers:", JSON.stringify(Object.keys(headers)));
+      
       const response = await fetch(fcmUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
+        headers,
         body: JSON.stringify(message),
       });
 
       const result = await response.json();
+      console.log(`FCM v1 response status:`, response.status);
       console.log(`FCM v1 response:`, JSON.stringify(result));
 
       // If token is invalid, clear it from profiles
