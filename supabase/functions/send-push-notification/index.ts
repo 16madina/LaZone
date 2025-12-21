@@ -92,26 +92,19 @@ async function generateAccessToken(serviceAccount: ServiceAccount): Promise<stri
   const jwt = `${unsignedToken}.${signatureB64}`;
 
   // Exchange JWT for access token
-  console.log("Exchanging JWT for access token...");
-  console.log("Token URI:", serviceAccount.token_uri);
-  
   const tokenResponse = await fetch(serviceAccount.token_uri, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
   });
 
-  const responseText = await tokenResponse.text();
-  console.log("Token exchange response status:", tokenResponse.status);
-  console.log("Token exchange response:", responseText);
-
   if (!tokenResponse.ok) {
-    console.error("Token exchange failed:", responseText);
-    throw new Error(`Failed to get access token: ${responseText}`);
+    const errorText = await tokenResponse.text();
+    console.error("Token exchange failed:", errorText);
+    throw new Error(`Failed to get access token: ${errorText}`);
   }
 
-  const tokenData = JSON.parse(responseText);
-  console.log("Got access token, length:", tokenData.access_token?.length);
+  const tokenData = await tokenResponse.json();
   return tokenData.access_token;
 }
 
@@ -131,25 +124,11 @@ serve(async (req) => {
       );
     }
 
-    console.log("=== DEBUG SERVICE ACCOUNT ===");
-    console.log("Service account JSON length:", serviceAccountJson.length);
-    console.log("First 200 chars:", serviceAccountJson.substring(0, 200));
-    console.log("Last 100 chars:", serviceAccountJson.substring(serviceAccountJson.length - 100));
-
     let serviceAccount: ServiceAccount;
     try {
       serviceAccount = JSON.parse(serviceAccountJson);
-      console.log("=== PARSED SERVICE ACCOUNT ===");
-      console.log("project_id:", serviceAccount.project_id);
-      console.log("client_email:", serviceAccount.client_email);
-      console.log("private_key_id:", serviceAccount.private_key_id);
-      console.log("private_key length:", serviceAccount.private_key?.length);
-      console.log("private_key starts with:", serviceAccount.private_key?.substring(0, 50));
-      console.log("private_key ends with:", serviceAccount.private_key?.substring(serviceAccount.private_key.length - 50));
-      console.log("token_uri:", serviceAccount.token_uri);
     } catch (e) {
       console.error("Invalid service account JSON:", e);
-      console.error("Raw JSON:", serviceAccountJson);
       return new Response(
         JSON.stringify({ error: "Invalid service account JSON format" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
