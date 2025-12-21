@@ -63,6 +63,26 @@ const AMENITIES = [
   'Cuisine équipée', 'Meublé', 'Internet', 'Eau chaude', 'Groupe électrogène'
 ];
 
+// Commodités spécifiques pour Residence (location courte durée)
+const RESIDENCE_AMENITIES = [
+  'Wifi', 'Climatisation', 'Télévision', 'Cuisine équipée', 'Machine à laver',
+  'Sèche-linge', 'Fer à repasser', 'Piscine', 'Jacuzzi', 'Parking gratuit',
+  'Petit-déjeuner inclus', 'Service de ménage', 'Draps fournis', 'Serviettes',
+  'Espace de travail', 'Balcon', 'Terrasse', 'Jardin', 'Barbecue', 'Vue mer'
+];
+
+// Restrictions pour Residence (location courte durée)
+const RESIDENCE_RESTRICTIONS = [
+  { id: 'non_fumeur', label: 'Non-fumeur', icon: '🚭' },
+  { id: 'pas_animaux', label: 'Pas d\'animaux', icon: '🐾' },
+  { id: 'pas_fete', label: 'Pas de fête', icon: '🎉' },
+  { id: 'pas_drogue', label: 'Pas de drogue', icon: '💊' },
+  { id: 'pas_alcool', label: 'Pas d\'alcool', icon: '🍺' },
+  { id: 'silence_nuit', label: 'Silence après 22h', icon: '🤫' },
+  { id: 'enfants_bienvenus', label: 'Enfants bienvenus', icon: '👶' },
+  { id: 'check_in_flexible', label: 'Check-in flexible', icon: '🕐' },
+];
+
 const DOCUMENTS = [
   { id: 'acd', label: 'ACD (Attestation de Cession de Droits)' },
   { id: 'titre_foncier', label: 'Titre Foncier' },
@@ -141,6 +161,7 @@ const PublishPage = () => {
   // Short-term specific (Residence mode)
   const [pricePerNight, setPricePerNight] = useState('');
   const [minimumStay, setMinimumStay] = useState('1');
+  const [selectedRestrictions, setSelectedRestrictions] = useState<string[]>([]);
 
   // Contact options
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
@@ -148,6 +169,7 @@ const PublishPage = () => {
   // Popover states
   const [amenitiesOpen, setAmenitiesOpen] = useState(false);
   const [documentsOpen, setDocumentsOpen] = useState(false);
+  const [restrictionsOpen, setRestrictionsOpen] = useState(false);
 
   // Pre-fill country from user profile
   useEffect(() => {
@@ -188,9 +210,11 @@ const PublishPage = () => {
 
   const showBedroomsBathrooms = propertyType === 'house' || propertyType === 'apartment';
   const showAmenities = propertyType !== 'land';
-  const showDocuments = propertyType === 'land' || transactionType === 'sale';
+  const showDocuments = !isResidence && (propertyType === 'land' || transactionType === 'sale');
   const showRentDetails = transactionType === 'rent' && propertyType !== 'land' && !isResidence;
   const showShortTermDetails = isResidence && propertyType !== 'land';
+  const showArea = !isResidence; // Cacher superficie en mode Residence
+  const showRestrictions = isResidence; // Afficher restrictions en mode Residence
 
   const validateField = (field: string, value: string) => {
     const newErrors = { ...errors };
@@ -331,6 +355,14 @@ const PublishPage = () => {
     );
   };
 
+  const toggleRestriction = (restrictionId: string) => {
+    setSelectedRestrictions(prev => 
+      prev.includes(restrictionId) 
+        ? prev.filter(r => r !== restrictionId)
+        : [...prev, restrictionId]
+    );
+  };
+
   const handleMarkerPositionChange = (lat: number, lng: number) => {
     setMarkerPosition({ lat, lng });
   };
@@ -354,11 +386,19 @@ const PublishPage = () => {
       newErrors.city = 'La ville doit contenir au moins 2 caractères';
     }
     
-    if (!price || isNaN(Number(price)) || Number(price) <= 0) {
-      newErrors.price = 'Veuillez entrer un prix valide';
+    // En mode Residence, valider le prix par nuit au lieu du prix normal
+    if (isResidence) {
+      if (!pricePerNight || isNaN(Number(pricePerNight)) || Number(pricePerNight) <= 0) {
+        newErrors.price = 'Veuillez entrer un prix par nuit valide';
+      }
+    } else {
+      if (!price || isNaN(Number(price)) || Number(price) <= 0) {
+        newErrors.price = 'Veuillez entrer un prix valide';
+      }
     }
     
-    if (!area || isNaN(Number(area)) || Number(area) <= 0) {
+    // Superficie requise seulement en mode LaZone
+    if (!isResidence && (!area || isNaN(Number(area)) || Number(area) <= 0)) {
       newErrors.area = 'Veuillez entrer une superficie valide';
     }
     
@@ -425,7 +465,11 @@ const PublishPage = () => {
           listing_type: isResidence ? 'short_term' : 'long_term',
           bedrooms: showBedroomsBathrooms ? parseInt(bedrooms) || 0 : null,
           bathrooms: showBedroomsBathrooms ? parseInt(bathrooms) || 0 : null,
-          features: [...selectedAmenities, ...selectedDocuments.map(d => DOCUMENTS.find(doc => doc.id === d)?.label || d)],
+          features: [
+            ...selectedAmenities, 
+            ...selectedDocuments.map(d => DOCUMENTS.find(doc => doc.id === d)?.label || d),
+            ...selectedRestrictions.map(r => RESIDENCE_RESTRICTIONS.find(res => res.id === r)?.label || r)
+          ],
           whatsapp_enabled: whatsappEnabled,
           country: selectedCountry,
           lat: markerPosition.lat,
@@ -736,12 +780,14 @@ const PublishPage = () => {
             <Home className="w-5 h-5 text-primary" />
             Type de propriété
           </h3>
-          <div className="grid grid-cols-2 gap-2">
+          <div className={`grid ${isResidence ? 'grid-cols-2' : 'grid-cols-2'} gap-2`}>
             {[
               { value: 'house', icon: '🏠', label: 'Maison' },
               { value: 'apartment', icon: '🏢', label: 'Appartement' },
-              { value: 'land', icon: '🌳', label: 'Terrain' },
-              { value: 'commercial', icon: '🏪', label: 'Commercial' },
+              ...(isResidence ? [] : [
+                { value: 'land', icon: '🌳', label: 'Terrain' },
+                { value: 'commercial', icon: '🏪', label: 'Commercial' },
+              ]),
             ].map((type) => (
               <button
                 key={type.value}
@@ -1039,36 +1085,38 @@ const PublishPage = () => {
           </div>
         </motion.div>
 
-        {/* Surface Area */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-card rounded-2xl p-4 shadow-sm"
-        >
-          <h3 className="font-semibold mb-3 flex items-center gap-2">
-            <Maximize className="w-5 h-5 text-primary" />
-            Superficie <span className="text-destructive">*</span>
-          </h3>
-          <div className="relative">
-            <Input
-              type="number"
-              value={area}
-              onChange={(e) => {
-                setArea(e.target.value);
-                if (touched.area) validateField('area', e.target.value);
-              }}
-              onBlur={() => {
-                handleBlur('area');
-                validateField('area', area);
-              }}
-              placeholder="0"
-              className={`pr-12 ${errors.area && touched.area ? 'border-destructive' : ''}`}
-            />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">m²</span>
-          </div>
-          {touched.area && <ErrorMessage message={errors.area} />}
-        </motion.div>
+        {/* Surface Area - Hidden in Residence mode */}
+        {showArea && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-card rounded-2xl p-4 shadow-sm"
+          >
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Maximize className="w-5 h-5 text-primary" />
+              Superficie <span className="text-destructive">*</span>
+            </h3>
+            <div className="relative">
+              <Input
+                type="number"
+                value={area}
+                onChange={(e) => {
+                  setArea(e.target.value);
+                  if (touched.area) validateField('area', e.target.value);
+                }}
+                onBlur={() => {
+                  handleBlur('area');
+                  validateField('area', area);
+                }}
+                placeholder="0"
+                className={`pr-12 ${errors.area && touched.area ? 'border-destructive' : ''}`}
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">m²</span>
+            </div>
+            {touched.area && <ErrorMessage message={errors.area} />}
+          </motion.div>
+        )}
 
         {/* Bedrooms and Bathrooms - Only for house/apartment */}
         {showBedroomsBathrooms && (
@@ -1140,7 +1188,7 @@ const PublishPage = () => {
               </PopoverTrigger>
               <PopoverContent className="w-[calc(100vw-2rem)] max-w-md p-0 bg-card border shadow-lg z-50" align="start">
                 <div className="max-h-64 overflow-y-auto p-2">
-                  {AMENITIES.map(amenity => (
+                  {(isResidence ? RESIDENCE_AMENITIES : AMENITIES).map(amenity => (
                     <label
                       key={amenity}
                       className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-muted transition-colors"
@@ -1223,6 +1271,67 @@ const PublishPage = () => {
                     >
                       {doc?.label.split(' ')[0]}
                       <button onClick={() => toggleDocument(docId)}>
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Restrictions Dropdown - Only for Residence mode */}
+        {showRestrictions && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card rounded-2xl p-4 shadow-sm"
+          >
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              🚫 Restrictions
+            </h3>
+            <Popover open={restrictionsOpen} onOpenChange={setRestrictionsOpen}>
+              <PopoverTrigger asChild>
+                <button className="w-full flex items-center justify-between p-3 rounded-xl border bg-background hover:bg-muted/50 transition-colors">
+                  <span className={selectedRestrictions.length > 0 ? 'text-foreground' : 'text-muted-foreground'}>
+                    {selectedRestrictions.length > 0 
+                      ? `${selectedRestrictions.length} restriction(s) sélectionnée(s)`
+                      : 'Définir les règles de la maison'}
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${restrictionsOpen ? 'rotate-180' : ''}`} />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[calc(100vw-2rem)] max-w-md p-0 bg-card border shadow-lg z-50" align="start">
+                <div className="max-h-64 overflow-y-auto p-2">
+                  {RESIDENCE_RESTRICTIONS.map(restriction => (
+                    <label
+                      key={restriction.id}
+                      className="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-muted transition-colors"
+                    >
+                      <Checkbox
+                        checked={selectedRestrictions.includes(restriction.id)}
+                        onCheckedChange={() => toggleRestriction(restriction.id)}
+                      />
+                      <span className="text-lg">{restriction.icon}</span>
+                      <span className="text-sm">{restriction.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+            {selectedRestrictions.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {selectedRestrictions.map(restrictionId => {
+                  const restriction = RESIDENCE_RESTRICTIONS.find(r => r.id === restrictionId);
+                  return (
+                    <span
+                      key={restrictionId}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-destructive/10 text-destructive rounded-full text-xs"
+                    >
+                      <span>{restriction?.icon}</span>
+                      {restriction?.label}
+                      <button onClick={() => toggleRestriction(restrictionId)}>
                         <X className="w-3 h-3" />
                       </button>
                     </span>
