@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Heart, Bed, Bath, Maximize, MapPin } from 'lucide-react';
+import { Heart, Bed, Bath, Maximize, MapPin, Calendar, Star } from 'lucide-react';
 import { Property } from '@/hooks/useProperties';
 import { useFavorites } from '@/hooks/useFavorites';
 import { Link } from 'react-router-dom';
@@ -7,6 +7,7 @@ import { formatPriceWithCurrency } from '@/data/currencies';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination } from 'swiper/modules';
 import { VendorBadge } from '@/components/VendorBadge';
+import { useAppStore } from '@/stores/appStore';
 import 'swiper/css';
 import 'swiper/css/pagination';
 
@@ -21,11 +22,21 @@ export const PropertyCard = ({ property, userCountry, isFirst = false }: Propert
   const { isFavorite, toggleFavorite } = useFavorites();
   const favorite = isFavorite(property.id);
   const [swiperActive, setSwiperActive] = useState(false);
+  const appMode = useAppStore((state) => state.appMode);
+  const isResidence = appMode === 'residence';
 
-  const formatPrice = (price: number, type: 'sale' | 'rent') => {
+  const formatPrice = () => {
     const countryCode = property.country || userCountry;
-    const formattedPrice = formatPriceWithCurrency(price, countryCode);
-    if (type === 'rent') {
+    
+    // Mode Residence: afficher prix par nuit
+    if (isResidence && property.pricePerNight) {
+      const formattedPrice = formatPriceWithCurrency(property.pricePerNight, countryCode);
+      return `${formattedPrice}/nuit`;
+    }
+    
+    // Mode LaZone: afficher prix classique
+    const formattedPrice = formatPriceWithCurrency(property.price, countryCode);
+    if (property.type === 'rent') {
       return `${formattedPrice}/mois`;
     }
     return formattedPrice;
@@ -72,15 +83,26 @@ export const PropertyCard = ({ property, userCountry, isFirst = false }: Propert
         
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent pointer-events-none" />
         
-        {/* Type Badge */}
+        {/* Type Badge - Different for Residence mode */}
         <div className="absolute top-3 left-3 z-10">
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-            property.type === 'sale' 
-              ? 'gradient-primary text-primary-foreground' 
-              : 'bg-secondary text-secondary-foreground'
-          }`}>
-            {property.type === 'sale' ? 'À vendre' : 'À louer'}
-          </span>
+          {isResidence ? (
+            <div className="flex items-center gap-1.5">
+              {property.minimumStay && property.minimumStay > 1 && (
+                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-background/90 backdrop-blur-sm text-foreground flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  Min {property.minimumStay} nuits
+                </span>
+              )}
+            </div>
+          ) : (
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              property.type === 'sale' 
+                ? 'gradient-primary text-primary-foreground' 
+                : 'bg-secondary text-secondary-foreground'
+            }`}>
+              {property.type === 'sale' ? 'À vendre' : 'À louer'}
+            </span>
+          )}
         </div>
 
         {/* Property Type Badge */}
@@ -123,9 +145,18 @@ export const PropertyCard = ({ property, userCountry, isFirst = false }: Propert
             </div>
           </div>
 
-          <p className="gradient-text font-display font-bold text-xl mb-2">
-            {formatPrice(property.price, property.type)}
-          </p>
+          <div className="flex items-center gap-2 mb-2">
+            <p className="gradient-text font-display font-bold text-xl">
+              {formatPrice()}
+            </p>
+            {/* Airbnb-style rating placeholder for Residence mode */}
+            {isResidence && (
+              <div className="flex items-center gap-1 text-muted-foreground text-sm">
+                <Star className="w-3.5 h-3.5 fill-primary text-primary" />
+                <span className="font-medium">Nouveau</span>
+              </div>
+            )}
+          </div>
 
           <div className="flex items-center gap-1 text-muted-foreground text-sm mb-3">
             <MapPin className="w-3.5 h-3.5" />

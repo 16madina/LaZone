@@ -1,6 +1,7 @@
 import { useAppStore } from '@/stores/appStore';
 
-const filters = [
+// Filtres pour LaZone (long terme)
+const longTermFilters = [
   { id: 'all', label: 'Tout', emoji: '✨' },
   { id: 'sale', label: 'À vendre', emoji: '💰' },
   { id: 'rent', label: 'À louer', emoji: '🔑' },
@@ -10,14 +11,27 @@ const filters = [
   { id: 'commercial', label: 'Commerces', emoji: '🏪' },
 ];
 
+// Filtres pour LaZone Residence (courts séjours - style Airbnb)
+const shortTermFilters = [
+  { id: 'all', label: 'Tout', emoji: '✨' },
+  { id: 'house', label: 'Villas', emoji: '🏡' },
+  { id: 'apartment', label: 'Appartements', emoji: '🏢' },
+  { id: 'entire', label: 'Logement entier', emoji: '🏠' },
+  { id: 'pool', label: 'Avec piscine', emoji: '🏊' },
+  { id: 'wifi', label: 'WiFi', emoji: '📶' },
+  { id: 'parking', label: 'Parking', emoji: '🚗' },
+];
+
 interface FilterChipsProps {
   variant?: 'default' | 'hero';
 }
 
 export const FilterChips = ({ variant = 'default' }: FilterChipsProps) => {
-  const { activeFilter, setActiveFilter } = useAppStore();
+  const { activeFilter, setActiveFilter, appMode } = useAppStore();
 
   const isHero = variant === 'hero';
+  const isResidence = appMode === 'residence';
+  const filters = isResidence ? shortTermFilters : longTermFilters;
 
   return (
     <div className="flex gap-2 overflow-x-auto scrollbar-hide py-2 -mx-4 px-4">
