@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Camera, MapPin, Home, DollarSign, Upload, Plus, X, 
   Bed, Bath, Maximize, FileText, Clock, Wallet, Check,
-  Loader2, AlertCircle, ChevronDown, Map, Image, Moon
+  Loader2, AlertCircle, ChevronDown, Map, Image, Moon, Navigation
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppMode } from '@/hooks/useAppMode';
@@ -220,7 +220,7 @@ const PublishPage = () => {
   }, [selectedCountry]);
 
   // Auto-geocode when city or address changes
-  const geocodeAddress = async (searchAddress: string, searchCity: string, countryCode: string) => {
+  const geocodeAddress = async (searchAddress: string, searchCity: string, countryCode: string, showToast = true) => {
     if (!searchCity || searchCity.length < 2) return;
     
     setIsGeocoding(true);
@@ -258,6 +258,13 @@ const PublishPage = () => {
         if (!isNaN(lat) && !isNaN(lng)) {
           setMarkerPosition({ lat, lng });
           console.log(`Geocoded "${query}" to: ${lat}, ${lng}`);
+          
+          if (showToast) {
+            toast({
+              title: '📍 Position trouvée',
+              description: `Coordonnées mises à jour pour "${searchCity}"`,
+            });
+          }
         }
       }
     } catch (error) {
@@ -265,6 +272,69 @@ const PublishPage = () => {
     } finally {
       setIsGeocoding(false);
     }
+  };
+
+  // Use current GPS position
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  
+  const handleUseCurrentLocation = async () => {
+    if (!navigator.geolocation) {
+      toast({
+        title: 'Géolocalisation non disponible',
+        description: 'Votre navigateur ne supporte pas la géolocalisation',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsGettingLocation(true);
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        
+        setMarkerPosition({ lat, lng });
+        setIsGettingLocation(false);
+        
+        toast({
+          title: '📍 Position GPS obtenue',
+          description: 'La carte a été mise à jour avec votre position actuelle',
+        });
+        
+        // Auto-open map to show the new position
+        if (!showMap) {
+          setShowMap(true);
+        }
+      },
+      (error) => {
+        setIsGettingLocation(false);
+        let errorMessage = 'Impossible d\'obtenir votre position';
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Veuillez autoriser l\'accès à votre position';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Position non disponible';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Délai d\'attente dépassé';
+            break;
+        }
+        
+        toast({
+          title: 'Erreur de géolocalisation',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
   };
 
   // Trigger geocoding when city changes
@@ -1421,16 +1491,33 @@ const PublishPage = () => {
               />
             </div>
 
-            {/* Map Toggle Button */}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowMap(!showMap)}
-              className="w-full flex items-center gap-2"
-            >
-              <Map className="w-4 h-4" />
-              {showMap ? 'Masquer la carte' : 'Sélectionner sur la carte'}
-            </Button>
+            {/* Map Toggle Button and GPS Button */}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowMap(!showMap)}
+                className="flex-1 flex items-center gap-2"
+              >
+                <Map className="w-4 h-4" />
+                {showMap ? 'Masquer la carte' : 'Carte'}
+              </Button>
+              
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleUseCurrentLocation}
+                disabled={isGettingLocation}
+                className="flex items-center gap-2"
+              >
+                {isGettingLocation ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Navigation className="w-4 h-4" />
+                )}
+                Ma position
+              </Button>
+            </div>
 
             {/* Interactive Map */}
             {showMap && (
