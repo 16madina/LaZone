@@ -3,7 +3,7 @@ import { useCallback, useRef } from 'react';
 type SoundType = 'message' | 'notification' | 'startup' | 'success' | 'error' | 'stamp';
 
 // Sound frequencies and durations for different notification types
-const soundConfigs: Record<SoundType, { frequencies: number[]; durations: number[]; type: OscillatorType }> = {
+const soundConfigs: Record<SoundType, { frequencies: number[]; durations: number[]; type: OscillatorType; gains?: number[] }> = {
   message: {
     frequencies: [800, 1000, 800],
     durations: [100, 100, 150],
@@ -29,11 +29,81 @@ const soundConfigs: Record<SoundType, { frequencies: number[]; durations: number
     durations: [150, 200],
     type: 'square'
   },
+  // Stamp sound - simulates a rubber stamp hitting paper
   stamp: {
-    frequencies: [150, 80, 60],
-    durations: [30, 50, 80],
-    type: 'square'
+    frequencies: [120, 80, 40, 30],
+    durations: [20, 40, 60, 100],
+    type: 'square',
+    gains: [0.5, 0.4, 0.3, 0.2]
   }
+};
+
+// Play realistic stamp sound with noise component
+const playStampSound = (audioContext: AudioContext) => {
+  const now = audioContext.currentTime;
+  
+  // Create noise buffer for paper/thud texture
+  const bufferSize = audioContext.sampleRate * 0.15;
+  const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+  const output = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    output[i] = Math.random() * 2 - 1;
+  }
+  
+  // Noise source for paper texture
+  const noiseSource = audioContext.createBufferSource();
+  noiseSource.buffer = noiseBuffer;
+  
+  // Filter noise to make it sound more like paper
+  const noiseFilter = audioContext.createBiquadFilter();
+  noiseFilter.type = 'lowpass';
+  noiseFilter.frequency.setValueAtTime(800, now);
+  noiseFilter.frequency.exponentialRampToValueAtTime(200, now + 0.1);
+  
+  // Noise gain envelope
+  const noiseGain = audioContext.createGain();
+  noiseGain.gain.setValueAtTime(0.3, now);
+  noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+  
+  noiseSource.connect(noiseFilter);
+  noiseFilter.connect(noiseGain);
+  noiseGain.connect(audioContext.destination);
+  
+  // Deep thump oscillator
+  const thump = audioContext.createOscillator();
+  thump.type = 'sine';
+  thump.frequency.setValueAtTime(150, now);
+  thump.frequency.exponentialRampToValueAtTime(40, now + 0.08);
+  
+  const thumpGain = audioContext.createGain();
+  thumpGain.gain.setValueAtTime(0.6, now);
+  thumpGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+  
+  thump.connect(thumpGain);
+  thumpGain.connect(audioContext.destination);
+  
+  // Click/impact oscillator
+  const click = audioContext.createOscillator();
+  click.type = 'square';
+  click.frequency.setValueAtTime(300, now);
+  click.frequency.exponentialRampToValueAtTime(80, now + 0.03);
+  
+  const clickGain = audioContext.createGain();
+  clickGain.gain.setValueAtTime(0.4, now);
+  clickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
+  
+  click.connect(clickGain);
+  clickGain.connect(audioContext.destination);
+  
+  // Start all sounds
+  noiseSource.start(now);
+  thump.start(now);
+  click.start(now);
+  
+  // Stop all sounds
+  noiseSource.stop(now + 0.15);
+  thump.stop(now + 0.12);
+  click.stop(now + 0.05);
 };
 
 export const useSound = () => {
@@ -74,6 +144,14 @@ export const useSound = () => {
     if (!soundEnabled || isMutedRef.current) return;
 
     try {
+      const audioContext = getAudioContext();
+      
+      // Special handling for stamp sound
+      if (soundType === 'stamp') {
+        playStampSound(audioContext);
+        return;
+      }
+      
       const config = soundConfigs[soundType];
       let currentTime = 0;
 
@@ -84,7 +162,7 @@ export const useSound = () => {
     } catch (error) {
       console.error('Error playing sound:', error);
     }
-  }, [playTone]);
+  }, [playTone, getAudioContext]);
 
   const setMuted = useCallback((muted: boolean) => {
     isMutedRef.current = muted;
@@ -148,6 +226,14 @@ export const getSoundInstance = () => {
       if (!soundEnabled) return;
 
       try {
+        const audioContext = getAudioContext();
+        
+        // Special handling for stamp sound
+        if (soundType === 'stamp') {
+          playStampSound(audioContext);
+          return;
+        }
+        
         const config = soundConfigs[soundType];
         let currentTime = 0;
 

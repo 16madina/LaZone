@@ -2,6 +2,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect } from 'react';
 import { AppMode } from '@/stores/appStore';
 import { getSoundInstance } from '@/hooks/useSound';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Capacitor } from '@capacitor/core';
 import logoLazone from '@/assets/logo-lazone.png';
 
 interface ModeSwitchSplashProps {
@@ -9,15 +11,35 @@ interface ModeSwitchSplashProps {
   onComplete: () => void;
 }
 
+// Trigger haptic feedback for stamp effect
+const triggerStampHaptic = async () => {
+  if (!Capacitor.isNativePlatform()) return;
+  
+  try {
+    // Heavy impact for the stamp "boom" effect
+    await Haptics.impact({ style: ImpactStyle.Heavy });
+  } catch (error) {
+    console.error('Haptic error:', error);
+  }
+};
+
 export const ModeSwitchSplash = ({ targetMode, onComplete }: ModeSwitchSplashProps) => {
   const isResidence = targetMode === 'residence';
   
-  // Play stamp sound when stamp animation starts
+  // Play stamp sound and haptic when stamp animation starts
   useEffect(() => {
     const stampTimer = setTimeout(() => {
       const sound = getSoundInstance();
       sound.playStampSound();
+      triggerStampHaptic();
     }, 700); // Sync with stamp animation delay
+    
+    // Second stamp sound + haptic for the main title stamp
+    const secondStampTimer = setTimeout(() => {
+      const sound = getSoundInstance();
+      sound.playStampSound();
+      triggerStampHaptic();
+    }, 900); // Sync with subtitle stamp animation
 
     const completeTimer = setTimeout(() => {
       onComplete();
@@ -25,6 +47,7 @@ export const ModeSwitchSplash = ({ targetMode, onComplete }: ModeSwitchSplashPro
 
     return () => {
       clearTimeout(stampTimer);
+      clearTimeout(secondStampTimer);
       clearTimeout(completeTimer);
     };
   }, [onComplete]);
