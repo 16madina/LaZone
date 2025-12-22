@@ -264,6 +264,22 @@ export const AppointmentsTab = () => {
           status,
           appointment.id
         );
+
+        // Send confirmation email for reservations
+        if (isReservation) {
+          try {
+            await supabase.functions.invoke('send-reservation-email', {
+              body: {
+                reservationId: appointment.id,
+                status,
+                responseMessage: responseMessage.trim() || undefined
+              }
+            });
+          } catch (emailError) {
+            console.error('Error sending reservation email:', emailError);
+            // Don't fail the whole operation if email fails
+          }
+        }
       }
 
       const isReservation = appointment?.reservation_type === 'reservation';

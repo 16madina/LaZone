@@ -39,6 +39,10 @@ interface BookedPeriod {
   checkOut: Date;
 }
 
+interface BlockedDate {
+  blocked_date: string;
+}
+
 export const ReservationDialog = ({ 
   propertyId, 
   ownerId, 
@@ -65,6 +69,7 @@ export const ReservationDialog = ({
   const [userPhone, setUserPhone] = useState('');
   const [guests, setGuests] = useState(1);
   const [bookedPeriods, setBookedPeriods] = useState<BookedPeriod[]>([]);
+  const [blockedDates, setBlockedDates] = useState<Date[]>([]);
   const [loadingDates, setLoadingDates] = useState(true);
 
   // Calculate nights and total price
@@ -73,12 +78,13 @@ export const ReservationDialog = ({
     : 0;
   const totalPrice = nights * pricePerNight;
 
-  // Fetch booked dates for this property
+  // Fetch booked dates and blocked dates for this property
   useEffect(() => {
-    const fetchBookedDates = async () => {
+    const fetchUnavailableDates = async () => {
       setLoadingDates(true);
       try {
-        const { data, error } = await supabase
+        // Fetch booked reservations
+        const { data: bookingsData, error: bookingsError } = await supabase
           .from('appointments')
           .select('check_in_date, check_out_date')
           .eq('property_id', propertyId)
@@ -87,29 +93,40 @@ export const ReservationDialog = ({
           .not('check_in_date', 'is', null)
           .not('check_out_date', 'is', null);
 
-        if (error) throw error;
+        if (bookingsError) throw bookingsError;
 
-        const periods: BookedPeriod[] = (data || []).map(booking => ({
+        const periods: BookedPeriod[] = (bookingsData || []).map(booking => ({
           checkIn: parseISO(booking.check_in_date!),
           checkOut: parseISO(booking.check_out_date!)
         }));
 
         setBookedPeriods(periods);
+
+        // Fetch manually blocked dates
+        const { data: blockedData, error: blockedError } = await supabase
+          .from('property_blocked_dates')
+          .select('blocked_date')
+          .eq('property_id', propertyId);
+
+        if (blockedError) throw blockedError;
+
+        const blocked = (blockedData || []).map((d: BlockedDate) => parseISO(d.blocked_date));
+        setBlockedDates(blocked);
       } catch (error) {
-        console.error('Error fetching booked dates:', error);
+        console.error('Error fetching unavailable dates:', error);
       } finally {
         setLoadingDates(false);
       }
     };
 
     if (open) {
-      fetchBookedDates();
+      fetchUnavailableDates();
     }
   }, [propertyId, open]);
 
-  // Calculate disabled dates (booked dates)
+  // Calculate all disabled dates (booked + manually blocked)
   const disabledDates = useMemo(() => {
-    const disabled: Date[] = [];
+    const disabled: Date[] = [...blockedDates];
     
     bookedPeriods.forEach(period => {
       // Get all days between check-in and check-out (exclusive of check-out)
@@ -121,7 +138,7 @@ export const ReservationDialog = ({
     });
 
     return disabled;
-  }, [bookedPeriods]);
+  }, [bookedPeriods, blockedDates]);
 
   // Check if a date is disabled
   const isDateDisabled = (date: Date): boolean => {
@@ -130,7 +147,7 @@ export const ReservationDialog = ({
       return true;
     }
     
-    // Booked dates
+    // Booked or blocked dates
     return disabledDates.some(disabledDate => 
       disabledDate.toDateString() === date.toDateString()
     );
