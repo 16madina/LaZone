@@ -1034,14 +1034,34 @@ const ProfilePage = () => {
                                 {property.area}m²
                               </span>
                             </div>
-                            <div className="flex items-center gap-1 mt-1">
-                              <button
-                                onClick={() => navigate(`/property/${property.id}`)}
-                                className="p-1 rounded bg-muted"
-                                title="Voir"
-                              >
-                                <Eye className="w-3 h-3 text-muted-foreground" />
-                              </button>
+                            <div className="flex items-center justify-between mt-1">
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => navigate(`/property/${property.id}`)}
+                                  className="p-1 rounded bg-muted"
+                                  title="Voir"
+                                >
+                                  <Eye className="w-3 h-3 text-muted-foreground" />
+                                </button>
+                                <button
+                                  onClick={() => togglePropertyStatus(property.id, property.is_active)}
+                                  className="p-1 rounded bg-muted"
+                                  title={property.is_active ? 'Désactiver' : 'Activer'}
+                                >
+                                  {property.is_active ? (
+                                    <EyeOff className="w-3 h-3 text-muted-foreground" />
+                                  ) : (
+                                    <Eye className="w-3 h-3 text-green-600" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => deleteProperty(property.id)}
+                                  className="p-1 rounded bg-red-50"
+                                  title="Supprimer"
+                                >
+                                  <Trash2 className="w-3 h-3 text-red-500" />
+                                </button>
+                              </div>
 
                               {isResidence && (
                                 <BlockedDatesManager
@@ -1049,32 +1069,15 @@ const ProfilePage = () => {
                                   propertyTitle={property.title}
                                   trigger={
                                     <button
-                                      className="p-1 rounded bg-muted"
+                                      className="flex items-center gap-1 px-2 py-1 rounded-lg bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
                                       title="Gérer les disponibilités"
                                     >
-                                      <Calendar className="w-3 h-3 text-muted-foreground" />
+                                      <Calendar className="w-3.5 h-3.5" />
+                                      Dispo
                                     </button>
                                   }
                                 />
                               )}
-
-                              <button
-                                onClick={() => togglePropertyStatus(property.id, property.is_active)}
-                                className="p-1 rounded bg-muted"
-                                title={property.is_active ? 'Désactiver' : 'Activer'}
-                              >
-                                {property.is_active ? (
-                                  <EyeOff className="w-3 h-3 text-muted-foreground" />
-                                ) : (
-                                  <Eye className="w-3 h-3 text-green-600" />
-                                )}
-                              </button>
-                              <button
-                                onClick={() => deleteProperty(property.id)}
-                                className="p-1 rounded bg-red-50"
-                              >
-                                <Trash2 className="w-3 h-3 text-red-500" />
-                              </button>
                             </div>
                           </div>
                         </div>
