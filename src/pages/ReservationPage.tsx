@@ -314,7 +314,7 @@ const ReservationPage = () => {
 
     setSubmitting(true);
     try {
-      const { error } = await supabase
+      const { data: insertedReservation, error } = await supabase
         .from('appointments')
         .insert({
           property_id: property.id,
@@ -331,9 +331,21 @@ const ReservationPage = () => {
           message: message.trim() || null,
           share_phone: sharePhone,
           contact_phone: sharePhone ? contactPhone.trim() : null,
-        });
+        })
+        .select('id')
+        .single();
 
       if (error) throw error;
+
+      // Send email notification to owner (fire and forget)
+      if (insertedReservation?.id) {
+        supabase.functions.invoke('notify-owner-reservation', {
+          body: { reservationId: insertedReservation.id }
+        }).catch(emailError => {
+          console.error('Error sending owner notification email:', emailError);
+          // Don't fail the reservation if email fails
+        });
+      }
 
       toast({
         title: '🎉 Demande envoyée !',
