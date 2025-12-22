@@ -55,48 +55,66 @@ export type Database = {
       }
       appointments: {
         Row: {
+          check_in_date: string | null
+          check_out_date: string | null
           contact_phone: string | null
           created_at: string
           id: string
           message: string | null
           owner_id: string
+          price_per_night: number | null
           property_id: string
           requested_date: string
           requested_time: string
           requester_id: string
+          reservation_type: string | null
           response_message: string | null
           share_phone: boolean | null
           status: string
+          total_nights: number | null
+          total_price: number | null
           updated_at: string
         }
         Insert: {
+          check_in_date?: string | null
+          check_out_date?: string | null
           contact_phone?: string | null
           created_at?: string
           id?: string
           message?: string | null
           owner_id: string
+          price_per_night?: number | null
           property_id: string
           requested_date: string
           requested_time: string
           requester_id: string
+          reservation_type?: string | null
           response_message?: string | null
           share_phone?: boolean | null
           status?: string
+          total_nights?: number | null
+          total_price?: number | null
           updated_at?: string
         }
         Update: {
+          check_in_date?: string | null
+          check_out_date?: string | null
           contact_phone?: string | null
           created_at?: string
           id?: string
           message?: string | null
           owner_id?: string
+          price_per_night?: number | null
           property_id?: string
           requested_date?: string
           requested_time?: string
           requester_id?: string
+          reservation_type?: string | null
           response_message?: string | null
           share_phone?: boolean | null
           status?: string
+          total_nights?: number | null
+          total_price?: number | null
           updated_at?: string
         }
         Relationships: [
