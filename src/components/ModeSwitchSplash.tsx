@@ -1,5 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect } from 'react';
 import { AppMode } from '@/stores/appStore';
+import { getSoundInstance } from '@/hooks/useSound';
 import logoLazone from '@/assets/logo-lazone.png';
 
 interface ModeSwitchSplashProps {
@@ -10,10 +12,22 @@ interface ModeSwitchSplashProps {
 export const ModeSwitchSplash = ({ targetMode, onComplete }: ModeSwitchSplashProps) => {
   const isResidence = targetMode === 'residence';
   
-  // Auto-complete after animation
-  setTimeout(() => {
-    onComplete();
-  }, 2200);
+  // Play stamp sound when stamp animation starts
+  useEffect(() => {
+    const stampTimer = setTimeout(() => {
+      const sound = getSoundInstance();
+      sound.playStampSound();
+    }, 700); // Sync with stamp animation delay
+
+    const completeTimer = setTimeout(() => {
+      onComplete();
+    }, 2200);
+
+    return () => {
+      clearTimeout(stampTimer);
+      clearTimeout(completeTimer);
+    };
+  }, [onComplete]);
 
   return (
     <AnimatePresence>
@@ -78,65 +92,63 @@ export const ModeSwitchSplash = ({ targetMode, onComplete }: ModeSwitchSplashPro
               </div>
             </motion.div>
 
-            {/* Residence Stamp Effect */}
-            {isResidence && (
+            {/* Stamp on Logo */}
+            <motion.div
+              initial={{ 
+                scale: 3, 
+                opacity: 0,
+                rotate: isResidence ? -25 : 20
+              }}
+              animate={{ 
+                scale: 1, 
+                opacity: 1,
+                rotate: isResidence ? -12 : 8
+              }}
+              transition={{ 
+                delay: 0.7,
+                type: "spring",
+                stiffness: 400,
+                damping: 12,
+              }}
+              className={`absolute -bottom-3 ${isResidence ? '-right-4' : '-left-4'}`}
+            >
+              {/* Stamp Container */}
               <motion.div
-                initial={{ 
-                  scale: 3, 
-                  opacity: 0,
-                  rotate: -25
-                }}
-                animate={{ 
-                  scale: 1, 
-                  opacity: 1,
-                  rotate: -12
-                }}
-                transition={{ 
-                  delay: 0.7,
-                  type: "spring",
-                  stiffness: 400,
-                  damping: 12,
-                }}
-                className="absolute -bottom-3 -right-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.7 }}
+                className="relative"
               >
-                {/* Stamp Container */}
+                {/* Stamp Impact Effect */}
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.7 }}
-                  className="relative"
+                  initial={{ scale: 1.5, opacity: 0.8 }}
+                  animate={{ scale: 2.5, opacity: 0 }}
+                  transition={{ 
+                    delay: 0.7,
+                    duration: 0.4,
+                    ease: "easeOut"
+                  }}
+                  className="absolute inset-0 bg-white/30 rounded-lg blur-md"
+                />
+                
+                {/* The Stamp */}
+                <div 
+                  className="relative px-3 py-1.5 border-2 border-white rounded-md bg-white/10 backdrop-blur-sm"
+                  style={{
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)'
+                  }}
                 >
-                  {/* Stamp Impact Effect */}
-                  <motion.div
-                    initial={{ scale: 1.5, opacity: 0.8 }}
-                    animate={{ scale: 2.5, opacity: 0 }}
-                    transition={{ 
-                      delay: 0.7,
-                      duration: 0.4,
-                      ease: "easeOut"
-                    }}
-                    className="absolute inset-0 bg-white/30 rounded-lg blur-md"
-                  />
-                  
-                  {/* The Stamp */}
-                  <div 
-                    className="relative px-3 py-1.5 border-2 border-white rounded-md bg-white/10 backdrop-blur-sm"
+                  <span 
+                    className="text-white font-bold text-xs tracking-wider uppercase"
                     style={{
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)'
+                      textShadow: '0 1px 2px rgba(0,0,0,0.3)'
                     }}
                   >
-                    <span 
-                      className="text-white font-bold text-xs tracking-wider uppercase"
-                      style={{
-                        textShadow: '0 1px 2px rgba(0,0,0,0.3)'
-                      }}
-                    >
-                      Residence
-                    </span>
-                  </div>
-                </motion.div>
+                    {isResidence ? 'Residence' : 'Immo'}
+                  </span>
+                </div>
               </motion.div>
-            )}
+            </motion.div>
           </div>
 
           {/* Title */}
@@ -149,52 +161,46 @@ export const ModeSwitchSplash = ({ targetMode, onComplete }: ModeSwitchSplashPro
             LaZone
           </motion.h1>
           
-          {/* Subtitle with Stamp Animation for Residence Mode */}
+          {/* Subtitle with Stamp Animation */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
             className="relative"
           >
-            {isResidence ? (
+            <motion.div
+              initial={{ scale: 2.5, opacity: 0, rotate: isResidence ? -8 : 6 }}
+              animate={{ scale: 1, opacity: 1, rotate: 0 }}
+              transition={{ 
+                delay: 0.9,
+                type: "spring",
+                stiffness: 350,
+                damping: 15,
+              }}
+              className="relative"
+            >
+              {/* Stamp Impact Ripple */}
               <motion.div
-                initial={{ scale: 2.5, opacity: 0, rotate: -8 }}
-                animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                initial={{ scale: 0.8, opacity: 0.6 }}
+                animate={{ scale: 2, opacity: 0 }}
                 transition={{ 
                   delay: 0.9,
-                  type: "spring",
-                  stiffness: 350,
-                  damping: 15,
+                  duration: 0.5,
+                  ease: "easeOut"
                 }}
-                className="relative"
+                className="absolute inset-0 bg-white/40 rounded-lg blur-lg"
+              />
+              
+              <span 
+                className="text-2xl font-bold text-white font-display px-4 py-1 border-2 border-white/80 rounded-md inline-block"
+                style={{
+                  textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                }}
               >
-                {/* Stamp Impact Ripple */}
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0.6 }}
-                  animate={{ scale: 2, opacity: 0 }}
-                  transition={{ 
-                    delay: 0.9,
-                    duration: 0.5,
-                    ease: "easeOut"
-                  }}
-                  className="absolute inset-0 bg-white/40 rounded-lg blur-lg"
-                />
-                
-                <span 
-                  className="text-2xl font-bold text-white font-display px-4 py-1 border-2 border-white/80 rounded-md inline-block"
-                  style={{
-                    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-                  }}
-                >
-                  Residence
-                </span>
-              </motion.div>
-            ) : (
-              <span className="text-2xl font-semibold text-white/90 font-display">
-                Immobilier
+                {isResidence ? 'Residence' : 'Immobilier'}
               </span>
-            )}
+            </motion.div>
           </motion.div>
 
           {/* Tagline */}

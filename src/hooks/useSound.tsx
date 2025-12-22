@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 
-type SoundType = 'message' | 'notification' | 'startup' | 'success' | 'error';
+type SoundType = 'message' | 'notification' | 'startup' | 'success' | 'error' | 'stamp';
 
 // Sound frequencies and durations for different notification types
 const soundConfigs: Record<SoundType, { frequencies: number[]; durations: number[]; type: OscillatorType }> = {
@@ -27,6 +27,11 @@ const soundConfigs: Record<SoundType, { frequencies: number[]; durations: number
   error: {
     frequencies: [200, 150],
     durations: [150, 200],
+    type: 'square'
+  },
+  stamp: {
+    frequencies: [150, 80, 60],
+    durations: [30, 50, 80],
     type: 'square'
   }
 };
@@ -97,6 +102,7 @@ export const useSound = () => {
     playStartupSound: () => playSound('startup'),
     playSuccessSound: () => playSound('success'),
     playErrorSound: () => playSound('error'),
+    playStampSound: () => playSound('stamp'),
     setMuted,
     isMuted
   };
@@ -161,6 +167,7 @@ export const getSoundInstance = () => {
       playStartupSound: () => playSound('startup'),
       playSuccessSound: () => playSound('success'),
       playErrorSound: () => playSound('error'),
+      playStampSound: () => playSound('stamp'),
       setMuted: (muted: boolean) => localStorage.setItem('soundEnabled', (!muted).toString()),
       isMuted: () => localStorage.getItem('soundEnabled') === 'false'
     };
