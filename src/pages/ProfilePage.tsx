@@ -68,6 +68,7 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { AppointmentsTab } from '@/components/appointment/AppointmentsTab';
+import { BlockedDatesManager } from '@/components/appointment/BlockedDatesManager';
 
 type TabType = 'annonces' | 'rdv' | 'favoris' | 'parametres';
 
@@ -1037,12 +1038,30 @@ const ProfilePage = () => {
                               <button
                                 onClick={() => navigate(`/property/${property.id}`)}
                                 className="p-1 rounded bg-muted"
+                                title="Voir"
                               >
                                 <Eye className="w-3 h-3 text-muted-foreground" />
                               </button>
+
+                              {isResidence && (
+                                <BlockedDatesManager
+                                  propertyId={property.id}
+                                  propertyTitle={property.title}
+                                  trigger={
+                                    <button
+                                      className="p-1 rounded bg-muted"
+                                      title="Gérer les disponibilités"
+                                    >
+                                      <Calendar className="w-3 h-3 text-muted-foreground" />
+                                    </button>
+                                  }
+                                />
+                              )}
+
                               <button
                                 onClick={() => togglePropertyStatus(property.id, property.is_active)}
                                 className="p-1 rounded bg-muted"
+                                title={property.is_active ? 'Désactiver' : 'Activer'}
                               >
                                 {property.is_active ? (
                                   <EyeOff className="w-3 h-3 text-muted-foreground" />
