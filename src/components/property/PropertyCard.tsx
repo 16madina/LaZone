@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Heart, Bed, Bath, Maximize, MapPin, Calendar, Star } from 'lucide-react';
+import { Heart, Bed, Bath, Maximize, MapPin, Calendar, Star, Clock } from 'lucide-react';
 import { Property } from '@/hooks/useProperties';
 import { useFavorites } from '@/hooks/useFavorites';
 import { Link } from 'react-router-dom';
@@ -85,7 +85,12 @@ export const PropertyCard = ({ property, userCountry, isFirst = false }: Propert
         {/* Type Badge - Different for short_term (Residence) listings */}
         <div className="absolute top-3 left-3 z-10">
           {property.listingType === 'short_term' ? (
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-col items-start gap-1.5">
+              {/* Courte durée badge */}
+              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/90 backdrop-blur-sm text-white flex items-center gap-1.5 shadow-sm">
+                <Clock className="w-3.5 h-3.5" />
+                Courte durée
+              </span>
               {property.minimumStay && property.minimumStay > 1 && (
                 <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-background/90 backdrop-blur-sm text-foreground flex items-center gap-1">
                   <Calendar className="w-3 h-3" />
