@@ -23,7 +23,8 @@ import {
   Flag,
   Ban,
   ChevronRight as ChevronRightIcon,
-  Plus
+  Plus,
+  Pencil
 } from 'lucide-react';
 import { useFavorites } from '@/hooks/useFavorites';
 import { ImageGallery } from '@/components/property/ImageGallery';
@@ -364,6 +365,16 @@ const PropertyDetailPage = () => {
           </motion.button>
           
           <div className="flex gap-2">
+            {/* Edit button for owner */}
+            {user && user.id === property.userId && (
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => navigate(`/property/${property.id}/edit`)}
+                className="glass w-10 h-10 rounded-full flex items-center justify-center bg-primary/20"
+              >
+                <Pencil className="w-5 h-5 text-primary" />
+              </motion.button>
+            )}
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => shareProperty({

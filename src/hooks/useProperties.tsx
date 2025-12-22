@@ -28,6 +28,8 @@ export interface Property {
   createdAt: string;
   userId: string;
   vendorBadge?: BadgeLevel;
+  // Discount tiers
+  hasDiscounts?: boolean;
 }
 
 export const useProperties = () => {
@@ -86,6 +88,15 @@ export const useProperties = () => {
           })
           .map((img: any) => img.url);
 
+        // Check if property has any discounts
+        const hasDiscounts = !!(
+          p.discount_3_nights || 
+          p.discount_5_nights || 
+          p.discount_7_nights || 
+          p.discount_14_nights || 
+          p.discount_30_nights
+        );
+
         return {
           id: p.id,
           title: p.title,
@@ -109,6 +120,7 @@ export const useProperties = () => {
           createdAt: p.created_at,
           userId: p.user_id,
           vendorBadge: badgeMap.get(p.user_id) || 'none',
+          hasDiscounts,
         };
       });
 
