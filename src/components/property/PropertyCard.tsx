@@ -83,23 +83,22 @@ export const PropertyCard = ({ property, userCountry, isFirst = false }: Propert
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent pointer-events-none" />
         
         {/* Type Badge - Different for short_term (Residence) listings */}
-        {property.listingType === 'short_term' ? (
-          <div className="absolute top-0 left-0 z-10">
-            {/* Top green bar - rectangle with rounded bottom-right corner */}
-            <div className="w-4 h-12 bg-emerald-500 rounded-br-xl" />
-            {/* Bottom green bar - smaller, pill shape on right */}
-            <div className="w-4 h-7 bg-emerald-500 rounded-r-full mt-1" />
-            {/* Text positioned between the two bars */}
-            <div className="absolute top-10 left-7 flex items-center gap-2 text-white whitespace-nowrap" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 6v6l4 2" />
-              </svg>
-              <span className="text-lg font-semibold tracking-wide">Courte durée</span>
+        <div className="absolute top-3 left-3 z-10">
+          {property.listingType === 'short_term' ? (
+            <div className="flex flex-col items-start gap-1.5">
+              {/* Courte durée badge */}
+              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/90 backdrop-blur-sm text-white flex items-center gap-1.5 shadow-sm">
+                <Clock className="w-3.5 h-3.5" />
+                Courte durée
+              </span>
+              {property.minimumStay && property.minimumStay > 1 && (
+                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-background/90 backdrop-blur-sm text-foreground flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  Min {property.minimumStay} nuits
+                </span>
+              )}
             </div>
-          </div>
-        ) : (
-          <div className="absolute top-3 left-3 z-10">
+          ) : (
             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
               property.type === 'sale' 
                 ? 'gradient-primary text-primary-foreground' 
@@ -107,18 +106,8 @@ export const PropertyCard = ({ property, userCountry, isFirst = false }: Propert
             }`}>
               {property.type === 'sale' ? 'À vendre' : 'À louer'}
             </span>
-          </div>
-        )}
-        
-        {/* Minimum stay badge for short_term */}
-        {property.listingType === 'short_term' && property.minimumStay && property.minimumStay > 1 && (
-          <div className="absolute top-24 left-3 z-10">
-            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-background/90 backdrop-blur-sm text-foreground flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              Min {property.minimumStay} nuits
-            </span>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Property Type Badge */}
         <div className="absolute top-3 right-12 z-10">
