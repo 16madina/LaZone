@@ -239,7 +239,9 @@ const PropertyDetailPage = () => {
     return formattedPrice;
   };
 
-  const isResidenceProperty = property.listingType === 'short_term';
+  // En mode Residence, on affiche le système de réservation
+  const isResidenceMode = appMode === 'residence';
+  const isResidenceProperty = property.listingType === 'short_term' || isResidenceMode;
   const displayPrice = isResidenceProperty && property.pricePerNight 
     ? property.pricePerNight 
     : property.price;
@@ -606,16 +608,15 @@ const PropertyDetailPage = () => {
                   propertyId={property.id}
                   ownerId={property.userId}
                   propertyTitle={property.title}
-                  pricePerNight={property.pricePerNight || 0}
+                  pricePerNight={property.pricePerNight || Math.round(property.price / 30)}
                   minimumStay={property.minimumStay}
                   country={property.country}
                   trigger={
                     <button 
-                      onClick={handleScheduleVisit}
                       className="w-full py-3 rounded-xl border border-border hover:bg-muted transition-colors font-medium flex items-center justify-center gap-2"
                     >
                       <Calendar className="w-5 h-5" />
-                      Réserver ce logement
+                      Demander une réservation
                     </button>
                   }
                 />
