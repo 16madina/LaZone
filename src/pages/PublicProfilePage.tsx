@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, BadgeCheck, MapPin, Calendar, 
-  Building2, Star, MessageCircle, UserPlus, UserMinus, Users, Loader2
+  Building2, Star, MessageCircle, UserPlus, UserMinus, Users, Loader2,
+  Home, Hotel
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -39,13 +40,16 @@ interface Review {
   } | null;
 }
 
+type ProfileTab = 'immobilier' | 'residence' | 'notes';
+
 const PublicProfilePage = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [properties, setProperties] = useState<Property[]>([]);
+  const [immobilierProperties, setImmobilierProperties] = useState<Property[]>([]);
+  const [residenceProperties, setResidenceProperties] = useState<Property[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [userReview, setUserReview] = useState<Review | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,6 +60,7 @@ const PublicProfilePage = () => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [userBadge, setUserBadge] = useState<BadgeLevel>('none');
+  const [activeTab, setActiveTab] = useState<ProfileTab>('immobilier');
 
   useEffect(() => {
     if (userId) {
@@ -137,7 +142,12 @@ const PublicProfilePage = () => {
         };
       });
       
-      setProperties(transformedProperties);
+      // Séparer les annonces par mode
+      const immobilier = transformedProperties.filter(p => p.listingType === 'long_term');
+      const residence = transformedProperties.filter(p => p.listingType === 'short_term');
+      
+      setImmobilierProperties(immobilier);
+      setResidenceProperties(residence);
     } catch (error) {
       console.error('Error fetching properties:', error);
     } finally {
@@ -400,7 +410,7 @@ const PublicProfilePage = () => {
                 </p>
                 <p className="text-sm text-muted-foreground flex items-center gap-1">
                   <Building2 className="w-4 h-4" />
-                  {properties.length} annonce{properties.length > 1 ? 's' : ''} active{properties.length > 1 ? 's' : ''}
+                  {immobilierProperties.length + residenceProperties.length} annonce{(immobilierProperties.length + residenceProperties.length) > 1 ? 's' : ''} active{(immobilierProperties.length + residenceProperties.length) > 1 ? 's' : ''}
                 </p>
               </div>
             </div>
@@ -409,7 +419,7 @@ const PublicProfilePage = () => {
           {/* Stats Row */}
           <div className="grid grid-cols-4 gap-3 mt-6 pt-6 border-t border-border">
             <div className="text-center">
-              <p className="font-display font-bold text-xl text-primary">{properties.length}</p>
+              <p className="font-display font-bold text-xl text-primary">{immobilierProperties.length + residenceProperties.length}</p>
               <p className="text-[10px] text-muted-foreground">Annonces</p>
             </div>
             <button 
@@ -463,69 +473,137 @@ const PublicProfilePage = () => {
         </div>
       </motion.div>
 
-      {/* Review Form (only for logged in users who aren't viewing their own profile) */}
-      {user && user.id !== userId && (
-        <div className="px-4 mb-4">
-          <ReviewForm
-            reviewedUserId={userId!}
-            currentUserId={user.id}
-            existingReview={userReview}
-            onReviewSubmitted={fetchReviews}
-          />
+      {/* Tabs */}
+      <div className="px-4 mb-4">
+        <div className="flex gap-2 bg-muted/50 p-1 rounded-xl">
+          <button
+            onClick={() => setActiveTab('immobilier')}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'immobilier'
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Home className="w-4 h-4" />
+            <span>Immobilier</span>
+            <span className="text-xs opacity-70">({immobilierProperties.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('residence')}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'residence'
+                ? 'bg-emerald-500 text-white shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Hotel className="w-4 h-4" />
+            <span>Résidence</span>
+            <span className="text-xs opacity-70">({residenceProperties.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('notes')}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'notes'
+                ? 'bg-amber-500 text-white shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Star className="w-4 h-4" />
+            <span>Notes</span>
+            <span className="text-xs opacity-70">({reviews.length})</span>
+          </button>
         </div>
-      )}
-
-      {/* Reviews Section */}
-      <div className="px-4 mb-6">
-        <h3 className="font-display font-semibold text-lg mb-4">
-          Avis ({reviews.length})
-        </h3>
-
-        {reviewsLoading ? (
-          <div className="space-y-3">
-            {[1, 2].map((i) => (
-              <Skeleton key={i} className="h-24 rounded-xl" />
-            ))}
-          </div>
-        ) : reviews.length > 0 ? (
-          <div className="space-y-3">
-            {reviews.map((review) => (
-              <ReviewCard key={review.id} review={review} />
-            ))}
-          </div>
-        ) : (
-          <div className="glass-card p-6 text-center">
-            <Star className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
-            <p className="text-muted-foreground text-sm">Aucun avis pour le moment</p>
-          </div>
-        )}
       </div>
 
-      {/* User's Properties */}
-      <div className="px-4">
-        <h3 className="font-display font-semibold text-lg mb-4">
-          Annonces de {profile.full_name?.split(' ')[0] || 'cet utilisateur'}
-        </h3>
+      {/* Tab Content */}
+      <div className="px-4 pb-4">
+        {/* Immobilier Tab */}
+        {activeTab === 'immobilier' && (
+          <div>
+            {propertiesLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <Skeleton key={i} className="h-24 rounded-xl" />
+                ))}
+              </div>
+            ) : immobilierProperties.length > 0 ? (
+              <div className="space-y-3">
+                {immobilierProperties.map((property) => (
+                  <CompactPropertyCard
+                    key={property.id}
+                    property={property}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="glass-card p-8 text-center">
+                <Home className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                <p className="text-muted-foreground">Aucune annonce immobilière</p>
+              </div>
+            )}
+          </div>
+        )}
 
-        {propertiesLoading ? (
-          <div className="space-y-3">
-            {[1, 2].map((i) => (
-              <Skeleton key={i} className="h-24 rounded-xl" />
-            ))}
+        {/* Residence Tab */}
+        {activeTab === 'residence' && (
+          <div>
+            {propertiesLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <Skeleton key={i} className="h-24 rounded-xl" />
+                ))}
+              </div>
+            ) : residenceProperties.length > 0 ? (
+              <div className="space-y-3">
+                {residenceProperties.map((property) => (
+                  <CompactPropertyCard
+                    key={property.id}
+                    property={property}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="glass-card p-8 text-center">
+                <Hotel className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                <p className="text-muted-foreground">Aucun séjour disponible</p>
+              </div>
+            )}
           </div>
-        ) : properties.length > 0 ? (
-          <div className="space-y-3">
-            {properties.map((property) => (
-              <CompactPropertyCard
-                key={property.id}
-                property={property}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="glass-card p-8 text-center">
-            <Building2 className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">Aucune annonce pour le moment</p>
+        )}
+
+        {/* Notes Tab */}
+        {activeTab === 'notes' && (
+          <div>
+            {/* Review Form (only for logged in users who aren't viewing their own profile) */}
+            {user && user.id !== userId && (
+              <div className="mb-4">
+                <ReviewForm
+                  reviewedUserId={userId!}
+                  currentUserId={user.id}
+                  existingReview={userReview}
+                  onReviewSubmitted={fetchReviews}
+                />
+              </div>
+            )}
+
+            {reviewsLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <Skeleton key={i} className="h-24 rounded-xl" />
+                ))}
+              </div>
+            ) : reviews.length > 0 ? (
+              <div className="space-y-3">
+                {reviews.map((review) => (
+                  <ReviewCard key={review.id} review={review} />
+                ))}
+              </div>
+            ) : (
+              <div className="glass-card p-6 text-center">
+                <Star className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
+                <p className="text-muted-foreground text-sm">Aucun avis pour le moment</p>
+              </div>
+            )}
           </div>
         )}
       </div>
