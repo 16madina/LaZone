@@ -108,6 +108,20 @@ const EditPropertyPage = () => {
   // Popover states
   const [amenitiesOpen, setAmenitiesOpen] = useState(false);
 
+  // Helper function to normalize strings for comparison (removes accents)
+  const normalizeString = (str: string) => 
+    str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+  // Helper function to find country by code or name
+  const findCountryByCodeOrName = (value: string | null) => {
+    if (!value) return null;
+    const normalized = normalizeString(value);
+    return africanCountries.find(c => 
+      normalizeString(c.code) === normalized || 
+      normalizeString(c.name) === normalized
+    );
+  };
+
   // Fetch property data
   useEffect(() => {
     const fetchProperty = async () => {
@@ -182,12 +196,17 @@ const EditPropertyPage = () => {
         if (propertyData.discount_14_nights) setDiscount14Nights(propertyData.discount_14_nights.toString());
         if (propertyData.discount_30_nights) setDiscount30Nights(propertyData.discount_30_nights.toString());
         
-        // Country
+        // Country - use helper to find by code or name with accent-insensitive matching
         if (propertyData.country) {
-          const country = africanCountries.find(c => c.name === propertyData.country || c.code === propertyData.country);
+          const country = findCountryByCodeOrName(propertyData.country);
           if (country) {
             setSelectedCountry(country.code);
             setAvailableCities(country.cities);
+          } else {
+            // Fallback: if it looks like a code (2 chars), use it directly
+            if (propertyData.country.length === 2) {
+              setSelectedCountry(propertyData.country.toUpperCase());
+            }
           }
         }
         
@@ -267,6 +286,16 @@ const EditPropertyPage = () => {
       toast({
         title: 'Champs requis',
         description: 'Veuillez remplir tous les champs obligatoires.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate country is selected
+    if (!selectedCountry) {
+      toast({
+        title: 'Pays requis',
+        description: 'Veuillez sélectionner un pays.',
         variant: 'destructive',
       });
       return;

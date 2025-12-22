@@ -100,12 +100,14 @@ const Index = () => {
     setCurrentBg(heroImages[randomIndex]);
   }, []);
 
+  // Normalize string for accent-insensitive comparison
   const normalizeCountryValue = (value: string | null | undefined) =>
-    (value ?? '').trim().toLowerCase();
+    (value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
 
   const matchesSelectedCountry = (propertyCountry: string | null, selected: Country | null) => {
     if (!selected) return true;
     const pc = normalizeCountryValue(propertyCountry);
+    // Match by code OR by name (accent-insensitive)
     return (
       pc === normalizeCountryValue(selected.code) ||
       pc === normalizeCountryValue(selected.name)
