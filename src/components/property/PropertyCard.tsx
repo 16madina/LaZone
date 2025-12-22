@@ -85,14 +85,22 @@ export const PropertyCard = ({ property, userCountry, isFirst = false }: Propert
         {/* Type Badge - Different for short_term (Residence) listings */}
         <div className="absolute top-3 left-3 z-10">
           {property.listingType === 'short_term' ? (
-            <div className="flex flex-col items-start gap-1.5">
-              {/* Courte durée badge */}
-              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/90 backdrop-blur-sm text-white flex items-center gap-1.5 shadow-sm">
-                <Clock className="w-3.5 h-3.5" />
-                Courte durée
-              </span>
+            <div className="flex flex-col items-start gap-1">
+              {/* Courte durée badge with green bars like reference */}
+              <div className="flex items-start gap-2">
+                {/* Two green vertical bars */}
+                <div className="flex flex-col gap-1">
+                  <div className="w-2 h-8 bg-emerald-500 rounded-sm" />
+                  <div className="w-2 h-4 bg-emerald-500 rounded-sm" />
+                </div>
+                {/* Clock icon and text */}
+                <div className="flex items-center gap-1.5 text-white drop-shadow-lg mt-1">
+                  <Clock className="w-4 h-4" />
+                  <span className="text-sm font-semibold">Courte durée</span>
+                </div>
+              </div>
               {property.minimumStay && property.minimumStay > 1 && (
-                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-background/90 backdrop-blur-sm text-foreground flex items-center gap-1">
+                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-background/90 backdrop-blur-sm text-foreground flex items-center gap-1 mt-1">
                   <Calendar className="w-3 h-3" />
                   Min {property.minimumStay} nuits
                 </span>
