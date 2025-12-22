@@ -29,6 +29,8 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { ImageGallery } from '@/components/property/ImageGallery';
 import { ReportDialog } from '@/components/property/ReportDialog';
 import { AppointmentDialog } from '@/components/appointment/AppointmentDialog';
+import { ReservationDialog } from '@/components/appointment/ReservationDialog';
+import { useAppMode } from '@/hooks/useAppMode';
 import { supabase } from '@/integrations/supabase/client';
 import { formatPriceWithCurrency } from '@/data/currencies';
 import { toast } from '@/hooks/use-toast';
@@ -52,6 +54,9 @@ interface PropertyDetail {
   features: string[];
   userId: string;
   whatsappEnabled: boolean;
+  listingType: 'long_term' | 'short_term';
+  pricePerNight: number | null;
+  minimumStay: number;
 }
 
 interface OtherProperty {
@@ -68,6 +73,7 @@ const PropertyDetailPage = () => {
   const { user } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { shareProperty } = useShare();
+  const { appMode } = useAppMode();
   const [showGallery, setShowGallery] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [swiperRef, setSwiperRef] = useState<SwiperType | null>(null);
@@ -134,6 +140,9 @@ const PropertyDetailPage = () => {
           features: propertyData.features || [],
           userId: propertyData.user_id,
           whatsappEnabled: propertyData.whatsapp_enabled || false,
+          listingType: propertyData.listing_type as 'long_term' | 'short_term',
+          pricePerNight: propertyData.price_per_night ? Number(propertyData.price_per_night) : null,
+          minimumStay: propertyData.minimum_stay || 1,
         };
 
         setProperty(formattedProperty);
@@ -219,13 +228,21 @@ const PropertyDetailPage = () => {
     );
   }
 
-  const formatPrice = (price: number, type: 'sale' | 'rent', country: string | null) => {
+  const formatPrice = (price: number, type: 'sale' | 'rent', country: string | null, isShortTerm?: boolean) => {
     const formattedPrice = formatPriceWithCurrency(price, country);
+    if (isShortTerm) {
+      return `${formattedPrice}/nuit`;
+    }
     if (type === 'rent') {
       return `${formattedPrice}/mois`;
     }
     return formattedPrice;
   };
+
+  const isResidenceProperty = property.listingType === 'short_term';
+  const displayPrice = isResidenceProperty && property.pricePerNight 
+    ? property.pricePerNight 
+    : property.price;
 
   const formatShortPrice = (price: number, country: string | null) => {
     if (price >= 1000000000) {
@@ -420,7 +437,7 @@ const PropertyDetailPage = () => {
         >
           <h1 className="font-display text-xl font-bold mb-2">{property.title}</h1>
           <p className="gradient-text font-display font-bold text-2xl mb-3">
-            {formatPrice(property.price, property.type, property.country)}
+            {formatPrice(displayPrice, property.type, property.country, isResidenceProperty)}
           </p>
           
           <div className="flex items-center gap-2 text-muted-foreground mb-4">
@@ -581,23 +598,43 @@ const PropertyDetailPage = () => {
                 className="w-full py-3 rounded-xl gradient-primary text-primary-foreground font-medium flex items-center justify-center gap-2"
               >
                 <MessageCircle className="w-5 h-5" />
-                Contacter le vendeur
+                Contacter le {isResidenceProperty ? 'propriétaire' : 'vendeur'}
               </button>
               
-              <AppointmentDialog
-                propertyId={property.id}
-                ownerId={property.userId}
-                propertyTitle={property.title}
-                trigger={
-                  <button 
-                    onClick={handleScheduleVisit}
-                    className="w-full py-3 rounded-xl border border-border hover:bg-muted transition-colors font-medium flex items-center justify-center gap-2"
-                  >
-                    <Calendar className="w-5 h-5" />
-                    Prendre rendez-vous pour une visite
-                  </button>
-                }
-              />
+              {isResidenceProperty ? (
+                <ReservationDialog
+                  propertyId={property.id}
+                  ownerId={property.userId}
+                  propertyTitle={property.title}
+                  pricePerNight={property.pricePerNight || 0}
+                  minimumStay={property.minimumStay}
+                  country={property.country}
+                  trigger={
+                    <button 
+                      onClick={handleScheduleVisit}
+                      className="w-full py-3 rounded-xl border border-border hover:bg-muted transition-colors font-medium flex items-center justify-center gap-2"
+                    >
+                      <Calendar className="w-5 h-5" />
+                      Réserver ce logement
+                    </button>
+                  }
+                />
+              ) : (
+                <AppointmentDialog
+                  propertyId={property.id}
+                  ownerId={property.userId}
+                  propertyTitle={property.title}
+                  trigger={
+                    <button 
+                      onClick={handleScheduleVisit}
+                      className="w-full py-3 rounded-xl border border-border hover:bg-muted transition-colors font-medium flex items-center justify-center gap-2"
+                    >
+                      <Calendar className="w-5 h-5" />
+                      Prendre rendez-vous pour une visite
+                    </button>
+                  }
+                />
+              )}
               
               <button 
                 onClick={handleCall}
