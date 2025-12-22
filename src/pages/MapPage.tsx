@@ -218,7 +218,7 @@ const MapPage = () => {
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
       
-      // Create marker cluster group with custom styling
+      // Create marker cluster group with custom styling based on mode
       const clusterGroup = L.markerClusterGroup({
         maxClusterRadius: 50,
         spiderfyOnMaxZoom: true,
@@ -226,9 +226,15 @@ const MapPage = () => {
         zoomToBoundsOnClick: true,
         iconCreateFunction: (cluster) => {
           const count = cluster.getChildCount();
+          const clusterColor = isResidence 
+            ? 'linear-gradient(135deg, #059669, #10b981)' 
+            : 'linear-gradient(135deg, #ea580c, #f97316)';
+          const shadowColor = isResidence 
+            ? 'rgba(5, 150, 105, 0.4)' 
+            : 'rgba(234, 88, 12, 0.4)';
           return L.divIcon({
             html: `<div style="
-              background: linear-gradient(135deg, #ea580c, #f97316);
+              background: ${clusterColor};
               color: white;
               width: 40px;
               height: 40px;
@@ -238,7 +244,7 @@ const MapPage = () => {
               justify-content: center;
               font-weight: 700;
               font-size: 14px;
-              box-shadow: 0 4px 12px rgba(234, 88, 12, 0.4);
+              box-shadow: 0 4px 12px ${shadowColor};
               border: 3px solid white;
             ">${count}</div>`,
             className: 'custom-cluster-icon',
@@ -312,11 +318,13 @@ const MapPage = () => {
     // Add new markers to cluster group
     filteredProperties.forEach((property) => {
       if (property.lat && property.lng) {
-        // In Residence mode, use price per night; otherwise use regular price
+        // In Residence mode, use price per night with emerald color
         const displayPrice = isResidence 
           ? (property.pricePerNight || property.price)
           : property.price;
-        const bgColor = isResidence ? '#8b5cf6' : (property.type === 'sale' ? '#ea580c' : '#16a34a');
+        const bgColor = isResidence 
+          ? '#059669'  // Emerald for Residence mode
+          : (property.type === 'sale' ? '#ea580c' : '#16a34a');
         const priceText = formatPriceShort(displayPrice, isResidence);
         
         const icon = L.divIcon({
@@ -406,8 +414,10 @@ const MapPage = () => {
       if (selectedProperty) {
         const prevMarker = markersRef.current.get(selectedProperty.id);
         if (prevMarker) {
-          const bgColor = isResidence ? '#8b5cf6' : (selectedProperty.type === 'sale' ? '#ea580c' : '#16a34a');
-          const prevPriceText = formatPriceShort(displayPrice, isResidence);
+        const bgColor = isResidence 
+          ? '#059669'  // Emerald for Residence mode
+          : (selectedProperty.type === 'sale' ? '#ea580c' : '#16a34a');
+        const prevPriceText = formatPriceShort(displayPrice, isResidence);
           
           const normalIcon = L.divIcon({
             className: 'custom-price-marker',
@@ -469,7 +479,13 @@ const MapPage = () => {
             <DropdownMenuTrigger asChild>
               <button 
                 data-tutorial="map-country"
-                className={`p-3 rounded-xl shadow-md border flex items-center gap-1 ${countryFilter ? 'bg-primary text-primary-foreground' : 'bg-card'}`}
+                className={`p-3 rounded-xl shadow-md border flex items-center gap-1 ${
+                  countryFilter 
+                    ? isResidence 
+                      ? 'bg-emerald-500 text-white border-emerald-500' 
+                      : 'bg-primary text-primary-foreground' 
+                    : 'bg-card'
+                }`}
               >
                 {countryFilter ? (
                   <img 
@@ -550,7 +566,13 @@ const MapPage = () => {
             />
           </div>
           <button 
-            className={`p-3 rounded-xl shadow-md border ${userLocation ? 'bg-primary text-primary-foreground' : 'bg-card'}`}
+            className={`p-3 rounded-xl shadow-md border ${
+              userLocation 
+                ? isResidence 
+                  ? 'bg-emerald-500 text-white border-emerald-500' 
+                  : 'bg-primary text-primary-foreground' 
+                : 'bg-card'
+            }`}
             onClick={centerOnUser}
             disabled={locatingUser}
           >
@@ -564,41 +586,78 @@ const MapPage = () => {
 
         {/* Filter Pills */}
         <div className="flex gap-2 mt-2 overflow-x-auto pb-1" data-tutorial="map-filters">
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-auto bg-card shadow-md border h-9 px-3">
-              <SelectValue placeholder="Type" />
-            </SelectTrigger>
-            <SelectContent className="bg-card border shadow-lg z-[1001]">
-              <SelectItem value="all">Tous</SelectItem>
-              <SelectItem value="sale">Vente</SelectItem>
-              <SelectItem value="rent">Location</SelectItem>
-            </SelectContent>
-          </Select>
+          {isResidence ? (
+            // Residence mode filters
+            <>
+              <Select value={propertyTypeFilter} onValueChange={setPropertyTypeFilter}>
+                <SelectTrigger className={`w-auto shadow-md border h-9 px-3 ${propertyTypeFilter !== 'all' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-card'}`}>
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border shadow-lg z-[1001]">
+                  <SelectItem value="all">Tous</SelectItem>
+                  <SelectItem value="house">Villa</SelectItem>
+                  <SelectItem value="apartment">Appartement</SelectItem>
+                  <SelectItem value="commercial">Résidence</SelectItem>
+                </SelectContent>
+              </Select>
 
-          <Select value={propertyTypeFilter} onValueChange={setPropertyTypeFilter}>
-            <SelectTrigger className="w-auto bg-card shadow-md border h-9 px-3">
-              <SelectValue placeholder="Propriété" />
-            </SelectTrigger>
-            <SelectContent className="bg-card border shadow-lg z-[1001]">
-              <SelectItem value="all">Tous</SelectItem>
-              <SelectItem value="house">Maison</SelectItem>
-              <SelectItem value="apartment">Appartement</SelectItem>
-              <SelectItem value="land">Terrain</SelectItem>
-              <SelectItem value="commercial">Commercial</SelectItem>
-            </SelectContent>
-          </Select>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className={`w-auto shadow-md border h-9 px-3 ${typeFilter !== 'all' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-card'}`}>
+                  <SelectValue placeholder="Durée" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border shadow-lg z-[1001]">
+                  <SelectItem value="all">Tous</SelectItem>
+                  <SelectItem value="rent">Court séjour</SelectItem>
+                  <SelectItem value="sale">Long séjour</SelectItem>
+                </SelectContent>
+              </Select>
+            </>
+          ) : (
+            // Immobilier mode filters
+            <>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className={`w-auto shadow-md border h-9 px-3 ${typeFilter !== 'all' ? 'bg-primary text-primary-foreground border-primary' : 'bg-card'}`}>
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border shadow-lg z-[1001]">
+                  <SelectItem value="all">Tous</SelectItem>
+                  <SelectItem value="sale">Vente</SelectItem>
+                  <SelectItem value="rent">Location</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={propertyTypeFilter} onValueChange={setPropertyTypeFilter}>
+                <SelectTrigger className={`w-auto shadow-md border h-9 px-3 ${propertyTypeFilter !== 'all' ? 'bg-primary text-primary-foreground border-primary' : 'bg-card'}`}>
+                  <SelectValue placeholder="Propriété" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border shadow-lg z-[1001]">
+                  <SelectItem value="all">Tous</SelectItem>
+                  <SelectItem value="house">Maison</SelectItem>
+                  <SelectItem value="apartment">Appartement</SelectItem>
+                  <SelectItem value="land">Terrain</SelectItem>
+                  <SelectItem value="commercial">Commercial</SelectItem>
+                </SelectContent>
+              </Select>
+            </>
+          )}
 
           <button
             onClick={() => setShowList(!showList)}
             className={`px-3 py-1.5 rounded-lg shadow-md border text-sm whitespace-nowrap flex items-center gap-1.5 transition-colors ${
-              showList ? 'bg-primary text-primary-foreground' : 'bg-card'
+              showList 
+                ? isResidence 
+                  ? 'bg-emerald-500 text-white border-emerald-500' 
+                  : 'bg-primary text-primary-foreground' 
+                : 'bg-card'
             }`}
           >
             <List className="w-4 h-4" />
             Liste
           </button>
 
-          <div className="px-3 py-1.5 bg-card rounded-lg shadow-md border text-sm whitespace-nowrap flex items-center">
+          <div className={`px-3 py-1.5 rounded-lg shadow-md border text-sm whitespace-nowrap flex items-center ${
+            isResidence ? 'bg-emerald-500/10 text-emerald-700 border-emerald-200' : 'bg-card'
+          }`}>
             {filteredProperties.length} annonce{filteredProperties.length > 1 ? 's' : ''}
           </div>
         </div>
