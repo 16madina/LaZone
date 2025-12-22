@@ -677,29 +677,13 @@ const PropertyDetailPage = () => {
               </button>
               
               {isResidenceProperty ? (
-                <ReservationDialog
-                  propertyId={property.id}
-                  ownerId={property.userId}
-                  propertyTitle={property.title}
-                  pricePerNight={property.pricePerNight || Math.round(property.price / 30)}
-                  minimumStay={property.minimumStay}
-                  country={property.country}
-                  discounts={{
-                    discount3Nights: property.discount3Nights,
-                    discount5Nights: property.discount5Nights,
-                    discount7Nights: property.discount7Nights,
-                    discount14Nights: property.discount14Nights,
-                    discount30Nights: property.discount30Nights,
-                  }}
-                  trigger={
-                    <button 
-                      className="w-full py-3 rounded-xl border border-border hover:bg-muted transition-colors font-medium flex items-center justify-center gap-2"
-                    >
-                      <Calendar className="w-5 h-5" />
-                      Demander une réservation
-                    </button>
-                  }
-                />
+                <button 
+                  onClick={() => navigate(`/reservation/${property.id}`)}
+                  className="w-full py-3 rounded-xl border border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/50 transition-colors font-medium flex items-center justify-center gap-2"
+                >
+                  <Calendar className="w-5 h-5" />
+                  Demander une réservation
+                </button>
               ) : (
                 <AppointmentDialog
                   propertyId={property.id}
