@@ -83,36 +83,36 @@ export const PropertyCard = ({ property, userCountry, isFirst = false }: Propert
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent pointer-events-none" />
         
         {/* Type Badge - Different for short_term (Residence) listings */}
-        <div className="absolute top-2 left-0 z-10">
-          {property.listingType === 'short_term' ? (
-            <div className="relative">
-              {/* Two green bars with rounded right corners */}
-              <div className="flex flex-col gap-1">
-                <div className="w-3 h-10 bg-emerald-500 rounded-r-lg" />
-                <div className="w-3 h-6 bg-emerald-500 rounded-r-lg" />
-              </div>
-              {/* Clock icon and text positioned to the right of bars */}
-              <div className="absolute top-8 left-5 flex items-center gap-1.5 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-                <Clock className="w-5 h-5" strokeWidth={2.5} />
-                <span className="text-base font-semibold">Courte durée</span>
-              </div>
+        {property.listingType === 'short_term' ? (
+          <div className="absolute top-0 left-0 z-10">
+            {/* Top green bar - rectangle with rounded bottom-right corner */}
+            <div className="w-4 h-12 bg-emerald-500 rounded-br-xl" />
+            {/* Bottom green bar - smaller, pill shape on right */}
+            <div className="w-4 h-7 bg-emerald-500 rounded-r-full mt-1" />
+            {/* Text positioned between the two bars */}
+            <div className="absolute top-10 left-7 flex items-center gap-2 text-white whitespace-nowrap" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 6v6l4 2" />
+              </svg>
+              <span className="text-lg font-semibold tracking-wide">Courte durée</span>
             </div>
-          ) : (
-            <div className="ml-3 mt-1">
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                property.type === 'sale' 
-                  ? 'gradient-primary text-primary-foreground' 
-                  : 'bg-secondary text-secondary-foreground'
-              }`}>
-                {property.type === 'sale' ? 'À vendre' : 'À louer'}
-              </span>
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="absolute top-3 left-3 z-10">
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              property.type === 'sale' 
+                ? 'gradient-primary text-primary-foreground' 
+                : 'bg-secondary text-secondary-foreground'
+            }`}>
+              {property.type === 'sale' ? 'À vendre' : 'À louer'}
+            </span>
+          </div>
+        )}
         
         {/* Minimum stay badge for short_term */}
         {property.listingType === 'short_term' && property.minimumStay && property.minimumStay > 1 && (
-          <div className="absolute top-20 left-3 z-10">
+          <div className="absolute top-24 left-3 z-10">
             <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-background/90 backdrop-blur-sm text-foreground flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               Min {property.minimumStay} nuits
