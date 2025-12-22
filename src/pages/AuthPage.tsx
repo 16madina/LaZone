@@ -400,38 +400,28 @@ const AuthPage = () => {
         className="relative z-20 p-4 flex items-center justify-between"
         style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
       >
-        <motion.button
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
+        <button
           onClick={() => navigate('/')}
           className="w-12 h-12 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 flex items-center justify-center shadow-lg active:scale-90 transition-transform"
         >
           <ArrowLeft className="w-5 h-5" />
-        </motion.button>
+        </button>
         
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+        <div>
           <AppLogo className="h-12" />
-        </motion.div>
+        </div>
         
-        <motion.button
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
+        <button
           onClick={toggleTheme}
           className="w-12 h-12 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 flex items-center justify-center shadow-lg active:scale-90 transition-transform"
         >
           {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-        </motion.button>
+        </button>
       </header>
 
       {/* Main Content */}
       <div className="relative z-10 flex-1 px-4 pb-8 pt-4 overflow-y-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+        <div
           className="bg-card/90 backdrop-blur-md rounded-3xl shadow-2xl border border-border/50 p-6 max-w-md mx-auto mb-8"
         >
           {/* Title */}
@@ -965,7 +955,7 @@ const AuthPage = () => {
             </button>
           </p>
         </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Terms Dialog */}
