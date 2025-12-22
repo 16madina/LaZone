@@ -81,7 +81,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { africanCountries } from '@/data/africanCountries';
 
-type TabType = 'users' | 'properties' | 'reports' | 'admins' | 'sponsored' | 'notifications' | 'banners';
+type TabType = 'users' | 'properties' | 'properties-residence' | 'reports' | 'admins' | 'sponsored' | 'notifications' | 'banners';
 
 // Predefined notification templates
 const notificationTemplates = [
@@ -164,6 +164,7 @@ interface PropertyData {
   user_id: string;
   owner_name?: string;
   image_url?: string;
+  listing_type?: string;
 }
 
 interface SponsorDialogData {
@@ -340,6 +341,7 @@ const AdminPage = () => {
   // Data states
   const [users, setUsers] = useState<UserData[]>([]);
   const [properties, setProperties] = useState<PropertyData[]>([]);
+  const [residenceProperties, setResidenceProperties] = useState<PropertyData[]>([]);
   const [reports, setReports] = useState<ReportData[]>([]);
   const [userReports, setUserReports] = useState<UserReportData[]>([]);
   const [admins, setAdmins] = useState<AdminData[]>([]);
@@ -462,7 +464,10 @@ const AdminPage = () => {
           await fetchUsers();
           break;
         case 'properties':
-          await fetchProperties();
+          await fetchProperties('long_term');
+          break;
+        case 'properties-residence':
+          await fetchProperties('short_term');
           break;
         case 'reports':
           await fetchReports();
@@ -543,10 +548,11 @@ const AdminPage = () => {
     setUsers(usersWithData);
   };
 
-  const fetchProperties = async () => {
+  const fetchProperties = async (listingType: 'long_term' | 'short_term') => {
     const { data, error } = await supabase
       .from('properties')
-      .select('id, title, price, city, country, is_active, is_sponsored, sponsored_until, created_at, user_id')
+      .select('id, title, price, city, country, is_active, is_sponsored, sponsored_until, created_at, user_id, listing_type')
+      .eq('listing_type', listingType)
       .order('created_at', { ascending: false });
     
     if (error) throw error;
@@ -574,7 +580,11 @@ const AdminPage = () => {
       image_url: imageMap.get(p.id) || null,
     }));
 
-    setProperties(propertiesWithOwner);
+    if (listingType === 'long_term') {
+      setProperties(propertiesWithOwner);
+    } else {
+      setResidenceProperties(propertiesWithOwner);
+    }
   };
 
   const fetchReports = async () => {
@@ -861,7 +871,9 @@ const AdminPage = () => {
       setSponsorDays('30');
       setSponsorStartDate(new Date());
       setSponsorEndDate(undefined);
-      fetchProperties();
+      // Refresh both property lists
+      fetchProperties('long_term');
+      fetchProperties('short_term');
     } catch (error) {
       console.error('Error sponsoring property:', error);
       toast({ title: 'Erreur', variant: 'destructive' });
@@ -885,7 +897,8 @@ const AdminPage = () => {
       if (activeTab === 'sponsored') {
         fetchSponsoredProperties();
       } else {
-        fetchProperties();
+        fetchProperties('long_term');
+        fetchProperties('short_term');
       }
     } catch (error) {
       console.error('Error removing sponsor:', error);
@@ -1146,7 +1159,8 @@ const AdminPage = () => {
 
   const tabs = [
     { id: 'users' as TabType, label: 'Utilisateurs', icon: Users },
-    { id: 'properties' as TabType, label: 'Annonces', icon: Home },
+    { id: 'properties' as TabType, label: 'Immobilier', icon: Home },
+    { id: 'properties-residence' as TabType, label: 'Résidence', icon: Home, color: 'text-emerald-500' },
     { id: 'reports' as TabType, label: 'Signalements', icon: Flag },
     { id: 'sponsored' as TabType, label: 'Sponsorisés', icon: Star },
     { id: 'banners' as TabType, label: 'Bannières', icon: Image },
@@ -1267,6 +1281,28 @@ const AdminPage = () => {
     }
   });
 
+  const filteredResidenceProperties = residenceProperties.filter(p => {
+    const query = searchQuery.toLowerCase();
+    const matchesSearch = p.title.toLowerCase().includes(query) ||
+      p.city.toLowerCase().includes(query) ||
+      (p.owner_name?.toLowerCase().includes(query)) ||
+      (p.country?.toLowerCase().includes(query)) ||
+      (africanCountries.find(c => c.code === p.country)?.name.toLowerCase().includes(query));
+    
+    if (!matchesSearch) return false;
+    
+    switch (propertyStatusFilter) {
+      case 'active':
+        return p.is_active && !p.is_sponsored;
+      case 'inactive':
+        return !p.is_active;
+      case 'sponsored':
+        return p.is_sponsored;
+      default:
+        return true;
+    }
+  });
+
   if (loadingRoles) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -1311,26 +1347,28 @@ const AdminPage = () => {
       {/* Tabs - Two rows for mobile */}
       <div className="px-4 -mt-3">
         <div className="bg-card rounded-xl shadow-sm p-2 space-y-2">
-          {/* First row - 3 tabs */}
-          <div className="grid grid-cols-3 gap-1">
-            {tabs.slice(0, 3).map((tab) => (
+          {/* First row - 4 tabs */}
+          <div className="grid grid-cols-4 gap-1">
+            {tabs.slice(0, 4).map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`py-2 px-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
                   activeTab === tab.id
-                    ? 'bg-primary text-primary-foreground'
+                    ? tab.id === 'properties-residence' 
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:bg-muted'
                 }`}
               >
-                <tab.icon className="w-4 h-4 flex-shrink-0" />
+                <tab.icon className={`w-4 h-4 flex-shrink-0 ${tab.id === 'properties-residence' && activeTab !== tab.id ? 'text-emerald-500' : ''}`} />
                 <span className="truncate">{tab.label}</span>
               </button>
             ))}
           </div>
           {/* Second row - remaining tabs */}
-          <div className="grid grid-cols-3 gap-1">
-            {tabs.slice(3).map((tab) => (
+          <div className="grid grid-cols-4 gap-1">
+            {tabs.slice(4).map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
@@ -1567,6 +1605,112 @@ const AdminPage = () => {
                 ))}
                 {filteredProperties.length === 0 && (
                   <p className="text-center text-muted-foreground py-8">Aucune annonce trouvée</p>
+                )}
+              </div>
+            )}
+
+            {/* Residence Properties Tab */}
+            {activeTab === 'properties-residence' && (
+              <div className="space-y-3">
+                {/* Status Filter Chips */}
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {[
+                    { value: 'all', label: 'Toutes', count: residenceProperties.length },
+                    { value: 'active', label: 'Actives', count: residenceProperties.filter(p => p.is_active && !p.is_sponsored).length },
+                    { value: 'inactive', label: 'Inactives', count: residenceProperties.filter(p => !p.is_active).length },
+                    { value: 'sponsored', label: 'Sponsorisées', count: residenceProperties.filter(p => p.is_sponsored).length },
+                  ].map((filter) => (
+                    <button
+                      key={filter.value}
+                      onClick={() => setPropertyStatusFilter(filter.value as typeof propertyStatusFilter)}
+                      className={cn(
+                        "flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5",
+                        propertyStatusFilter === filter.value
+                          ? "bg-emerald-500 text-white"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      )}
+                    >
+                      {filter.label}
+                      <span className={cn(
+                        "text-xs px-1.5 py-0.5 rounded-full",
+                        propertyStatusFilter === filter.value
+                          ? "bg-white/20 text-white"
+                          : "bg-background text-foreground"
+                      )}>
+                        {filter.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                {filteredResidenceProperties.map((property) => (
+                  <div key={property.id} className="bg-card rounded-xl p-4 shadow-sm border-l-4 border-l-emerald-500">
+                    <div className="flex items-start gap-3">
+                      {/* Thumbnail */}
+                      <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-muted">
+                        {property.image_url ? (
+                          <img 
+                            src={property.image_url} 
+                            alt={property.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Home className="w-6 h-6 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium truncate">{property.title}</h3>
+                          {property.is_sponsored && (
+                            <Badge className="text-xs bg-amber-500">Sponsorisé</Badge>
+                          )}
+                          {!property.is_active && (
+                            <Badge variant="secondary" className="text-xs">Inactif</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{property.city} • {property.owner_name}</p>
+                        <Badge className="mt-1 text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Résidence</Badge>
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => navigate(`/property/${property.id}`)}
+                          className="p-2 rounded-lg hover:bg-muted transition-colors"
+                          title="Voir"
+                        >
+                          <Eye className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                        {property.is_sponsored ? (
+                          <button
+                            onClick={() => handleRemoveSponsor(property.id)}
+                            className="p-2 rounded-lg hover:bg-muted transition-colors"
+                            title="Retirer sponsoring"
+                          >
+                            <X className="w-4 h-4 text-amber-500" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setSponsorDialog({ open: true, property })}
+                            className="p-2 rounded-lg hover:bg-muted transition-colors"
+                            title="Sponsoriser"
+                          >
+                            <Star className="w-4 h-4 text-amber-500" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteProperty(property.id)}
+                          className="p-2 rounded-lg hover:bg-muted transition-colors"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {filteredResidenceProperties.length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">Aucune annonce Résidence trouvée</p>
                 )}
               </div>
             )}
