@@ -241,19 +241,26 @@ export const usePushNotifications = () => {
       }
 
       if (permStatus.receive !== 'granted') {
-        toast({
-          title: 'Notifications désactivées',
-          description: 'Activez les notifications dans les paramètres',
-          variant: 'destructive',
-        });
+        console.log('[push] Permission not granted');
         return null;
       }
 
       // NOTE: register() returns void (undefined) by design.
       // The token comes via the 'registration' event listener below.
-      await PushNotifications.register();
-      console.log('[push] register() called — waiting for registration event...');
-      return true;
+      // Wrap in try-catch to handle Firebase not initialized error
+      try {
+        await PushNotifications.register();
+        console.log('[push] register() called — waiting for registration event...');
+        return true;
+      } catch (firebaseError: any) {
+        // Handle Firebase not initialized error gracefully
+        const errorMessage = firebaseError?.message || String(firebaseError);
+        if (errorMessage.includes('FirebaseApp') || errorMessage.includes('Firebase')) {
+          console.warn('[push] Firebase not configured - push notifications disabled');
+          return null;
+        }
+        throw firebaseError;
+      }
     } catch (error) {
       console.error('[push] registration error:', error);
       return null;
