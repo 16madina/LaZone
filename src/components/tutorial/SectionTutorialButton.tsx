@@ -9,7 +9,7 @@ interface SectionTutorialButtonProps {
 }
 
 const SectionTutorialButton = ({ section, className = '', variant = 'floating' }: SectionTutorialButtonProps) => {
-  const { startSectionTutorial, isActive } = useTutorial();
+  const { startSectionTutorial, isActive, isResidenceMode } = useTutorial();
 
   if (isActive) return null;
 
@@ -35,7 +35,11 @@ const SectionTutorialButton = ({ section, className = '', variant = 'floating' }
       animate={{ scale: 1, opacity: 1 }}
       transition={{ delay: 1, type: 'spring', stiffness: 260, damping: 20 }}
       onClick={handleClick}
-      className={`fixed z-40 w-12 h-12 rounded-full bg-primary/90 backdrop-blur-sm shadow-lg flex items-center justify-center text-primary-foreground hover:bg-primary hover:scale-110 active:scale-95 transition-all ${className}`}
+      className={`fixed z-40 w-12 h-12 rounded-full backdrop-blur-sm shadow-lg flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all ${
+        isResidenceMode 
+          ? 'bg-emerald-500/90 hover:bg-emerald-500' 
+          : 'bg-primary/90 hover:bg-primary'
+      } ${className}`}
       style={{ bottom: 'calc(80px + env(safe-area-inset-bottom))', right: '16px' }}
       aria-label="Aide de cette section"
     >
