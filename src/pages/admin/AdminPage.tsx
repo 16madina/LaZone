@@ -386,6 +386,19 @@ const AdminPage = () => {
   const [selectedUserId, setSelectedUserId] = useState('');
   const [sendingNotification, setSendingNotification] = useState(false);
 
+  // Global stats state
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalImmobilier: 0,
+    totalResidence: 0,
+    pendingReservations: 0,
+    pendingPropertyReports: 0,
+    pendingUserReports: 0,
+    activeSponsored: 0,
+    bannedUsers: 0,
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
+
   // Drag and drop sensors for banner reordering
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -444,6 +457,47 @@ const AdminPage = () => {
     setBanners(data || []);
   };
 
+  // Fetch global stats
+  const fetchStats = async () => {
+    setLoadingStats(true);
+    try {
+      const [
+        usersResult,
+        immobilierResult,
+        residenceResult,
+        reservationsResult,
+        propertyReportsResult,
+        userReportsResult,
+        sponsoredResult,
+        bannedResult,
+      ] = await Promise.all([
+        supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('properties').select('id', { count: 'exact', head: true }).eq('listing_type', 'long_term'),
+        supabase.from('properties').select('id', { count: 'exact', head: true }).eq('listing_type', 'short_term'),
+        supabase.from('appointments').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('property_reports').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('user_reports').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('properties').select('id', { count: 'exact', head: true }).eq('is_sponsored', true),
+        supabase.from('user_bans').select('id', { count: 'exact', head: true }).eq('is_active', true),
+      ]);
+
+      setStats({
+        totalUsers: usersResult.count || 0,
+        totalImmobilier: immobilierResult.count || 0,
+        totalResidence: residenceResult.count || 0,
+        pendingReservations: reservationsResult.count || 0,
+        pendingPropertyReports: propertyReportsResult.count || 0,
+        pendingUserReports: userReportsResult.count || 0,
+        activeSponsored: sponsoredResult.count || 0,
+        bannedUsers: bannedResult.count || 0,
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
   useEffect(() => {
     if (!loadingRoles && !isAdmin && !isModerator) {
       navigate('/profile');
@@ -452,6 +506,7 @@ const AdminPage = () => {
 
   useEffect(() => {
     if (isAdmin || isModerator) {
+      fetchStats();
       fetchData();
     }
   }, [activeTab, isAdmin, isModerator]);
@@ -1384,6 +1439,132 @@ const AdminPage = () => {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Global Stats */}
+      <div className="px-4 mt-4">
+        {loadingStats ? (
+          <div className="bg-card rounded-xl p-4 shadow-sm border border-border animate-pulse">
+            <div className="h-6 w-32 bg-muted rounded mb-3" />
+            <div className="grid grid-cols-2 gap-2">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                <div key={i} className="h-16 bg-muted rounded-lg" />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="bg-card rounded-xl p-4 shadow-sm border border-border">
+            <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <Shield className="w-4 h-4 text-primary" />
+              Statistiques globales
+            </h2>
+            <div className="grid grid-cols-2 gap-2">
+              {/* Total Users */}
+              <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 border border-blue-200 dark:border-blue-900">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                    <Users className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-blue-700 dark:text-blue-400">{stats.totalUsers}</p>
+                    <p className="text-xs text-blue-600 dark:text-blue-500">Utilisateurs</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Immobilier */}
+              <div className="bg-primary/10 rounded-lg p-3 border border-primary/20">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                    <Home className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-primary">{stats.totalImmobilier}</p>
+                    <p className="text-xs text-primary/70">Immobilier</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Résidence */}
+              <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-3 border border-emerald-200 dark:border-emerald-900">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
+                    <Home className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">{stats.totalResidence}</p>
+                    <p className="text-xs text-emerald-600 dark:text-emerald-500">Résidence</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Pending Reservations */}
+              <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-3 border border-amber-200 dark:border-amber-900">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center">
+                    <Clock className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-amber-700 dark:text-amber-400">{stats.pendingReservations}</p>
+                    <p className="text-xs text-amber-600 dark:text-amber-500">Réservations</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Property Reports */}
+              <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-3 border border-red-200 dark:border-red-900">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center">
+                    <Flag className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-red-700 dark:text-red-400">{stats.pendingPropertyReports}</p>
+                    <p className="text-xs text-red-600 dark:text-red-500">Signalements</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* User Reports */}
+              <div className="bg-orange-50 dark:bg-orange-950/30 rounded-lg p-3 border border-orange-200 dark:border-orange-900">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
+                    <AlertTriangle className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-orange-700 dark:text-orange-400">{stats.pendingUserReports}</p>
+                    <p className="text-xs text-orange-600 dark:text-orange-500">Sig. users</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Sponsored */}
+              <div className="bg-purple-50 dark:bg-purple-950/30 rounded-lg p-3 border border-purple-200 dark:border-purple-900">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center">
+                    <Star className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-purple-700 dark:text-purple-400">{stats.activeSponsored}</p>
+                    <p className="text-xs text-purple-600 dark:text-purple-500">Sponsorisés</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Banned Users */}
+              <div className="bg-gray-50 dark:bg-gray-950/30 rounded-lg p-3 border border-gray-200 dark:border-gray-800">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center">
+                    <Ban className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-gray-700 dark:text-gray-400">{stats.bannedUsers}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-500">Bannis</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Content */}
