@@ -1181,6 +1181,13 @@ const ProfilePage = () => {
                 <div>
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Compte</h3>
                   <div className="space-y-2">
+                    <button onClick={() => user && navigate(`/user/${user.id}`)} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Eye className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Ma page publique</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                    </button>
                     <button onClick={() => navigate('/settings/edit-profile')} className="w-full flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
                       <div className="flex items-center gap-3">
                         <Edit className="w-5 h-5 text-primary" />
