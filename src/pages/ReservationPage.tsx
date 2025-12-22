@@ -337,13 +337,29 @@ const ReservationPage = () => {
 
       if (error) throw error;
 
-      // Send email notification to owner (fire and forget)
+      // Send email and push notifications to owner (fire and forget)
       if (insertedReservation?.id) {
+        // Email notification
         supabase.functions.invoke('notify-owner-reservation', {
           body: { reservationId: insertedReservation.id }
         }).catch(emailError => {
           console.error('Error sending owner notification email:', emailError);
-          // Don't fail the reservation if email fails
+        });
+
+        // Push notification
+        supabase.functions.invoke('send-push-notification', {
+          body: {
+            userId: property.user_id,
+            title: '📬 Nouvelle demande de réservation',
+            body: `Demande pour "${property.title}" du ${format(dateRange.from, 'dd/MM')} au ${format(dateRange.to, 'dd/MM')}`,
+            data: {
+              type: 'reservation_request',
+              property_id: property.id,
+              reservation_id: insertedReservation.id
+            }
+          }
+        }).catch(pushError => {
+          console.error('Error sending owner push notification:', pushError);
         });
       }
 
