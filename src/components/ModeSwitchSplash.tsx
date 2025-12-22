@@ -106,8 +106,8 @@ export const ModeSwitchSplash = ({ targetMode, onComplete }: ModeSwitchSplashPro
                 delay: 0.2
               }}
             >
-              <div 
-                className="w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-white/25 backdrop-blur-xl flex items-center justify-center overflow-hidden p-4"
+              <motion.div 
+                className="w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-white/25 backdrop-blur-xl flex items-center justify-center overflow-hidden p-4 relative"
                 style={{
                   boxShadow: `
                     0 25px 50px -12px rgba(0, 0, 0, 0.4),
@@ -118,10 +118,33 @@ export const ModeSwitchSplash = ({ targetMode, onComplete }: ModeSwitchSplashPro
                   `,
                   transform: 'perspective(1000px) rotateX(2deg)',
                 }}
+                animate={{
+                  scale: [1, 1.03, 1],
+                  boxShadow: [
+                    `0 25px 50px -12px rgba(0, 0, 0, 0.4), 0 12px 24px -8px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -1px 0 rgba(0, 0, 0, 0.1)`,
+                    `0 30px 60px -15px rgba(0, 0, 0, 0.5), 0 15px 30px -10px rgba(0, 0, 0, 0.4), 0 0 20px 2px rgba(255, 255, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(0, 0, 0, 0.1)`,
+                    `0 25px 50px -12px rgba(0, 0, 0, 0.4), 0 12px 24px -8px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -1px 0 rgba(0, 0, 0, 0.1)`
+                  ]
+                }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 1
+                }}
               >
                 {/* Logo glow effect */}
-                <div 
-                  className="absolute inset-0 rounded-3xl opacity-60"
+                <motion.div 
+                  className="absolute inset-0 rounded-3xl"
+                  animate={{
+                    opacity: [0.4, 0.7, 0.4]
+                  }}
+                  transition={{
+                    duration: 2.5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: 1
+                  }}
                   style={{
                     background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, transparent 60%)'
                   }}
@@ -134,7 +157,7 @@ export const ModeSwitchSplash = ({ targetMode, onComplete }: ModeSwitchSplashPro
                     filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3))'
                   }}
                 />
-              </div>
+              </motion.div>
             </motion.div>
 
             {/* Stamp on Logo */}
