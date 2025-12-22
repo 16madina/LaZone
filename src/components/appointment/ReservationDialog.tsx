@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { format, differenceInDays, addDays } from 'date-fns';
+import { useState, useEffect, useMemo } from 'react';
+import { format, differenceInDays, addDays, eachDayOfInterval, isWithinInterval, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Calendar, Loader2, Phone, Users, Moon } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -34,6 +34,11 @@ interface ReservationDialogProps {
   onOpenChange?: (open: boolean) => void;
 }
 
+interface BookedPeriod {
+  checkIn: Date;
+  checkOut: Date;
+}
+
 export const ReservationDialog = ({ 
   propertyId, 
   ownerId, 
@@ -59,12 +64,77 @@ export const ReservationDialog = ({
   const [contactPhone, setContactPhone] = useState('');
   const [userPhone, setUserPhone] = useState('');
   const [guests, setGuests] = useState(1);
+  const [bookedPeriods, setBookedPeriods] = useState<BookedPeriod[]>([]);
+  const [loadingDates, setLoadingDates] = useState(true);
 
   // Calculate nights and total price
   const nights = dateRange?.from && dateRange?.to 
     ? differenceInDays(dateRange.to, dateRange.from)
     : 0;
   const totalPrice = nights * pricePerNight;
+
+  // Fetch booked dates for this property
+  useEffect(() => {
+    const fetchBookedDates = async () => {
+      setLoadingDates(true);
+      try {
+        const { data, error } = await supabase
+          .from('appointments')
+          .select('check_in_date, check_out_date')
+          .eq('property_id', propertyId)
+          .eq('status', 'approved')
+          .eq('reservation_type', 'reservation')
+          .not('check_in_date', 'is', null)
+          .not('check_out_date', 'is', null);
+
+        if (error) throw error;
+
+        const periods: BookedPeriod[] = (data || []).map(booking => ({
+          checkIn: parseISO(booking.check_in_date!),
+          checkOut: parseISO(booking.check_out_date!)
+        }));
+
+        setBookedPeriods(periods);
+      } catch (error) {
+        console.error('Error fetching booked dates:', error);
+      } finally {
+        setLoadingDates(false);
+      }
+    };
+
+    if (open) {
+      fetchBookedDates();
+    }
+  }, [propertyId, open]);
+
+  // Calculate disabled dates (booked dates)
+  const disabledDates = useMemo(() => {
+    const disabled: Date[] = [];
+    
+    bookedPeriods.forEach(period => {
+      // Get all days between check-in and check-out (exclusive of check-out)
+      const days = eachDayOfInterval({ 
+        start: period.checkIn, 
+        end: addDays(period.checkOut, -1) // Check-out day is available for new check-in
+      });
+      disabled.push(...days);
+    });
+
+    return disabled;
+  }, [bookedPeriods]);
+
+  // Check if a date is disabled
+  const isDateDisabled = (date: Date): boolean => {
+    // Past dates
+    if (date < new Date(new Date().setHours(0, 0, 0, 0))) {
+      return true;
+    }
+    
+    // Booked dates
+    return disabledDates.some(disabledDate => 
+      disabledDate.toDateString() === date.toDateString()
+    );
+  };
 
   // Fetch user's phone number from profile
   useEffect(() => {
@@ -207,15 +277,39 @@ export const ReservationDialog = ({
             <label className="text-sm font-medium mb-2 block">
               Sélectionnez vos dates
             </label>
-            <CalendarComponent
-              mode="range"
-              selected={dateRange}
-              onSelect={setDateRange}
-              disabled={(date) => date < new Date()}
-              locale={fr}
-              numberOfMonths={1}
-              className={cn("rounded-md border pointer-events-auto")}
-            />
+            {loadingDates ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                <span className="ml-2 text-sm text-muted-foreground">Chargement des disponibilités...</span>
+              </div>
+            ) : (
+              <>
+                <CalendarComponent
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  disabled={isDateDisabled}
+                  locale={fr}
+                  numberOfMonths={1}
+                  className={cn("rounded-md border pointer-events-auto")}
+                  modifiers={{
+                    booked: disabledDates
+                  }}
+                  modifiersStyles={{
+                    booked: { 
+                      textDecoration: 'line-through',
+                      opacity: 0.5
+                    }
+                  }}
+                />
+                {bookedPeriods.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                    <span className="w-3 h-3 rounded bg-muted inline-block"></span>
+                    Les dates barrées sont déjà réservées
+                  </p>
+                )}
+              </>
+            )}
           </div>
 
           {/* Nights Summary */}

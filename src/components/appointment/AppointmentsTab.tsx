@@ -44,6 +44,11 @@ interface Appointment {
   created_at: string;
   share_phone: boolean | null;
   contact_phone: string | null;
+  reservation_type: 'appointment' | 'reservation';
+  check_in_date: string | null;
+  check_out_date: string | null;
+  total_nights: number | null;
+  total_price: number | null;
   property?: {
     title: string;
     address: string;
@@ -119,6 +124,7 @@ export const AppointmentsTab = () => {
         .map(a => ({
           ...a,
           status: a.status as 'pending' | 'approved' | 'rejected',
+          reservation_type: (a.reservation_type || 'appointment') as 'appointment' | 'reservation',
           property: propertiesMap.get(a.property_id),
           requester: profilesMap.get(a.requester_id),
           owner: profilesMap.get(a.owner_id),
@@ -159,26 +165,58 @@ export const AppointmentsTab = () => {
   const sendAppointmentNotification = async (
     userId: string, 
     status: 'approved' | 'rejected',
-    propertyTitle: string
+    propertyTitle: string,
+    isReservation: boolean = false
   ) => {
     try {
-      const title = status === 'approved' 
-        ? 'Rendez-vous approuvé ✓' 
-        : 'Rendez-vous refusé';
-      const body = status === 'approved'
-        ? `Votre demande de visite pour "${propertyTitle}" a été acceptée !`
-        : `Votre demande de visite pour "${propertyTitle}" a été refusée.`;
+      let title: string;
+      let body: string;
+      
+      if (isReservation) {
+        title = status === 'approved' 
+          ? '🎉 Réservation confirmée !' 
+          : 'Réservation refusée';
+        body = status === 'approved'
+          ? `Votre réservation pour "${propertyTitle}" a été acceptée ! Préparez vos valises !`
+          : `Votre demande de réservation pour "${propertyTitle}" a été refusée.`;
+      } else {
+        title = status === 'approved' 
+          ? 'Rendez-vous approuvé ✓' 
+          : 'Rendez-vous refusé';
+        body = status === 'approved'
+          ? `Votre demande de visite pour "${propertyTitle}" a été acceptée !`
+          : `Votre demande de visite pour "${propertyTitle}" a été refusée.`;
+      }
 
       await supabase.functions.invoke('send-push-notification', {
         body: {
           userId,
           title,
           body,
-          data: { type: 'appointment', status }
+          data: { type: isReservation ? 'reservation' : 'appointment', status }
         }
       });
     } catch (error) {
       console.error('Error sending push notification:', error);
+    }
+  };
+
+  // Create in-app notification for reservation status change
+  const createReservationNotification = async (
+    userId: string,
+    actorId: string,
+    status: 'approved' | 'rejected',
+    appointmentId: string
+  ) => {
+    try {
+      await supabase.from('notifications').insert({
+        user_id: userId,
+        actor_id: actorId,
+        type: status === 'approved' ? 'reservation_approved' : 'reservation_rejected',
+        entity_id: appointmentId,
+      });
+    } catch (error) {
+      console.error('Error creating notification:', error);
     }
   };
 
@@ -207,17 +245,32 @@ export const AppointmentsTab = () => {
 
       if (error) throw error;
 
-      // Send push notification to requester
+      // Send push notification and create in-app notification
       if (appointment) {
+        const isReservation = appointment.reservation_type === 'reservation';
+        
+        // Send push notification
         await sendAppointmentNotification(
           appointment.requester_id,
           status,
-          appointment.property?.title || 'Propriété'
+          appointment.property?.title || 'Propriété',
+          isReservation
+        );
+        
+        // Create in-app notification
+        await createReservationNotification(
+          appointment.requester_id,
+          user!.id,
+          status,
+          appointment.id
         );
       }
 
+      const isReservation = appointment?.reservation_type === 'reservation';
       toast({
-        title: status === 'approved' ? 'Rendez-vous approuvé' : 'Rendez-vous refusé',
+        title: status === 'approved' 
+          ? (isReservation ? 'Réservation confirmée' : 'Rendez-vous approuvé') 
+          : (isReservation ? 'Réservation refusée' : 'Rendez-vous refusé'),
         description: status === 'approved' 
           ? 'Le demandeur a été notifié de votre acceptation.'
           : 'Le demandeur a été notifié de votre refus.',

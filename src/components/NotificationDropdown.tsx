@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, UserPlus, Star, MessageCircle, Loader2 } from 'lucide-react';
+import { Bell, UserPlus, Star, MessageCircle, Loader2, CalendarCheck, CalendarX } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -32,6 +32,12 @@ export const NotificationDropdown = ({ variant = 'default' }: NotificationDropdo
         return <Star className="w-4 h-4 text-yellow-500" />;
       case 'message':
         return <MessageCircle className="w-4 h-4 text-green-500" />;
+      case 'reservation_approved':
+      case 'appointment_approved':
+        return <CalendarCheck className="w-4 h-4 text-green-500" />;
+      case 'reservation_rejected':
+      case 'appointment_rejected':
+        return <CalendarX className="w-4 h-4 text-destructive" />;
       default:
         return <Bell className="w-4 h-4 text-muted-foreground" />;
     }
@@ -46,6 +52,14 @@ export const NotificationDropdown = ({ variant = 'default' }: NotificationDropdo
         return `${name} vous a laissé un avis`;
       case 'message':
         return `${name} vous a envoyé un message`;
+      case 'reservation_approved':
+        return `${name} a confirmé votre réservation ! 🎉`;
+      case 'reservation_rejected':
+        return `${name} a refusé votre demande de réservation`;
+      case 'appointment_approved':
+        return `${name} a accepté votre demande de visite`;
+      case 'appointment_rejected':
+        return `${name} a refusé votre demande de visite`;
       default:
         return 'Nouvelle notification';
     }
@@ -66,6 +80,12 @@ export const NotificationDropdown = ({ variant = 'default' }: NotificationDropdo
         break;
       case 'message':
         navigate('/messages', { state: { recipientId: notification.actor_id } });
+        break;
+      case 'reservation_approved':
+      case 'reservation_rejected':
+      case 'appointment_approved':
+      case 'appointment_rejected':
+        navigate('/dashboard');
         break;
       default:
         navigate('/notifications');

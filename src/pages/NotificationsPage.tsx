@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Bell, UserPlus, Star, MessageCircle, 
-  Check, Loader2 
+  Check, Loader2, CalendarCheck, CalendarX 
 } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,12 @@ const NotificationsPage = () => {
         return <Star className="w-5 h-5 text-amber-500" />;
       case 'message':
         return <MessageCircle className="w-5 h-5 text-green-500" />;
+      case 'reservation_approved':
+      case 'appointment_approved':
+        return <CalendarCheck className="w-5 h-5 text-green-500" />;
+      case 'reservation_rejected':
+      case 'appointment_rejected':
+        return <CalendarX className="w-5 h-5 text-destructive" />;
       default:
         return <Bell className="w-5 h-5 text-muted-foreground" />;
     }
@@ -35,6 +41,14 @@ const NotificationsPage = () => {
         return `${name} vous a laissé un avis`;
       case 'message':
         return `${name} vous a envoyé un message`;
+      case 'reservation_approved':
+        return `${name} a confirmé votre réservation ! 🎉`;
+      case 'reservation_rejected':
+        return `${name} a refusé votre demande de réservation`;
+      case 'appointment_approved':
+        return `${name} a accepté votre demande de visite`;
+      case 'appointment_rejected':
+        return `${name} a refusé votre demande de visite`;
       default:
         return 'Nouvelle notification';
     }
@@ -50,6 +64,8 @@ const NotificationsPage = () => {
       navigate(`/user/${notification.actor_id}`);
     } else if (notification.type === 'message') {
       navigate('/messages');
+    } else if (notification.type.includes('reservation') || notification.type.includes('appointment')) {
+      navigate('/dashboard');
     }
   };
 
