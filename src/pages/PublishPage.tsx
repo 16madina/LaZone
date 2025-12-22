@@ -162,6 +162,13 @@ const PublishPage = () => {
   const [pricePerNight, setPricePerNight] = useState('');
   const [minimumStay, setMinimumStay] = useState('1');
   const [selectedRestrictions, setSelectedRestrictions] = useState<string[]>([]);
+  
+  // Discount packages (for Residence mode)
+  const [discount3Nights, setDiscount3Nights] = useState('');
+  const [discount5Nights, setDiscount5Nights] = useState('');
+  const [discount7Nights, setDiscount7Nights] = useState('');
+  const [discount14Nights, setDiscount14Nights] = useState('');
+  const [discount30Nights, setDiscount30Nights] = useState('');
 
   // Contact options
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
@@ -485,6 +492,12 @@ const PublishPage = () => {
           // Short-term specific fields
           price_per_night: isResidence ? parseFloat(pricePerNight) || null : null,
           minimum_stay: isResidence ? parseInt(minimumStay) || 1 : null,
+          // Discount packages
+          discount_3_nights: isResidence && discount3Nights ? parseFloat(discount3Nights) : null,
+          discount_5_nights: isResidence && discount5Nights ? parseFloat(discount5Nights) : null,
+          discount_7_nights: isResidence && discount7Nights ? parseFloat(discount7Nights) : null,
+          discount_14_nights: isResidence && discount14Nights ? parseFloat(discount14Nights) : null,
+          discount_30_nights: isResidence && discount30Nights ? parseFloat(discount30Nights) : null,
         })
         .select()
         .single();
@@ -972,6 +985,144 @@ const PublishPage = () => {
             <p className="text-xs text-muted-foreground mt-2">
               Durée minimum de réservation
             </p>
+          </motion.div>
+        )}
+
+        {/* Discount Packages - Only for Residence mode */}
+        {showShortTermDetails && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card rounded-2xl p-4 shadow-sm"
+          >
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              🏷️ Forfaits & Rabais
+              <span className="text-xs font-normal text-muted-foreground">(optionnel)</span>
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Offrez des réductions pour encourager les séjours prolongés
+            </p>
+            
+            <div className="space-y-3">
+              {/* 3 nights discount */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <Label className="text-sm">À partir de 3 nuits</Label>
+                </div>
+                <div className="relative w-24">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="50"
+                    value={discount3Nights}
+                    onChange={(e) => setDiscount3Nights(e.target.value)}
+                    placeholder="0"
+                    className="pr-8 text-center"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                </div>
+              </div>
+
+              {/* 5 nights discount */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <Label className="text-sm">À partir de 5 nuits</Label>
+                </div>
+                <div className="relative w-24">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="50"
+                    value={discount5Nights}
+                    onChange={(e) => setDiscount5Nights(e.target.value)}
+                    placeholder="0"
+                    className="pr-8 text-center"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                </div>
+              </div>
+
+              {/* 7 nights discount */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <Label className="text-sm">À partir de 7 nuits</Label>
+                </div>
+                <div className="relative w-24">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="50"
+                    value={discount7Nights}
+                    onChange={(e) => setDiscount7Nights(e.target.value)}
+                    placeholder="0"
+                    className="pr-8 text-center"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                </div>
+              </div>
+
+              {/* 14 nights discount */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <Label className="text-sm">À partir de 14 nuits</Label>
+                </div>
+                <div className="relative w-24">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="50"
+                    value={discount14Nights}
+                    onChange={(e) => setDiscount14Nights(e.target.value)}
+                    placeholder="0"
+                    className="pr-8 text-center"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                </div>
+              </div>
+
+              {/* 30 nights discount */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <Label className="text-sm">À partir de 30 nuits</Label>
+                </div>
+                <div className="relative w-24">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="50"
+                    value={discount30Nights}
+                    onChange={(e) => setDiscount30Nights(e.target.value)}
+                    placeholder="0"
+                    className="pr-8 text-center"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Preview of discounts */}
+            {(discount3Nights || discount5Nights || discount7Nights || discount14Nights || discount30Nights) && pricePerNight && (
+              <div className="mt-4 p-3 bg-primary/5 rounded-xl">
+                <p className="text-xs font-medium text-primary mb-2">Aperçu des prix avec rabais :</p>
+                <div className="space-y-1 text-xs">
+                  {discount3Nights && (
+                    <p>3+ nuits : <span className="font-semibold">{Math.round(Number(pricePerNight) * (1 - Number(discount3Nights) / 100)).toLocaleString()}</span>/nuit <span className="text-primary">(-{discount3Nights}%)</span></p>
+                  )}
+                  {discount5Nights && (
+                    <p>5+ nuits : <span className="font-semibold">{Math.round(Number(pricePerNight) * (1 - Number(discount5Nights) / 100)).toLocaleString()}</span>/nuit <span className="text-primary">(-{discount5Nights}%)</span></p>
+                  )}
+                  {discount7Nights && (
+                    <p>7+ nuits : <span className="font-semibold">{Math.round(Number(pricePerNight) * (1 - Number(discount7Nights) / 100)).toLocaleString()}</span>/nuit <span className="text-primary">(-{discount7Nights}%)</span></p>
+                  )}
+                  {discount14Nights && (
+                    <p>14+ nuits : <span className="font-semibold">{Math.round(Number(pricePerNight) * (1 - Number(discount14Nights) / 100)).toLocaleString()}</span>/nuit <span className="text-primary">(-{discount14Nights}%)</span></p>
+                  )}
+                  {discount30Nights && (
+                    <p>30+ nuits : <span className="font-semibold">{Math.round(Number(pricePerNight) * (1 - Number(discount30Nights) / 100)).toLocaleString()}</span>/nuit <span className="text-primary">(-{discount30Nights}%)</span></p>
+                  )}
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
 

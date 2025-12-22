@@ -464,6 +464,11 @@ export type Database = {
           country: string | null
           created_at: string
           description: string | null
+          discount_14_nights: number | null
+          discount_3_nights: number | null
+          discount_30_nights: number | null
+          discount_5_nights: number | null
+          discount_7_nights: number | null
           features: string[] | null
           id: string
           is_active: boolean | null
@@ -493,6 +498,11 @@ export type Database = {
           country?: string | null
           created_at?: string
           description?: string | null
+          discount_14_nights?: number | null
+          discount_3_nights?: number | null
+          discount_30_nights?: number | null
+          discount_5_nights?: number | null
+          discount_7_nights?: number | null
           features?: string[] | null
           id?: string
           is_active?: boolean | null
@@ -522,6 +532,11 @@ export type Database = {
           country?: string | null
           created_at?: string
           description?: string | null
+          discount_14_nights?: number | null
+          discount_3_nights?: number | null
+          discount_30_nights?: number | null
+          discount_5_nights?: number | null
+          discount_7_nights?: number | null
           features?: string[] | null
           id?: string
           is_active?: boolean | null
