@@ -12,8 +12,10 @@ import {
   Trash2,
   Eye,
   EyeOff,
-  Loader2
+  Loader2,
+  Calendar
 } from 'lucide-react';
+import { BlockedDatesManager } from '@/components/appointment/BlockedDatesManager';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppMode } from '@/hooks/useAppMode';
 import { supabase } from '@/integrations/supabase/client';
@@ -299,6 +301,20 @@ const MyListingsPage = () => {
                       >
                         <Eye className="w-4 h-4 text-muted-foreground" />
                       </button>
+                      {isResidence && (
+                        <BlockedDatesManager
+                          propertyId={property.id}
+                          propertyTitle={property.title}
+                          trigger={
+                            <button
+                              className="p-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
+                              title="Gérer les disponibilités"
+                            >
+                              <Calendar className="w-4 h-4 text-muted-foreground" />
+                            </button>
+                          }
+                        />
+                      )}
                       <button
                         onClick={() => togglePropertyStatus(property.id, property.is_active)}
                         className="p-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
