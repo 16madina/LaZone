@@ -400,29 +400,40 @@ const AuthPage = () => {
         className="relative z-20 p-4 flex items-center justify-between"
         style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
       >
-        <button
+        <motion.button
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
           onClick={() => navigate('/')}
           className="w-12 h-12 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 flex items-center justify-center shadow-lg active:scale-90 transition-transform"
         >
           <ArrowLeft className="w-5 h-5" />
-        </button>
+        </motion.button>
         
-        <div>
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
           <AppLogo className="h-12" />
-        </div>
+        </motion.div>
         
-        <button
+        <motion.button
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
           onClick={toggleTheme}
           className="w-12 h-12 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 flex items-center justify-center shadow-lg active:scale-90 transition-transform"
         >
           {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-        </button>
+        </motion.button>
       </header>
 
       {/* Main Content */}
-      <div className="relative z-10 flex-1 px-4 pb-8 pt-4 overflow-y-auto">
-        <div
-          className="bg-card/90 backdrop-blur-md rounded-3xl shadow-2xl border border-border/50 p-6 max-w-md mx-auto mb-8"
+      <div className="relative z-10 flex-1 px-4 pb-8 pt-4 overflow-y-auto" style={{ paddingBottom: 'env(keyboard-inset-height, 2rem)' }}>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-card/90 backdrop-blur-md rounded-3xl shadow-2xl border border-border/50 p-6 max-w-md mx-auto mb-[50vh] overflow-visible scrollbar-hide"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {/* Title */}
           <div className="text-center mb-6">
@@ -955,7 +966,7 @@ const AuthPage = () => {
             </button>
           </p>
         </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Terms Dialog */}
