@@ -5,7 +5,7 @@ import { X, ChevronLeft, ChevronRight, Sparkles, ArrowDown, ArrowUp, ArrowLeft, 
 import { motion, AnimatePresence } from 'framer-motion';
 
 const TutorialOverlay = () => {
-  const { isActive, currentStep, steps, nextStep, prevStep, skipTutorial } = useTutorial();
+  const { isActive, currentStep, steps, nextStep, prevStep, skipTutorial, isResidenceMode } = useTutorial();
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [tooltipHeight, setTooltipHeight] = useState<number>(240);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -255,7 +255,7 @@ const TutorialOverlay = () => {
               height: targetRect.height + 16,
               boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.4)',
               borderRadius: '12px',
-              border: '2px solid hsl(var(--primary))',
+              border: isResidenceMode ? '2px solid #10b981' : '2px solid hsl(var(--primary))',
               pointerEvents: 'none',
             }}
           />
@@ -280,8 +280,10 @@ const TutorialOverlay = () => {
             className="z-[101] pointer-events-none"
             style={arrowProps.style}
           >
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-lg">
-              <arrowProps.Icon className="w-6 h-6 text-primary-foreground" />
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${
+              isResidenceMode ? 'bg-emerald-500' : 'bg-primary'
+            }`}>
+              <arrowProps.Icon className="w-6 h-6 text-white" />
             </div>
           </motion.div>
         )}
@@ -300,7 +302,7 @@ const TutorialOverlay = () => {
           {/* Progress bar */}
           <div className="h-1 bg-muted">
             <motion.div
-              className="h-full bg-primary"
+              className={`h-full ${isResidenceMode ? 'bg-emerald-500' : 'bg-primary'}`}
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.3 }}
@@ -310,8 +312,10 @@ const TutorialOverlay = () => {
           {/* Header */}
           <div className="p-3 pb-1 flex items-start justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-                <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center ${
+                isResidenceMode ? 'bg-emerald-500/10' : 'bg-primary/10'
+              }`}>
+                <Sparkles className={`w-3.5 h-3.5 ${isResidenceMode ? 'text-emerald-500' : 'text-primary'}`} />
               </div>
               <span className="text-xs text-muted-foreground">
                 {currentStep + 1}/{steps.length}
@@ -349,7 +353,7 @@ const TutorialOverlay = () => {
             <Button
               size="sm"
               onClick={nextStep}
-              className="gap-1 h-8 text-xs"
+              className={`gap-1 h-8 text-xs ${isResidenceMode ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : ''}`}
             >
               {currentStep === steps.length - 1 ? 'OK' : 'Suiv.'}
               {currentStep < steps.length - 1 && <ChevronRight className="w-3 h-3" />}

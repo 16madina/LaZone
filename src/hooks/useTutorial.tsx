@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useAppMode } from '@/hooks/useAppMode';
 
 export interface TutorialStep {
   id: string;
@@ -12,6 +13,7 @@ export interface TutorialStep {
 
 export type TutorialSection = 'full' | 'home' | 'map' | 'publish' | 'messages' | 'profile';
 
+// Tutoriels mode Immobilier
 const fullTutorialSteps: TutorialStep[] = [
   {
     id: 'welcome',
@@ -79,6 +81,78 @@ const fullTutorialSteps: TutorialStep[] = [
     id: 'complete',
     title: 'Prêt ! 🎉',
     description: 'Bonne exploration de LaZone !',
+    position: 'center'
+  }
+];
+
+// Tutoriels mode Résidence
+const fullResidenceTutorialSteps: TutorialStep[] = [
+  {
+    id: 'welcome',
+    title: 'Bienvenue en Résidence ! 🏨',
+    description: 'Découvrez les locations courte durée en Afrique.',
+    position: 'center'
+  },
+  {
+    id: 'search',
+    title: 'Recherche',
+    description: 'Trouvez des hébergements par ville ou quartier.',
+    target: '[data-tutorial="search"]',
+    position: 'bottom',
+    route: '/'
+  },
+  {
+    id: 'country',
+    title: 'Pays',
+    description: 'Cliquez sur le drapeau pour changer de pays.',
+    target: '[data-tutorial="country"]',
+    position: 'bottom',
+    route: '/'
+  },
+  {
+    id: 'property-card',
+    title: 'Séjours',
+    description: 'Parcourez villas, appartements et résidences disponibles.',
+    target: '[data-tutorial="property-card"]',
+    position: 'top',
+    route: '/'
+  },
+  {
+    id: 'map',
+    title: 'Carte',
+    description: 'Visualisez les hébergements sur la carte.',
+    target: '[data-tutorial="nav-map"]',
+    position: 'top',
+    route: '/'
+  },
+  {
+    id: 'publish',
+    title: 'Publier',
+    description: 'Proposez votre bien en location courte durée.',
+    target: '[data-tutorial="nav-publish"]',
+    position: 'top',
+    route: '/'
+  },
+  {
+    id: 'messages',
+    title: 'Messages',
+    description: 'Discutez avec hôtes et voyageurs.',
+    target: '[data-tutorial="nav-messages"]',
+    position: 'top',
+    route: '/'
+  },
+  {
+    id: 'profile',
+    title: 'Profil',
+    description: 'Gérez vos séjours et réservations.',
+    target: '[data-tutorial="nav-profile"]',
+    position: 'top',
+    route: '/'
+  },
+  {
+    id: 'complete',
+    title: 'Prêt ! 🌴',
+    description: 'Bon séjour avec LaZone Résidence !',
     position: 'center'
   }
 ];
@@ -267,6 +341,198 @@ const sectionTutorials: Record<TutorialSection, TutorialStep[]> = {
   ]
 };
 
+// Tutoriels spécifiques au mode Résidence
+const sectionResidenceTutorials: Record<TutorialSection, TutorialStep[]> = {
+  full: fullResidenceTutorialSteps,
+  home: [
+    {
+      id: 'home-intro',
+      title: 'Accueil Résidence 🏨',
+      description: 'Parcourez les hébergements disponibles.',
+      position: 'center'
+    },
+    {
+      id: 'home-search',
+      title: 'Recherche',
+      description: 'Tapez une ville ou un quartier.',
+      target: '[data-tutorial="search"]',
+      position: 'bottom'
+    },
+    {
+      id: 'home-filters',
+      title: 'Filtres',
+      description: 'Filtrez par type : Villa, Appartement, Résidence.',
+      target: '[data-tutorial="filters"]',
+      position: 'bottom'
+    },
+    {
+      id: 'home-country',
+      title: 'Pays',
+      description: 'Changez de destination via le drapeau.',
+      target: '[data-tutorial="country"]',
+      position: 'bottom'
+    },
+    {
+      id: 'home-properties',
+      title: 'Séjours',
+      description: 'Découvrez les prix par nuit et les disponibilités.',
+      target: '[data-tutorial="property-card"]',
+      position: 'top'
+    },
+    {
+      id: 'home-complete',
+      title: 'Bon voyage ! 🌴',
+      description: 'Trouvez votre prochain séjour !',
+      position: 'center'
+    }
+  ],
+  map: [
+    {
+      id: 'map-country',
+      title: 'Changer de destination 🌍',
+      description: 'Sélectionnez un pays africain pour voir les hébergements.',
+      position: 'map-center'
+    },
+    {
+      id: 'map-filters',
+      title: 'Type d\'hébergement 🏨',
+      description: 'Filtrez par Villa, Appartement ou Résidence.',
+      position: 'map-center'
+    },
+    {
+      id: 'map-markers',
+      title: 'Les marqueurs 📍',
+      description: 'Les marqueurs verts groupent plusieurs hébergements. Cliquez pour les détails.',
+      position: 'map-center'
+    },
+    {
+      id: 'map-zoom',
+      title: 'Zoom + / - 🔍',
+      description: 'Zoomez pour voir plus de détails sur les hébergements.',
+      position: 'map-center'
+    }
+  ],
+  publish: [
+    {
+      id: 'publish-intro',
+      title: 'Publier un séjour 🏨',
+      description: 'Proposez votre bien en location courte durée.',
+      position: 'bottom'
+    },
+    {
+      id: 'publish-photos',
+      title: 'Ajoutez vos photos 📷',
+      description: 'Jusqu\'à 6 photos pour séduire les voyageurs.',
+      target: '[data-tutorial="publish-photos"]',
+      position: 'bottom'
+    },
+    {
+      id: 'publish-details',
+      title: 'Détails du séjour',
+      description: 'Prix par nuit, équipements, capacité d\'accueil...',
+      target: '[data-tutorial="publish-details"]',
+      position: 'bottom'
+    },
+    {
+      id: 'publish-pricing',
+      title: 'Tarification 💰',
+      description: 'Définissez le prix par nuit et les remises longue durée.',
+      target: '[data-tutorial="publish-pricing"]',
+      position: 'bottom'
+    },
+    {
+      id: 'publish-location',
+      title: 'Localisation exacte 📍',
+      description: 'Indiquez l\'emplacement précis de votre hébergement.',
+      target: '[data-tutorial="publish-location"]',
+      position: 'top'
+    },
+    {
+      id: 'publish-complete',
+      title: 'Prêt à accueillir ! 🎉',
+      description: 'Votre séjour sera visible par les voyageurs.',
+      position: 'bottom'
+    }
+  ],
+  messages: [
+    {
+      id: 'messages-intro',
+      title: 'Messages 💬',
+      description: 'Discutez avec hôtes et voyageurs.',
+      position: 'center'
+    },
+    {
+      id: 'messages-search',
+      title: 'Recherche',
+      description: 'Recherchez une conversation.',
+      target: '[data-tutorial="messages-search"]',
+      position: 'bottom'
+    },
+    {
+      id: 'messages-tabs',
+      title: 'Filtres',
+      description: 'Triez : Tous, Reçus, Envoyés, Archivés.',
+      target: '[data-tutorial="messages-tabs"]',
+      position: 'bottom'
+    },
+    {
+      id: 'messages-list',
+      title: 'Conversations',
+      description: 'Cliquez pour ouvrir une discussion.',
+      target: '[data-tutorial="messages-list"]',
+      position: 'top'
+    },
+    {
+      id: 'messages-complete',
+      title: 'Connecté ! 📱',
+      description: 'Répondez vite pour confirmer les réservations.',
+      position: 'center'
+    }
+  ],
+  profile: [
+    {
+      id: 'profile-intro',
+      title: 'Profil 👤',
+      description: 'Gérez compte et séjours.',
+      position: 'center'
+    },
+    {
+      id: 'profile-info',
+      title: 'Mon profil',
+      description: 'Voir et modifier vos infos.',
+      target: '[data-tutorial="profile-info"]',
+      position: 'bottom'
+    },
+    {
+      id: 'profile-listings',
+      title: 'Mes séjours',
+      description: 'Vos hébergements publiés.',
+      target: '[data-tutorial="profile-listings"]',
+      position: 'bottom'
+    },
+    {
+      id: 'profile-appointments',
+      title: 'Réservations',
+      description: 'Gérez vos demandes de réservation.',
+      target: '[data-tutorial="profile-appointments"]',
+      position: 'bottom'
+    },
+    {
+      id: 'profile-settings',
+      title: 'Paramètres',
+      description: 'Notifications, calendrier, disponibilités.',
+      target: '[data-tutorial="profile-settings"]',
+      position: 'bottom'
+    },
+    {
+      id: 'profile-complete',
+      title: 'Super hôte ! 🌟',
+      description: 'Un profil complet attire plus de réservations.',
+      position: 'center'
+    }
+  ]
+};
+
 interface TutorialContextType {
   isActive: boolean;
   currentStep: number;
@@ -280,6 +546,7 @@ interface TutorialContextType {
   completeTutorial: () => void;
   hasCompletedTutorial: boolean;
   resetTutorial: () => void;
+  isResidenceMode: boolean;
 }
 
 const TutorialContext = createContext<TutorialContextType | undefined>(undefined);
@@ -289,8 +556,32 @@ export const TutorialProvider = ({ children }: { children: ReactNode }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [currentSection, setCurrentSection] = useState<TutorialSection>('full');
   const [hasCompletedTutorial, setHasCompletedTutorial] = useState(true);
+  const [isResidenceMode, setIsResidenceMode] = useState(false);
 
-  const steps = sectionTutorials[currentSection];
+  // Sync with app mode from localStorage
+  useEffect(() => {
+    const checkMode = () => {
+      const mode = localStorage.getItem('lazone_app_mode');
+      setIsResidenceMode(mode === 'residence');
+    };
+    
+    checkMode();
+    
+    // Listen for storage changes
+    window.addEventListener('storage', checkMode);
+    
+    // Also check periodically for same-tab changes
+    const interval = setInterval(checkMode, 1000);
+    
+    return () => {
+      window.removeEventListener('storage', checkMode);
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Get the appropriate tutorials based on mode
+  const tutorials = isResidenceMode ? sectionResidenceTutorials : sectionTutorials;
+  const steps = tutorials[currentSection];
 
   useEffect(() => {
     const completed = localStorage.getItem('lazone_tutorial_completed');
@@ -357,7 +648,8 @@ export const TutorialProvider = ({ children }: { children: ReactNode }) => {
       skipTutorial,
       completeTutorial,
       hasCompletedTutorial,
-      resetTutorial
+      resetTutorial,
+      isResidenceMode
     }}>
       {children}
     </TutorialContext.Provider>
