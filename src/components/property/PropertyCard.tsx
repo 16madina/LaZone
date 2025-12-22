@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Heart, Bed, Bath, Maximize, MapPin, Calendar, Star, Clock } from 'lucide-react';
+import { Heart, Bed, Bath, Maximize, MapPin, Calendar, Star, Clock, Tag } from 'lucide-react';
 import { Property } from '@/hooks/useProperties';
 import { useFavorites } from '@/hooks/useFavorites';
 import { Link } from 'react-router-dom';
@@ -91,6 +91,13 @@ export const PropertyCard = ({ property, userCountry, isFirst = false }: Propert
                 <Clock className="w-3.5 h-3.5" />
                 Courte durée
               </span>
+              {/* Promo badge if has discounts */}
+              {property.hasDiscounts && (
+                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-500/90 backdrop-blur-sm text-white flex items-center gap-1.5 shadow-sm animate-pulse">
+                  <Tag className="w-3.5 h-3.5" />
+                  Promo
+                </span>
+              )}
               {property.minimumStay && property.minimumStay > 1 && (
                 <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-background/90 backdrop-blur-sm text-foreground flex items-center gap-1">
                   <Calendar className="w-3 h-3" />

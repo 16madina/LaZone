@@ -41,6 +41,7 @@ import NotificationsPage from "./pages/NotificationsPage";
 import FollowersPage from "./pages/FollowersPage";
 import InstallPage from "./pages/InstallPage";
 import DashboardPage from "./pages/DashboardPage";
+import EditPropertyPage from "./pages/EditPropertyPage";
 import NetworkStatusPage from "./pages/settings/NetworkStatusPage";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { PushNotificationBanner } from "@/components/PushNotificationBanner";
@@ -79,6 +80,7 @@ const App = () => {
                       <Route path="/profile" element={<ProfilePage />} />
                       <Route path="/my-listings" element={<MyListingsPage />} />
                       <Route path="/property/:id" element={<PropertyDetail />} />
+                      <Route path="/property/:id/edit" element={<EditPropertyPage />} />
                       <Route path="/user/:userId" element={<PublicProfilePage />} />
                       <Route path="/notifications" element={<NotificationsPage />} />
                       <Route path="/followers" element={<FollowersPage />} />

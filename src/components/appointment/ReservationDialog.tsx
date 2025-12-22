@@ -542,12 +542,34 @@ export const ReservationDialog = ({
               <p className="font-medium mb-1">Récapitulatif :</p>
               <p>📅 Arrivée : {format(dateRange.from, 'EEEE d MMMM yyyy', { locale: fr })}</p>
               <p>📅 Départ : {format(dateRange.to, 'EEEE d MMMM yyyy', { locale: fr })}</p>
+              <p>🌙 {nights} nuit{nights > 1 ? 's' : ''}</p>
               <p>👥 {guests} voyageur{guests > 1 ? 's' : ''}</p>
               {sharePhone && contactPhone && (
                 <p className="text-muted-foreground mt-1">
                   📞 Téléphone partagé : {contactPhone}
                 </p>
               )}
+              
+              {/* Savings display */}
+              {applicableDiscount && savings > 0 && (
+                <div className="mt-2 pt-2 border-t border-border/50">
+                  <div className="flex items-center justify-between text-primary font-medium">
+                    <span className="flex items-center gap-1">
+                      🎉 Économies forfait {applicableDiscount.tier}
+                    </span>
+                    <span>-{formatPrice(Math.round(savings))}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Prix après réduction : {formatPrice(Math.round(discountedPricePerNight))}/nuit
+                  </p>
+                </div>
+              )}
+              
+              {/* Final total */}
+              <div className="mt-2 pt-2 border-t border-border/50 flex items-center justify-between font-bold">
+                <span>💰 Total à payer</span>
+                <span className="text-primary text-lg">{formatPrice(Math.round(totalPrice))}</span>
+              </div>
             </motion.div>
           )}
 
