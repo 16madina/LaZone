@@ -173,6 +173,10 @@ const PublishPage = () => {
   // Contact options
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
 
+  // Geocoding state
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const geocodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Popover states
   const [amenitiesOpen, setAmenitiesOpen] = useState(false);
   const [documentsOpen, setDocumentsOpen] = useState(false);
@@ -214,6 +218,96 @@ const PublishPage = () => {
       }
     }
   }, [selectedCountry]);
+
+  // Auto-geocode when city or address changes
+  const geocodeAddress = async (searchAddress: string, searchCity: string, countryCode: string) => {
+    if (!searchCity || searchCity.length < 2) return;
+    
+    setIsGeocoding(true);
+    try {
+      // Build the search query
+      const queryParts = [];
+      if (searchAddress && searchAddress.length >= 3) {
+        queryParts.push(searchAddress);
+      }
+      queryParts.push(searchCity);
+      
+      const query = queryParts.join(', ');
+      const countryFilter = countryCode ? `&countrycodes=${countryCode.toLowerCase()}` : '';
+      
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}${countryFilter}&limit=1`,
+        {
+          headers: {
+            'Accept-Language': 'fr',
+            'User-Agent': 'LaZone-App/1.0',
+          },
+        }
+      );
+      
+      if (!response.ok) throw new Error('Geocoding failed');
+      
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        const result = data[0];
+        const lat = parseFloat(result.lat);
+        const lng = parseFloat(result.lon);
+        
+        // Only update if coordinates are valid and different
+        if (!isNaN(lat) && !isNaN(lng)) {
+          setMarkerPosition({ lat, lng });
+          console.log(`Geocoded "${query}" to: ${lat}, ${lng}`);
+        }
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
+
+  // Trigger geocoding when city changes
+  useEffect(() => {
+    if (!city || city.length < 2 || !selectedCountry) return;
+    
+    // Clear previous timeout
+    if (geocodeTimeoutRef.current) {
+      clearTimeout(geocodeTimeoutRef.current);
+    }
+    
+    // Debounce geocoding
+    geocodeTimeoutRef.current = setTimeout(() => {
+      geocodeAddress(address, city, selectedCountry);
+    }, 500);
+    
+    return () => {
+      if (geocodeTimeoutRef.current) {
+        clearTimeout(geocodeTimeoutRef.current);
+      }
+    };
+  }, [city, selectedCountry]);
+
+  // Trigger geocoding when address changes (with longer debounce)
+  useEffect(() => {
+    if (!address || address.length < 3 || !city || city.length < 2 || !selectedCountry) return;
+    
+    // Clear previous timeout
+    if (geocodeTimeoutRef.current) {
+      clearTimeout(geocodeTimeoutRef.current);
+    }
+    
+    // Debounce geocoding with longer delay for address
+    geocodeTimeoutRef.current = setTimeout(() => {
+      geocodeAddress(address, city, selectedCountry);
+    }, 800);
+    
+    return () => {
+      if (geocodeTimeoutRef.current) {
+        clearTimeout(geocodeTimeoutRef.current);
+      }
+    };
+  }, [address]);
 
   const showBedroomsBathrooms = propertyType === 'house' || propertyType === 'apartment';
   const showAmenities = propertyType !== 'land';
@@ -1287,7 +1381,15 @@ const PublishPage = () => {
             </div>
 
             <div>
-              <Label htmlFor="address">Adresse <span className="text-destructive">*</span></Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="address">Adresse <span className="text-destructive">*</span></Label>
+                {isGeocoding && (
+                  <span className="flex items-center gap-1 text-xs text-primary animate-pulse">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Localisation...
+                  </span>
+                )}
+              </div>
               <Input
                 id="address"
                 value={address}
@@ -1303,6 +1405,9 @@ const PublishPage = () => {
                 className={`mt-1 ${errors.address && touched.address ? 'border-destructive' : ''}`}
               />
               {touched.address && <ErrorMessage message={errors.address} />}
+              <p className="text-xs text-muted-foreground mt-1">
+                📍 La position sur la carte se met à jour automatiquement
+              </p>
             </div>
             
             <div>
