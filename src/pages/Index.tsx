@@ -100,9 +100,21 @@ const Index = () => {
     setCurrentBg(heroImages[randomIndex]);
   }, []);
 
+  const normalizeCountryValue = (value: string | null | undefined) =>
+    (value ?? '').trim().toLowerCase();
+
+  const matchesSelectedCountry = (propertyCountry: string | null, selected: Country | null) => {
+    if (!selected) return true;
+    const pc = normalizeCountryValue(propertyCountry);
+    return (
+      pc === normalizeCountryValue(selected.code) ||
+      pc === normalizeCountryValue(selected.name)
+    );
+  };
+
   const filteredProperties = properties.filter((property) => {
     // Filter by country first (if a country is selected)
-    if (selectedCountry && property.country !== selectedCountry.code) {
+    if (!matchesSelectedCountry(property.country, selectedCountry)) {
       return false;
     }
 

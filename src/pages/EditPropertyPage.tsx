@@ -283,7 +283,7 @@ const EditPropertyPage = () => {
 
     setSaving(true);
     try {
-      const countryName = africanCountries.find(c => c.code === selectedCountry)?.name || selectedCountry;
+      const countryCode = selectedCountry || null;
       
       // Update property
       const { error: updateError } = await supabase
@@ -293,7 +293,7 @@ const EditPropertyPage = () => {
           description: description.trim() || null,
           address: address.trim(),
           city,
-          country: countryName,
+          country: countryCode,
           property_type: propertyType,
           type: transactionType,
           listing_type: listingType,
