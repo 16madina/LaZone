@@ -4,7 +4,7 @@ import { AppMode } from '@/stores/appStore';
 import { getSoundInstance } from '@/hooks/useSound';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
-import logoLazone from '@/assets/logo-lazone.png';
+import lazoneLogo from '@/assets/lazone-logo-new.png';
 
 interface ModeSwitchSplashProps {
   targetMode: AppMode;
@@ -106,11 +106,11 @@ export const ModeSwitchSplash = ({ targetMode, onComplete }: ModeSwitchSplashPro
                 delay: 0.2
               }}
             >
-              <div className="w-28 h-28 rounded-3xl bg-white/20 backdrop-blur-xl flex items-center justify-center shadow-2xl overflow-hidden">
+              <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-3xl bg-white/20 backdrop-blur-xl flex items-center justify-center shadow-2xl overflow-hidden p-4">
                 <img 
-                  src={logoLazone} 
+                  src={lazoneLogo} 
                   alt="LaZone" 
-                  className="w-16 h-16 object-contain"
+                  className="w-full h-full object-contain"
                 />
               </div>
             </motion.div>
@@ -133,7 +133,7 @@ export const ModeSwitchSplash = ({ targetMode, onComplete }: ModeSwitchSplashPro
                 stiffness: 400,
                 damping: 12,
               }}
-              className={`absolute -bottom-3 ${isResidence ? '-right-4' : '-left-4'}`}
+              className={`absolute -bottom-4 ${isResidence ? '-right-6' : '-left-6'}`}
             >
               {/* Stamp Container */}
               <motion.div
@@ -162,7 +162,7 @@ export const ModeSwitchSplash = ({ targetMode, onComplete }: ModeSwitchSplashPro
                   }}
                 >
                   <span 
-                    className="text-white font-bold text-xs tracking-wider uppercase"
+                    className="text-white font-bold text-sm tracking-wider uppercase"
                     style={{
                       textShadow: '0 1px 2px rgba(0,0,0,0.3)'
                     }}
@@ -179,7 +179,7 @@ export const ModeSwitchSplash = ({ targetMode, onComplete }: ModeSwitchSplashPro
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="text-4xl font-bold text-white mb-2 font-display"
+            className="text-5xl sm:text-6xl font-bold text-white mb-3 font-display"
           >
             LaZone
           </motion.h1>
@@ -215,7 +215,7 @@ export const ModeSwitchSplash = ({ targetMode, onComplete }: ModeSwitchSplashPro
               />
               
               <span 
-                className="text-2xl font-bold text-white font-display px-4 py-1 border-2 border-white/80 rounded-md inline-block"
+                className="text-3xl sm:text-4xl font-bold text-white font-display px-5 py-2 border-2 border-white/80 rounded-lg inline-block"
                 style={{
                   textShadow: '0 2px 4px rgba(0,0,0,0.3)',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
@@ -231,7 +231,7 @@ export const ModeSwitchSplash = ({ targetMode, onComplete }: ModeSwitchSplashPro
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.1 }}
-            className="text-white/70 mt-4 text-sm"
+            className="text-white/70 mt-5 text-base sm:text-lg"
           >
             {isResidence 
               ? 'Courts séjours • Vacances • Expériences'
