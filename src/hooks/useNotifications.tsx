@@ -7,7 +7,7 @@ import { isNativePlatform } from './useNativePlugins';
 interface Notification {
   id: string;
   user_id: string;
-  type: 'follow' | 'review' | 'message';
+  type: 'follow' | 'review' | 'message' | 'reservation_approved' | 'reservation_rejected' | 'appointment_approved' | 'appointment_rejected';
   actor_id: string;
   entity_id: string | null;
   is_read: boolean;
