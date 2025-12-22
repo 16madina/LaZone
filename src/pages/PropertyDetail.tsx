@@ -57,6 +57,12 @@ interface PropertyDetail {
   listingType: 'long_term' | 'short_term';
   pricePerNight: number | null;
   minimumStay: number;
+  // Discount tiers
+  discount3Nights: number | null;
+  discount5Nights: number | null;
+  discount7Nights: number | null;
+  discount14Nights: number | null;
+  discount30Nights: number | null;
 }
 
 interface OtherProperty {
@@ -143,6 +149,11 @@ const PropertyDetailPage = () => {
           listingType: propertyData.listing_type as 'long_term' | 'short_term',
           pricePerNight: propertyData.price_per_night ? Number(propertyData.price_per_night) : null,
           minimumStay: propertyData.minimum_stay || 1,
+          discount3Nights: propertyData.discount_3_nights ? Number(propertyData.discount_3_nights) : null,
+          discount5Nights: propertyData.discount_5_nights ? Number(propertyData.discount_5_nights) : null,
+          discount7Nights: propertyData.discount_7_nights ? Number(propertyData.discount_7_nights) : null,
+          discount14Nights: propertyData.discount_14_nights ? Number(propertyData.discount_14_nights) : null,
+          discount30Nights: propertyData.discount_30_nights ? Number(propertyData.discount_30_nights) : null,
         };
 
         setProperty(formattedProperty);
@@ -484,6 +495,57 @@ const PropertyDetailPage = () => {
           )}
         </motion.div>
 
+        {/* Discount Packages - Only for short-term */}
+        {isResidenceProperty && (property.discount3Nights || property.discount5Nights || property.discount7Nights || property.discount14Nights || property.discount30Nights) && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="glass-card p-5 mb-4"
+          >
+            <h3 className="font-display font-semibold mb-3 flex items-center gap-2">
+              🏷️ Forfaits disponibles
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              {property.discount3Nights && (
+                <div className="p-3 bg-primary/10 rounded-xl text-center">
+                  <p className="text-xs text-muted-foreground">3+ nuits</p>
+                  <p className="font-bold text-primary">-{property.discount3Nights}%</p>
+                  <p className="text-xs">{formatPriceWithCurrency(Math.round((property.pricePerNight || property.price) * (1 - property.discount3Nights / 100)), property.country)}/nuit</p>
+                </div>
+              )}
+              {property.discount5Nights && (
+                <div className="p-3 bg-primary/10 rounded-xl text-center">
+                  <p className="text-xs text-muted-foreground">5+ nuits</p>
+                  <p className="font-bold text-primary">-{property.discount5Nights}%</p>
+                  <p className="text-xs">{formatPriceWithCurrency(Math.round((property.pricePerNight || property.price) * (1 - property.discount5Nights / 100)), property.country)}/nuit</p>
+                </div>
+              )}
+              {property.discount7Nights && (
+                <div className="p-3 bg-primary/10 rounded-xl text-center">
+                  <p className="text-xs text-muted-foreground">7+ nuits</p>
+                  <p className="font-bold text-primary">-{property.discount7Nights}%</p>
+                  <p className="text-xs">{formatPriceWithCurrency(Math.round((property.pricePerNight || property.price) * (1 - property.discount7Nights / 100)), property.country)}/nuit</p>
+                </div>
+              )}
+              {property.discount14Nights && (
+                <div className="p-3 bg-primary/10 rounded-xl text-center">
+                  <p className="text-xs text-muted-foreground">14+ nuits</p>
+                  <p className="font-bold text-primary">-{property.discount14Nights}%</p>
+                  <p className="text-xs">{formatPriceWithCurrency(Math.round((property.pricePerNight || property.price) * (1 - property.discount14Nights / 100)), property.country)}/nuit</p>
+                </div>
+              )}
+              {property.discount30Nights && (
+                <div className="p-3 bg-primary/10 rounded-xl text-center">
+                  <p className="text-xs text-muted-foreground">30+ nuits</p>
+                  <p className="font-bold text-primary">-{property.discount30Nights}%</p>
+                  <p className="text-xs">{formatPriceWithCurrency(Math.round((property.pricePerNight || property.price) * (1 - property.discount30Nights / 100)), property.country)}/nuit</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
         {/* Description */}
         {property.description && (
           <motion.div
@@ -611,6 +673,13 @@ const PropertyDetailPage = () => {
                   pricePerNight={property.pricePerNight || Math.round(property.price / 30)}
                   minimumStay={property.minimumStay}
                   country={property.country}
+                  discounts={{
+                    discount3Nights: property.discount3Nights,
+                    discount5Nights: property.discount5Nights,
+                    discount7Nights: property.discount7Nights,
+                    discount14Nights: property.discount14Nights,
+                    discount30Nights: property.discount30Nights,
+                  }}
                   trigger={
                     <button 
                       className="w-full py-3 rounded-xl border border-border hover:bg-muted transition-colors font-medium flex items-center justify-center gap-2"

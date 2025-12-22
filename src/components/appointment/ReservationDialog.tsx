@@ -21,6 +21,14 @@ import { cn } from '@/lib/utils';
 import { formatPriceWithCurrency } from '@/data/currencies';
 import { DateRange } from 'react-day-picker';
 
+interface DiscountTiers {
+  discount3Nights: number | null;
+  discount5Nights: number | null;
+  discount7Nights: number | null;
+  discount14Nights: number | null;
+  discount30Nights: number | null;
+}
+
 interface ReservationDialogProps {
   propertyId: string;
   ownerId: string;
@@ -28,6 +36,7 @@ interface ReservationDialogProps {
   pricePerNight: number;
   minimumStay?: number;
   country?: string | null;
+  discounts?: DiscountTiers;
   trigger?: React.ReactNode;
   onSuccess?: () => void;
   open?: boolean;
@@ -50,6 +59,7 @@ export const ReservationDialog = ({
   pricePerNight,
   minimumStay = 1,
   country,
+  discounts,
   trigger,
   onSuccess,
   open: controlledOpen,
@@ -72,11 +82,40 @@ export const ReservationDialog = ({
   const [blockedDates, setBlockedDates] = useState<Date[]>([]);
   const [loadingDates, setLoadingDates] = useState(true);
 
-  // Calculate nights and total price
+  // Calculate applicable discount based on nights
+  const getApplicableDiscount = (numNights: number): { percentage: number; tier: string } | null => {
+    if (!discounts) return null;
+    
+    if (numNights >= 30 && discounts.discount30Nights) {
+      return { percentage: discounts.discount30Nights, tier: '30+ nuits' };
+    }
+    if (numNights >= 14 && discounts.discount14Nights) {
+      return { percentage: discounts.discount14Nights, tier: '14+ nuits' };
+    }
+    if (numNights >= 7 && discounts.discount7Nights) {
+      return { percentage: discounts.discount7Nights, tier: '7+ nuits' };
+    }
+    if (numNights >= 5 && discounts.discount5Nights) {
+      return { percentage: discounts.discount5Nights, tier: '5+ nuits' };
+    }
+    if (numNights >= 3 && discounts.discount3Nights) {
+      return { percentage: discounts.discount3Nights, tier: '3+ nuits' };
+    }
+    return null;
+  };
+
+  // Calculate nights and total price with discount
   const nights = dateRange?.from && dateRange?.to 
     ? differenceInDays(dateRange.to, dateRange.from)
     : 0;
-  const totalPrice = nights * pricePerNight;
+  
+  const applicableDiscount = getApplicableDiscount(nights);
+  const discountedPricePerNight = applicableDiscount 
+    ? pricePerNight * (1 - applicableDiscount.percentage / 100)
+    : pricePerNight;
+  const totalPriceBeforeDiscount = nights * pricePerNight;
+  const totalPrice = nights * discountedPricePerNight;
+  const savings = totalPriceBeforeDiscount - totalPrice;
 
   // Fetch booked dates and blocked dates for this property
   useEffect(() => {
@@ -221,8 +260,8 @@ export const ReservationDialog = ({
           check_in_date: format(dateRange.from, 'yyyy-MM-dd'),
           check_out_date: format(dateRange.to, 'yyyy-MM-dd'),
           total_nights: nights,
-          total_price: totalPrice,
-          price_per_night: pricePerNight,
+          total_price: Math.round(totalPrice),
+          price_per_night: Math.round(discountedPricePerNight),
           reservation_type: 'reservation',
           message: message.trim() || null,
           share_phone: sharePhone,
@@ -287,6 +326,30 @@ export const ReservationDialog = ({
                 Séjour minimum : {minimumStay} nuits
               </p>
             )}
+            
+            {/* Available discounts */}
+            {discounts && (discounts.discount3Nights || discounts.discount5Nights || discounts.discount7Nights || discounts.discount14Nights || discounts.discount30Nights) && (
+              <div className="mt-2 pt-2 border-t border-border/50">
+                <p className="text-xs text-muted-foreground mb-1">🏷️ Forfaits disponibles :</p>
+                <div className="flex flex-wrap gap-1">
+                  {discounts.discount3Nights && (
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">3+ nuits : -{discounts.discount3Nights}%</span>
+                  )}
+                  {discounts.discount5Nights && (
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">5+ nuits : -{discounts.discount5Nights}%</span>
+                  )}
+                  {discounts.discount7Nights && (
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">7+ nuits : -{discounts.discount7Nights}%</span>
+                  )}
+                  {discounts.discount14Nights && (
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">14+ nuits : -{discounts.discount14Nights}%</span>
+                  )}
+                  {discounts.discount30Nights && (
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">30+ nuits : -{discounts.discount30Nights}%</span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Date Range Selection */}
@@ -345,9 +408,27 @@ export const ReservationDialog = ({
                   {formatPrice(pricePerNight)} × {nights}
                 </span>
               </div>
+              
+              {/* Discount applied */}
+              {applicableDiscount && (
+                <div className="flex items-center justify-between text-sm text-primary">
+                  <span className="flex items-center gap-1">
+                    🏷️ Forfait {applicableDiscount.tier}
+                  </span>
+                  <span>-{applicableDiscount.percentage}%</span>
+                </div>
+              )}
+              
+              {applicableDiscount && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground line-through">{formatPrice(totalPriceBeforeDiscount)}</span>
+                  <span className="text-primary font-medium">Vous économisez {formatPrice(savings)}</span>
+                </div>
+              )}
+              
               <div className="flex items-center justify-between font-bold text-lg border-t border-primary/20 pt-2">
                 <span>Total</span>
-                <span className="text-primary">{formatPrice(totalPrice)}</span>
+                <span className="text-primary">{formatPrice(Math.round(totalPrice))}</span>
               </div>
               {nights < minimumStay && (
                 <p className="text-destructive text-xs">

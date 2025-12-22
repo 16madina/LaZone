@@ -1000,104 +1000,206 @@ const PublishPage = () => {
               <span className="text-xs font-normal text-muted-foreground">(optionnel)</span>
             </h3>
             <p className="text-xs text-muted-foreground mb-4">
-              Offrez des réductions pour encourager les séjours prolongés
+              Sélectionnez un forfait et définissez le pourcentage de réduction
             </p>
             
             <div className="space-y-3">
-              {/* 3 nights discount */}
+              {/* Dropdown to select discount tier */}
               <div className="flex items-center gap-3">
-                <div className="flex-1">
-                  <Label className="text-sm">À partir de 3 nuits</Label>
-                </div>
-                <div className="relative w-24">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="50"
-                    value={discount3Nights}
-                    onChange={(e) => setDiscount3Nights(e.target.value)}
-                    placeholder="0"
-                    className="pr-8 text-center"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
-                </div>
+                <Select 
+                  value={
+                    discount30Nights ? '30' : 
+                    discount14Nights ? '14' : 
+                    discount7Nights ? '7' : 
+                    discount5Nights ? '5' : 
+                    discount3Nights ? '3' : ''
+                  }
+                  onValueChange={(value) => {
+                    // Reset all discounts
+                    setDiscount3Nights('');
+                    setDiscount5Nights('');
+                    setDiscount7Nights('');
+                    setDiscount14Nights('');
+                    setDiscount30Nights('');
+                    // Set a default value for the selected tier
+                    if (value === '3') setDiscount3Nights('5');
+                    else if (value === '5') setDiscount5Nights('10');
+                    else if (value === '7') setDiscount7Nights('15');
+                    else if (value === '14') setDiscount14Nights('20');
+                    else if (value === '30') setDiscount30Nights('25');
+                  }}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Choisir un forfait" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border shadow-lg z-50">
+                    <SelectItem value="none">Aucun rabais</SelectItem>
+                    <SelectItem value="3">À partir de 3 nuits</SelectItem>
+                    <SelectItem value="5">À partir de 5 nuits</SelectItem>
+                    <SelectItem value="7">À partir de 7 nuits</SelectItem>
+                    <SelectItem value="14">À partir de 14 nuits</SelectItem>
+                    <SelectItem value="30">À partir de 30 nuits</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* 5 nights discount */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1">
-                  <Label className="text-sm">À partir de 5 nuits</Label>
-                </div>
-                <div className="relative w-24">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="50"
-                    value={discount5Nights}
-                    onChange={(e) => setDiscount5Nights(e.target.value)}
-                    placeholder="0"
-                    className="pr-8 text-center"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
-                </div>
-              </div>
+              {/* Input for the selected discount percentage */}
+              {(discount3Nights || discount5Nights || discount7Nights || discount14Nights || discount30Nights) && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl"
+                >
+                  <span className="text-sm flex-1">
+                    Rabais pour {
+                      discount30Nights ? '30+ nuits' : 
+                      discount14Nights ? '14+ nuits' : 
+                      discount7Nights ? '7+ nuits' : 
+                      discount5Nights ? '5+ nuits' : 
+                      '3+ nuits'
+                    }
+                  </span>
+                  <div className="relative w-20">
+                    <Input
+                      type="number"
+                      min="1"
+                      max="50"
+                      value={discount30Nights || discount14Nights || discount7Nights || discount5Nights || discount3Nights}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (discount30Nights) setDiscount30Nights(val);
+                        else if (discount14Nights) setDiscount14Nights(val);
+                        else if (discount7Nights) setDiscount7Nights(val);
+                        else if (discount5Nights) setDiscount5Nights(val);
+                        else if (discount3Nights) setDiscount3Nights(val);
+                      }}
+                      placeholder="0"
+                      className="pr-6 text-center font-bold"
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                  </div>
+                </motion.div>
+              )}
 
-              {/* 7 nights discount */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1">
-                  <Label className="text-sm">À partir de 7 nuits</Label>
-                </div>
-                <div className="relative w-24">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="50"
-                    value={discount7Nights}
-                    onChange={(e) => setDiscount7Nights(e.target.value)}
-                    placeholder="0"
-                    className="pr-8 text-center"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
-                </div>
-              </div>
-
-              {/* 14 nights discount */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1">
-                  <Label className="text-sm">À partir de 14 nuits</Label>
-                </div>
-                <div className="relative w-24">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="50"
-                    value={discount14Nights}
-                    onChange={(e) => setDiscount14Nights(e.target.value)}
-                    placeholder="0"
-                    className="pr-8 text-center"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
-                </div>
-              </div>
-
-              {/* 30 nights discount */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1">
-                  <Label className="text-sm">À partir de 30 nuits</Label>
-                </div>
-                <div className="relative w-24">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="50"
-                    value={discount30Nights}
-                    onChange={(e) => setDiscount30Nights(e.target.value)}
-                    placeholder="0"
-                    className="pr-8 text-center"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
-                </div>
-              </div>
+              {/* Multiple discounts toggle */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="text-xs text-primary hover:underline flex items-center gap-1">
+                    <Plus className="w-3 h-3" />
+                    Ajouter plusieurs forfaits
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 p-3 bg-card border shadow-lg z-50">
+                  <p className="text-xs font-medium mb-3">Définir plusieurs forfaits</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox 
+                        id="d3" 
+                        checked={!!discount3Nights} 
+                        onCheckedChange={(checked) => setDiscount3Nights(checked ? '5' : '')}
+                      />
+                      <Label htmlFor="d3" className="text-xs flex-1 cursor-pointer">3+ nuits</Label>
+                      {discount3Nights && (
+                        <div className="relative w-16">
+                          <Input
+                            type="number"
+                            min="1"
+                            max="50"
+                            value={discount3Nights}
+                            onChange={(e) => setDiscount3Nights(e.target.value)}
+                            className="h-7 pr-5 text-xs text-center"
+                          />
+                          <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">%</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox 
+                        id="d5" 
+                        checked={!!discount5Nights} 
+                        onCheckedChange={(checked) => setDiscount5Nights(checked ? '10' : '')}
+                      />
+                      <Label htmlFor="d5" className="text-xs flex-1 cursor-pointer">5+ nuits</Label>
+                      {discount5Nights && (
+                        <div className="relative w-16">
+                          <Input
+                            type="number"
+                            min="1"
+                            max="50"
+                            value={discount5Nights}
+                            onChange={(e) => setDiscount5Nights(e.target.value)}
+                            className="h-7 pr-5 text-xs text-center"
+                          />
+                          <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">%</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox 
+                        id="d7" 
+                        checked={!!discount7Nights} 
+                        onCheckedChange={(checked) => setDiscount7Nights(checked ? '15' : '')}
+                      />
+                      <Label htmlFor="d7" className="text-xs flex-1 cursor-pointer">7+ nuits</Label>
+                      {discount7Nights && (
+                        <div className="relative w-16">
+                          <Input
+                            type="number"
+                            min="1"
+                            max="50"
+                            value={discount7Nights}
+                            onChange={(e) => setDiscount7Nights(e.target.value)}
+                            className="h-7 pr-5 text-xs text-center"
+                          />
+                          <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">%</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox 
+                        id="d14" 
+                        checked={!!discount14Nights} 
+                        onCheckedChange={(checked) => setDiscount14Nights(checked ? '20' : '')}
+                      />
+                      <Label htmlFor="d14" className="text-xs flex-1 cursor-pointer">14+ nuits</Label>
+                      {discount14Nights && (
+                        <div className="relative w-16">
+                          <Input
+                            type="number"
+                            min="1"
+                            max="50"
+                            value={discount14Nights}
+                            onChange={(e) => setDiscount14Nights(e.target.value)}
+                            className="h-7 pr-5 text-xs text-center"
+                          />
+                          <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">%</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox 
+                        id="d30" 
+                        checked={!!discount30Nights} 
+                        onCheckedChange={(checked) => setDiscount30Nights(checked ? '25' : '')}
+                      />
+                      <Label htmlFor="d30" className="text-xs flex-1 cursor-pointer">30+ nuits</Label>
+                      {discount30Nights && (
+                        <div className="relative w-16">
+                          <Input
+                            type="number"
+                            min="1"
+                            max="50"
+                            value={discount30Nights}
+                            onChange={(e) => setDiscount30Nights(e.target.value)}
+                            className="h-7 pr-5 text-xs text-center"
+                          />
+                          <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">%</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* Preview of discounts */}
