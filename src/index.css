@@ -276,7 +276,8 @@
     padding-top: var(--app-sat);
   }
 
-  .bottom-safe-area {
+  .bottom-safe-area,
+  .pb-safe {
     padding-bottom: var(--app-sab);
   }
 
