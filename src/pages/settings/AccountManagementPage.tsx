@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -110,7 +110,7 @@ const AccountManagementPage = () => {
   return (
     <div className="min-h-screen bg-muted/30 pb-32">
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary via-primary to-primary/80 text-primary-foreground pt-[env(safe-area-inset-top)]">
+      <div className="bg-gradient-to-r from-primary via-primary to-primary/80 text-primary-foreground pt-[var(--app-sat)]">
         <div className="flex items-center gap-4 px-4 py-4">
           <button 
             onClick={() => navigate(-1)}

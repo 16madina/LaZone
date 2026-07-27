@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import heroBg4 from '@/assets/hero-bg-4.jpg';
@@ -611,7 +611,7 @@ const ProfilePage = () => {
         
         <div 
           className="relative z-10 flex flex-col items-center justify-center min-h-[70vh] px-6"
-          style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+          style={{ paddingTop: 'var(--app-sat)' }}
         >
           {/* Animated illustration */}
           <motion.div

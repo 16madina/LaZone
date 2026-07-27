@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+﻿import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Filter, X, MapPin, Bed, Bath, Maximize, Search, Loader2, Navigation, Check, Globe, ChevronDown, Calendar, Star, List } from 'lucide-react';
@@ -472,7 +472,7 @@ const MapPage = () => {
       {/* Search and Filters Header */}
       <div 
         className="absolute top-0 left-0 right-0 z-[1000] p-3"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
+        style={{ paddingTop: 'calc(var(--app-sat) + 0.75rem)' }}
       >
         <div className="flex gap-2">
           <DropdownMenu>

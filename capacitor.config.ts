@@ -36,6 +36,12 @@ const config: CapacitorConfig = {
     overrideUserAgent: 'LaZone Mobile App'
   },
   plugins: {
+    // Capacitor 8: inject correct --safe-area-inset-* on Android WebViews
+    // where env(safe-area-inset-*) is buggy — keeps logo/UI from jumping.
+    SystemBars: {
+      insetsHandling: 'css',
+      style: 'LIGHT',
+    },
     SplashScreen: {
       launchAutoHide: true,
       launchShowDuration: 0,
@@ -49,8 +55,9 @@ const config: CapacitorConfig = {
       resizeOnFullScreen: true
     },
     StatusBar: {
+      // overlaysWebView is ignored on Android 15+/16; SystemBars + CSS handle insets.
       overlaysWebView: true,
-      style: 'light',
+      style: 'LIGHT',
       backgroundColor: '#ea580c'
     },
     PushNotifications: {

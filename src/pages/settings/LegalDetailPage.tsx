@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Edit2, Save, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -149,7 +149,7 @@ const LegalDetailPage = () => {
   return (
     <div className="min-h-screen bg-muted/30 pb-32">
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary via-primary to-primary/80 text-primary-foreground pt-[env(safe-area-inset-top)]">
+      <div className="bg-gradient-to-r from-primary via-primary to-primary/80 text-primary-foreground pt-[var(--app-sat)]">
         <div className="flex items-center justify-between px-4 py-4">
           <div className="flex items-center gap-4">
             <button 

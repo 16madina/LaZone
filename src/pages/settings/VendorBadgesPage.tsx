@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Award, Star, Home, Users, Shield, Crown, Gem, Loader2, CheckCircle2, Lock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -251,7 +251,7 @@ const VendorBadgesPage = () => {
   return (
     <div className="min-h-screen bg-muted/30 pb-32">
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary via-primary to-primary/80 text-primary-foreground pt-[env(safe-area-inset-top)]">
+      <div className="bg-gradient-to-r from-primary via-primary to-primary/80 text-primary-foreground pt-[var(--app-sat)]">
         <div className="flex items-center gap-4 px-4 py-4">
           <button 
             onClick={() => navigate(-1)}

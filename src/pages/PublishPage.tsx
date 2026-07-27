@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -731,7 +731,7 @@ const PublishPage = () => {
         
         <div 
           className="relative z-10 flex flex-col items-center justify-center min-h-[70vh] px-6"
-          style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+          style={{ paddingTop: 'var(--app-sat)' }}
         >
           {/* Animated illustration */}
           <motion.div
@@ -857,7 +857,7 @@ const PublishPage = () => {
       {/* Header */}
       <div
         className="bg-gradient-to-r from-primary via-primary to-primary/80 text-primary-foreground px-4 pb-6"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.5rem)' }}
+        style={{ paddingTop: 'calc(var(--app-sat) + 1.5rem)' }}
       >
         <h1 className="font-display text-2xl font-bold">
           {isResidence ? 'Publier un hébergement' : 'Publier une annonce'}

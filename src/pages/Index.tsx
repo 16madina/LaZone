@@ -224,7 +224,7 @@ const Index = () => {
           backgroundImage: `url(${currentBg})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center top',
-          paddingTop: 'max(env(safe-area-inset-top, 0px), 1rem)',
+          paddingTop: 'max(var(--app-sat, 0px), 1rem)',
         }}
       >
         {/* Dark Overlay - changes color based on mode */}
@@ -240,7 +240,7 @@ const Index = () => {
         <div className="relative z-10">
           {/* Header */}
           <header className="flex items-center justify-between mb-8">
-            <AppLogo className="h-10" />
+            <AppLogo className="h-10 w-10" />
             <div className="flex items-center gap-2 sm:gap-3">
               <AppModeSwitch onSwitch={handleModeSwitch} />
               <CountrySelector 
@@ -255,7 +255,7 @@ const Index = () => {
 
           {/* Hero Content with Logo */}
           <div className="text-center mb-8">
-            <AppLogo className="h-24 mx-auto mb-4" />
+            <AppLogo className="h-24 w-24 mx-auto mb-4" />
             <h1 className="font-display text-2xl font-bold text-white mb-2">
               {isResidence ? (
                 <>

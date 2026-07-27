@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import logoLazone from "@/assets/logo-lazone.png";
+import { cn } from "@/lib/utils";
 
 export type AppLogoProps = Omit<
   React.ImgHTMLAttributes<HTMLImageElement>,
@@ -22,6 +23,7 @@ export function AppLogo({
   onError,
   loading = "eager",
   decoding = "async",
+  className,
   ...props
 }: AppLogoProps) {
   const [currentSrc, setCurrentSrc] = React.useState<string>(src ?? logoLazone);
@@ -37,6 +39,8 @@ export function AppLogo({
       alt={alt}
       loading={loading}
       decoding={decoding}
+      // Reserve layout space so the logo doesn't jump while loading / swapping fallbacks.
+      className={cn("object-contain shrink-0 align-middle", className)}
       onError={(e) => {
         if (fallbackSrc && currentSrc !== fallbackSrc) {
           setCurrentSrc(fallbackSrc);
